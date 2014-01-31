@@ -307,7 +307,9 @@ void GCode::readFromSerial()
 #ifdef WAITING_IDENTIFIER
         else if(bufferLength == 0 && time-timeOfLastDataPacket>1000)   // Don't do it if buffer is not empty. It may be a slow executing command.
         {
-            Com::printFLN(Com::tWait); // Unblock communication in case the last ok was not received correct.
+#if !SUPPORT_CURA
+			Com::printFLN(Com::tWait); // Unblock communication in case the last ok was not received correct.
+#endif // !SUPPORT_CURA
             timeOfLastDataPacket = time;
         }
 #endif
@@ -466,7 +468,6 @@ bool GCode::parseBinary(uint8_t *buffer,bool fromSerial)
     unsigned int sum1=0,sum2=0; // for fletcher-16 checksum
     // first do fletcher-16 checksum tests see
     // http://en.wikipedia.org/wiki/Fletcher's_checksum
-    uint8_t i=0;
     uint8_t *p = buffer;
     uint8_t len = binaryCommandSize-2;
     while (len)

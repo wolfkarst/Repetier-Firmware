@@ -34,6 +34,7 @@
 #define PRINTER_FLAG1_HOMED                 1
 #define PRINTER_FLAG1_AUTOMOUNT             2
 #define PRINTER_FLAG1_ANIMATION             4
+#define PRINTER_FLAG1_ALLKILLED             8
 class Printer
 {
 public:
@@ -70,6 +71,7 @@ public:
     static float coordinateOffset[3];
     static long currentPositionSteps[4];     ///< Position in steps from origin.
     static float currentPosition[3];
+    static float lastCmdPos[3]; ///< Last coordinates send by gcodes
     static long destinationSteps[4];         ///< Target position in steps.
 #if NONLINEAR_SYSTEM
     static long currentDeltaPositionSteps[4];
@@ -82,8 +84,11 @@ public:
     static long deltaBPosYSteps;
     static long deltaCPosXSteps;
     static long deltaCPosYSteps;
+#ifdef DEBUG_DELTA_REALPOS
+    static long realDeltaPositionSteps[3];
 #endif
-#if FEATURE_Z_PROBE || MAX_HARDWARE_ENDSTOP_Z || DRIVE_SYSTEM==3
+#endif
+#if FEATURE_Z_PROBE || MAX_HARDWARE_ENDSTOP_Z || NONLINEAR_SYSTEM
     static long stepsRemainingAtZHit;
 #endif
 #if DRIVE_SYSTEM==3
@@ -135,16 +140,40 @@ public:
     static long totalStepsRemaining;
 #endif
 #if FEATURE_MEMORY_POSITION
-    static long memoryX;
-    static long memoryY;
-    static long memoryZ;
-    static long memoryE;
+    static float memoryX;
+    static float memoryY;
+    static float memoryZ;
+    static float memoryE;
 #endif
 #ifdef XY_GANTRY
     static char motorX;
     static char motorY;
 #endif
-    static inline void setMenuMode(uint8_t mode,bool on) {
+
+#if FEATURE_Z_COMPENSATION
+    static short nonCompensatedPositionStepsX;
+    static short nonCompensatedPositionStepsY;
+    static short nonCompensatedPositionStepsZ;
+    static short targetCompensationZ;
+    static short currentCompensationZ;
+    static char	doZCompensation;
+#endif // FEATURE_Z_COMPENSATION
+
+#if FEATURE_EXTENDED_BUTTONS
+    static short targetPositionStepsX;
+    static short targetPositionStepsY;
+    static short targetPositionStepsZ;
+    static short targetPositionStepsE;
+    static short currentPositionStepsX;
+    static short currentPositionStepsY;
+    static short currentPositionStepsZ;
+    static short currentPositionStepsE;
+#endif // FEATURE_EXTENDED_BUTTONS
+
+    static short allowedZStepsAfterEndstop;
+    static short currentZStepsAfterEndstop;
+
+	static inline void setMenuMode(uint8_t mode,bool on) {
         if(on)
             menuMode |= mode;
         else
@@ -238,51 +267,81 @@ public:
     {
         if(positive)
         {
-            WRITE(X_DIR_PIN,!INVERT_X_DIR);
+            // extruder moves to the right
+            if( g_nDirectionX != 1 )
+            {
+                WRITE(X_DIR_PIN,!INVERT_X_DIR);
 #if FEATURE_TWO_XSTEPPER
-            WRITE(X2_DIR_PIN,!INVERT_X_DIR);
+                WRITE(X2_DIR_PIN,!INVERT_X_DIR);
 #endif
+                g_nDirectionX = 1;
+            }
         }
         else
         {
-            WRITE(X_DIR_PIN,INVERT_X_DIR);
+            // extruder moves to the left
+            if( g_nDirectionX != -1 )
+            {
+                WRITE(X_DIR_PIN,INVERT_X_DIR);
 #if FEATURE_TWO_XSTEPPER
-            WRITE(X2_DIR_PIN,INVERT_X_DIR);
+                WRITE(X2_DIR_PIN,INVERT_X_DIR);
 #endif
+                g_nDirectionX = -1;
+            }
         }
     }
     static inline void setYDirection(bool positive)
     {
         if(positive)
         {
-            WRITE(Y_DIR_PIN,!INVERT_Y_DIR);
+            // heat bed moves to the front
+            if( g_nDirectionY != 1 )
+            {
+                WRITE(Y_DIR_PIN,!INVERT_Y_DIR);
 #if FEATURE_TWO_YSTEPPER
-            WRITE(Y2_DIR_PIN,!INVERT_Y_DIR);
+                WRITE(Y2_DIR_PIN,!INVERT_Y_DIR);
 #endif
+                g_nDirectionY = 1;
+            }
         }
         else
         {
-            WRITE(Y_DIR_PIN,INVERT_Y_DIR);
+            // heat bed moves to the back
+            if( g_nDirectionY != -1 )
+            {
+                WRITE(Y_DIR_PIN,INVERT_Y_DIR);
 #if FEATURE_TWO_YSTEPPER
-            WRITE(Y2_DIR_PIN,INVERT_Y_DIR);
+                WRITE(Y2_DIR_PIN,INVERT_Y_DIR);
 #endif
+                g_nDirectionY = -1;
+            }
         }
     }
     static inline void setZDirection(bool positive)
     {
         if(positive)
         {
-            WRITE(Z_DIR_PIN,!INVERT_Z_DIR);
+            // heat bed moves to the bottom
+            if( g_nDirectionZ != 1 )
+            {
+                WRITE(Z_DIR_PIN,!INVERT_Z_DIR);
 #if FEATURE_TWO_ZSTEPPER
-            WRITE(Z2_DIR_PIN,!INVERT_Z_DIR);
+                WRITE(Z2_DIR_PIN,!INVERT_Z_DIR);
 #endif
+                g_nDirectionZ = 1;
+            }
         }
         else
         {
-            WRITE(Z_DIR_PIN,INVERT_Z_DIR);
+            // heat bed moves to the top
+            if( g_nDirectionZ != -1 )
+            {
+                WRITE(Z_DIR_PIN,INVERT_Z_DIR);
 #if FEATURE_TWO_ZSTEPPER
-            WRITE(Z2_DIR_PIN,INVERT_Z_DIR);
+                WRITE(Z2_DIR_PIN,INVERT_Z_DIR);
 #endif
+                g_nDirectionZ = -1;
+            }
         }
     }
     static inline uint8_t isLargeMachine()
@@ -308,6 +367,14 @@ public:
     static inline void setHomed(uint8_t b)
     {
         flag1 = (b ? flag1 | PRINTER_FLAG1_HOMED : flag1 & ~PRINTER_FLAG1_HOMED);
+    }
+    static inline uint8_t isAllKilled()
+    {
+        return flag1 & PRINTER_FLAG1_ALLKILLED;
+    }
+    static inline void setAllKilled(uint8_t b)
+    {
+        flag1 = (b ? flag1 | PRINTER_FLAG1_ALLKILLED : flag1 & ~PRINTER_FLAG1_ALLKILLED);
     }
     static inline uint8_t isAutomount()
     {
@@ -391,6 +458,9 @@ public:
     static inline void unsetAllSteppersDisabled()
     {
         flag0 &= ~PRINTER_FLAG0_STEPPER_DISABLED;
+#if FAN_BOARD_PIN>-1
+        pwm_pos[NUM_EXTRUDER+1] = 255;
+#endif // FAN_BOARD_PIN
     }
     static inline bool isAnyTempsensorDefect()
     {
@@ -553,7 +623,7 @@ public:
     }
     static void constrainDestinationCoords();
     static void updateDerivedParameter();
-    static void updateCurrentPosition();
+    static void updateCurrentPosition(bool copyLastCmd = false);
     static void kill(uint8_t only_steppers);
     static void updateAdvanceFlags();
     static void setup();
@@ -566,12 +636,12 @@ public:
     static inline int getFanSpeed() {
         return (int)pwm_pos[NUM_EXTRUDER+2];
     }
-#if DRIVE_SYSTEM==3
+#if NONLINEAR_SYSTEM
     static inline void setDeltaPositions(long xaxis, long yaxis, long zaxis)
     {
-        currentDeltaPositionSteps[0] = xaxis;
-        currentDeltaPositionSteps[1] = yaxis;
-        currentDeltaPositionSteps[2] = zaxis;
+        currentDeltaPositionSteps[X_AXIS] = xaxis;
+        currentDeltaPositionSteps[Y_AXIS] = yaxis;
+        currentDeltaPositionSteps[Z_AXIS] = zaxis;
     }
     static void deltaMoveToTopEndstops(float feedrate);
 #endif
@@ -579,7 +649,7 @@ public:
     static float runZMaxProbe();
 #endif
 #if FEATURE_Z_PROBE
-    static float runZProbe(bool first,bool last);
+    static float runZProbe(bool first,bool last,uint8_t repeat = Z_PROBE_REPETITIONS);
     static void waitForZProbeStart();
 #if FEATURE_AUTOLEVEL
     static void transformToPrinter(float x,float y,float z,float &transX,float &transY,float &transZ);

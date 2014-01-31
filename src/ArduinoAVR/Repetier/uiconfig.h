@@ -98,6 +98,29 @@ What display type do you use?
 */
 #define UI_DISPLAY_TYPE 0
 
+#if UI_DISPLAY_TYPE == 5 // Special case for graphic displays
+
+#define U8GLIB_ST7920 // Currently only this display from u8g lib is included.
+#define UI_LCD_WIDTH 128
+#define UI_LCD_HEIGHT 64
+
+//select font size
+#define UI_FONT_6X10 //default font
+#ifdef UI_FONT_6X10
+#define UI_FONT_WIDTH 6
+#define UI_FONT_HEIGHT 10
+#define UI_FONT_SMALL_HEIGHT 7
+#define UI_FONT_DEFAULT repetier_6x10
+#define UI_FONT_SMALL repetier_5x7
+#define UI_FONT_SMALL_WIDTH 5 //smaller font for status display
+#define UI_ANIMATION false  // Animations are too slow
+#endif
+
+//calculate rows and cols available with current font
+#define UI_COLS (UI_LCD_WIDTH/UI_FONT_WIDTH)
+#define UI_ROWS (UI_LCD_HEIGHT/UI_FONT_HEIGHT)
+#define UI_DISPLAY_CHARSET 3
+#else
 /** Number of columns per row
 
 Typical values are 16 and 20
@@ -107,6 +130,7 @@ Typical values are 16 and 20
 Rows of your display. 2 or 4
 */
 #define UI_ROWS 4
+#endif // UI_DISPLAY_TYPE
 
 /* What type of chip is used for I2C communication
 0 : PCF8574 or PCF8574A or compatible chips.
@@ -324,6 +348,7 @@ void ui_check_keys(int &action) {
  UI_KEYS_BUTTON_LOW(6,UI_ACTION_PREVIOUS); // push button, connects gnd to pin
  UI_KEYS_BUTTON_LOW(11,UI_ACTION_BACK); // push button, connects gnd to pin
  UI_KEYS_BUTTON_LOW(42,UI_ACTION_SD_PRINT ); // push button, connects gnd to pin
+
 //  UI_KEYS_CLICKENCODER_LOW_REV(47,45); // click encoder on pins 47 and 45. Phase is connected with gnd for signals.
 //  UI_KEYS_BUTTON_LOW(43,UI_ACTION_OK); // push button, connects gnd to pin
 #endif
