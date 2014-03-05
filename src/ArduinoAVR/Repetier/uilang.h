@@ -249,6 +249,8 @@
 #define UI_TEXT_OUTPUT_OBJECT	 "Output Object"
 #define UI_TEXT_PARK			 "Park Heat Bed"
 #define UI_TEXT_RESET			 "Restart"
+#define UI_TEXT_HEAT_BED_SCAN_ABORTED "Scan aborted"
+#define UI_TEXT_HEAT_BED_SCAN_DONE "Scan completed"
 // Printtime output gets aggregated like <Days_5gisgits>UI_TEXT_PRINTTIME_DAYS<Hours>UI_TEXT_PRINTTIME_HOURS<Minutes>UI_TEXT_PRINTTIME_MINUTES
 // ___88 days 12:45
 #define UI_TEXT_PRINTTIME_DAYS   " days "
@@ -430,6 +432,8 @@
 #define UI_TEXT_OUTPUT_OBJECT	 "Objekt ausgeben"
 #define UI_TEXT_PARK			 "Heizbett Parken"
 #define UI_TEXT_RESET			 "Neustart"
+#define UI_TEXT_HEAT_BED_SCAN_ABORTED "Scan abgebrochen"
+#define UI_TEXT_HEAT_BED_SCAN_DONE "Scan beendet"
 // Printtime output gets aggregated like <Days_5gisgits>UI_TEXT_PRINTTIME_DAYS<Hours>UI_TEXT_PRINTTIME_HOURS<Minutes>UI_TEXT_PRINTTIME_MINUTES
 // ___88 days 12:45
 #define UI_TEXT_PRINTTIME_DAYS   " Tage "

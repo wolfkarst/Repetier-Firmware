@@ -1313,6 +1313,10 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define	SUPPORT_CURA						1
 
+/** \brief Enables/disables the set to origin feature
+*/
+#define FEATURE_SET_TO_ORIGIN				0													// 1 = on, 0 = off
+
 /** \brief Enables/disables the output of the printed object feature
 */
 #define FEATURE_OUTPUT_PRINTED_OBJECT		1													// 1 = on, 0 = off
@@ -1343,11 +1347,11 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Enables/diables the emergency pause in case of too high pressure
 */
-#define FEATURE_EMERGENCY_PAUSE				1													// 1 = on, 0 = off
+#define FEATURE_EMERGENCY_PAUSE				0													// 1 = on, 0 = off
 
 /** \brief Specifies the pressure at which the emergency pause shall be performed, in [digits]
 */
-#define EMERGENCY_PAUSE_DIGITS				10000
+#define EMERGENCY_PAUSE_DIGITS				12000
 
 /** \brief Configuration of the external watchdog
 */
@@ -1375,10 +1379,61 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 #endif // MOTHERBOARD == 13
 
+/** \brief Configuration of the heat bed scan
+*/
+#define SCAN_X_START_MM					15																// [mm]
+#define SCAN_X_START_STEPS				long(XAXIS_STEPS_PER_MM * SCAN_X_START_MM)						// [steps]
+#define SCAN_X_END_MM					5																// [mm]
+#define SCAN_X_END_STEPS				long(XAXIS_STEPS_PER_MM * SCAN_X_END_MM)						// [steps]
+#define SCAN_X_STEP_SIZE_MM				20																// [mm]
+#define SCAN_X_STEP_SIZE_STEPS			long(XAXIS_STEPS_PER_MM * SCAN_X_STEP_SIZE_MM)					// [steps]
+#define SCAN_X_MAX_POSITION_STEPS		long(X_MAX_LENGTH * XAXIS_STEPS_PER_MM - SCAN_X_END_STEPS)		// [steps]
+
+#define	SCAN_Y_START_MM					30																// [mm]
+#define	SCAN_Y_START_STEPS				long(YAXIS_STEPS_PER_MM * SCAN_Y_START_MM)						// [steps]
+#define	SCAN_Y_END_MM					5																// [mm]
+#define	SCAN_Y_END_STEPS				long(YAXIS_STEPS_PER_MM * SCAN_Y_END_MM)						// [steps]
+#define SCAN_Y_STEP_SIZE_MM				20																// [mm]
+#define	SCAN_Y_STEP_SIZE_STEPS			long(YAXIS_STEPS_PER_MM * SCAN_Y_STEP_SIZE_MM)					// [steps]
+#define SCAN_Y_MAX_POSITION_STEPS		long(Y_MAX_LENGTH * YAXIS_STEPS_PER_MM - SCAN_Y_END_STEPS)		// [steps]
+
+#define SCAN_HEAT_BED_UP_FAST_STEPS		-20																// [steps]
+#define SCAN_HEAT_BED_UP_SLOW_STEPS		-4																// [steps]
+#define SCAN_HEAT_BED_DOWN_SLOW_STEPS	10																// [steps]
+#define SCAN_HEAT_BED_DOWN_FAST_STEPS	long(ZAXIS_STEPS_PER_MM / 4)									// [steps]
+#define	SCAN_FAST_STEP_DELAY_MS			5																// [ms]
+#define	SCAN_SLOW_STEP_DELAY_MS			100																// [ms]
+#define SCAN_IDLE_DELAY_MS				250																// [ms]
+
+#define SCAN_CONTACT_PRESSURE_DELTA		10																// [digits]
+#define SCAN_RETRY_PRESSURE_DELTA		5																// [digits]
+#define SCAN_IDLE_PRESSURE_DELTA		0																// [digits]
+#define SCAN_IDLE_PRESSURE_MIN			-3000															// [digits]
+#define SCAN_IDLE_PRESSURE_MAX			3000															// [digits]
+
+#define SCAN_RETRIES					3																// [-]
+#define	SCAN_PRESSURE_READS				15																// [-]
+#define SCAN_PRESSURE_TOLERANCE			15																// [digits]
+#define SCAN_PRESSURE_READ_DELAY_MS		15																// [ms]
+
+#define REMEMBER_PRESSURE				0
+
+/** \brief Configuration of the manual steps
+*/
+#define DEFAULT_MANUAL_Z_STEPS			16
+#define DEFAULT_MANUAL_EXTRUDER_STEPS	(EXT0_STEPS_PER_MM /2)
+
+/** \brief Configuration of the pause steps
+*/
+#define	DEFAULT_PAUSE_STEPS_X			(XAXIS_STEPS_PER_MM *50)
+#define	DEFAULT_PAUSE_STEPS_Y			(YAXIS_STEPS_PER_MM *50)
+#define DEFAULT_PAUSE_STEPS_Z			(ZAXIS_STEPS_PER_MM *2)
+#define	DEFAULT_PAUSE_STEPS_EXTRUDER	(EXT0_STEPS_PER_MM *10)
+
 /** \brief Printer name and firmware version
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".08"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".11"
 
 #endif

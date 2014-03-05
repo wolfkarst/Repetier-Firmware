@@ -2232,7 +2232,7 @@ void UIDisplay::nextPreviousAction(int8_t next)
         break;
     case UI_ACTION_PRINT_ACCEL_Y:
 #if DRIVE_SYSTEM!=3
-        INCREMENT_MIN_MAX(Printer::maxAccelerationMMPerSquareSecond[Y_AXIS],1,0,10000);
+        INCREMENT_MIN_MAX(Printer::maxAccelerationMMPerSquareSecond[Y_AXIS],100,0,10000);
 #else
         INCREMENT_MIN_MAX(Printer::maxAccelerationMMPerSquareSecond[Y_AXIS],100,0,10000);
 #endif
@@ -2252,7 +2252,7 @@ void UIDisplay::nextPreviousAction(int8_t next)
         break;
     case UI_ACTION_MOVE_ACCEL_Z:
 #if DRIVE_SYSTEM!=3
-        INCREMENT_MIN_MAX(Printer::maxTravelAccelerationMMPerSquareSecond[Z_AXIS],1,0,10000);
+        INCREMENT_MIN_MAX(Printer::maxTravelAccelerationMMPerSquareSecond[Z_AXIS],100,0,10000);
 #else
         INCREMENT_MIN_MAX(Printer::maxTravelAccelerationMMPerSquareSecond[Z_AXIS],100,0,10000);
 #endif
@@ -2448,6 +2448,12 @@ void UIDisplay::executeAction(int action)
             Commands::emergencyStop();
             break;
         case UI_ACTION_HOME_ALL:
+			if( PrintLine::linesCount )
+			{
+				// do not allow homing via the menu while we are printing
+				Com::printFLN( PSTR( "executeAction(): Home all is not available while the printing is in progress" ) );
+				break;
+			}
             Printer::homeAxis(true,true,true);
             Commands::printCurrentPosition();
             break;

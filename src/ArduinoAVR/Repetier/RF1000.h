@@ -73,40 +73,6 @@
 - M3104 - configure the x, y and z position which shall set when the printed object is output
 */
 
-
-#define SCAN_X_START_MM					15																// [mm]
-#define SCAN_X_START_STEPS				long(XAXIS_STEPS_PER_MM * SCAN_X_START_MM)						// [steps]
-#define SCAN_X_END_MM					5																// [mm]
-#define SCAN_X_END_STEPS				long(XAXIS_STEPS_PER_MM * SCAN_X_END_MM)						// [steps]
-#define SCAN_X_STEP_SIZE_MM				20																// [mm]
-#define SCAN_X_STEP_SIZE_STEPS			long(XAXIS_STEPS_PER_MM * SCAN_X_STEP_SIZE_MM)					// [steps]
-#define SCAN_X_MAX_POSITION_STEPS		long(X_MAX_LENGTH * XAXIS_STEPS_PER_MM - SCAN_X_END_STEPS)		// [steps]
-
-#define	SCAN_Y_START_MM					30																// [mm]
-#define	SCAN_Y_START_STEPS				long(YAXIS_STEPS_PER_MM * SCAN_Y_START_MM)						// [steps]
-#define	SCAN_Y_END_MM					5																// [mm]
-#define	SCAN_Y_END_STEPS				long(YAXIS_STEPS_PER_MM * SCAN_Y_END_MM)						// [steps]
-#define SCAN_Y_STEP_SIZE_MM				20																// [mm]
-#define	SCAN_Y_STEP_SIZE_STEPS			long(YAXIS_STEPS_PER_MM * SCAN_Y_STEP_SIZE_MM)					// [steps]
-#define SCAN_Y_MAX_POSITION_STEPS		long(Y_MAX_LENGTH * YAXIS_STEPS_PER_MM - SCAN_Y_END_STEPS)		// [steps]
-
-#define SCAN_HEAT_BED_UP_FAST_STEPS		-20																// [steps]
-#define SCAN_HEAT_BED_UP_SLOW_STEPS		-4																// [steps]
-#define SCAN_HEAT_BED_DOWN_SLOW_STEPS	10																// [steps]
-#define SCAN_HEAT_BED_DOWN_FAST_STEPS	long(ZAXIS_STEPS_PER_MM / 4)									// [steps]
-#define	SCAN_FAST_STEP_DELAY_MS			5																// [ms]
-#define	SCAN_SLOW_STEP_DELAY_MS			100																// [ms]
-#define SCAN_IDLE_DELAY_MS				250																// [ms]
-
-#define SCAN_CONTACT_PRESSURE_DELTA		10																// [digits]
-#define SCAN_RETRY_PRESSURE_DELTA		5																// [digits]
-#define SCAN_IDLE_PRESSURE_DELTA		0																// [digits]
-
-#define SCAN_RETRIES					3																// [-]
-#define	SCAN_PRESSURE_READS				15																// [-]
-#define SCAN_PRESSURE_TOLERANCE			15																// [digits]
-#define SCAN_PRESSURE_READ_DELAY_MS		15																// [ms]
-
 #define	SCAN_STRAIN_GAUGE				ACTIVE_STRAIN_GAUGE
 #define	HEAT_BED_COMPENSATION_X			long((X_MAX_LENGTH - SCAN_X_START_MM - SCAN_X_END_MM) / SCAN_X_STEP_SIZE_MM + 4)
 #define	HEAT_BED_COMPENSATION_Y			long((Y_MAX_LENGTH - SCAN_Y_START_MM - SCAN_Y_END_MM) / SCAN_Y_STEP_SIZE_MM + 4)
@@ -123,15 +89,6 @@
 #define EXTRUDER_STEPPER_HIGH_DELAY		40000															// [µs]
 #define EXTRUDER_STEPPER_LOW_DELAY		250																// [µs]
 #define	LOOP_INTERVAL					1000															// [ms]
-#define REMEMBER_PRESSURE				0
-#define	Z_COMPENSATION_INTERVAL			18
-
-#define DEFAULT_MANUAL_Z_STEPS			16
-#define DEFAULT_MANUAL_EXTRUDER_STEPS	(EXT0_STEPS_PER_MM /2)
-#define	DEFAULT_PAUSE_STEPS_X			(XAXIS_STEPS_PER_MM *50)
-#define	DEFAULT_PAUSE_STEPS_Y			(YAXIS_STEPS_PER_MM *50)
-#define DEFAULT_PAUSE_STEPS_Z			(ZAXIS_STEPS_PER_MM *2)
-#define	DEFAULT_PAUSE_STEPS_EXTRUDER	(EXT0_STEPS_PER_MM *10)
 
 #define	TASK_ENABLE_Z_COMPENSATION		1
 #define	TASK_DISABLE_Z_COMPENSATION		2

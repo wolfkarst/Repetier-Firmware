@@ -1935,6 +1935,16 @@ long PrintLine::bresenhamStep() // version for cartesian printer
         {
             if( cur->task == TASK_PAUSE_PRINT_1 )
             {
+				if( g_pausePrint )
+				{
+					// this operation can not be performed in case we are paused already
+					nextPlannerIndex(linesPos);
+					cur = 0;
+					HAL::forbidInterrupts();
+					--linesCount;
+					return 1000;
+				}
+
                 // the printing shall be paused without moving of the printer head
                 if( linesCount )
                 {
@@ -1960,22 +1970,37 @@ long PrintLine::bresenhamStep() // version for cartesian printer
             }
             if( cur->task == TASK_PAUSE_PRINT_2 )
             {
+				if( g_pausePrint >= 2 )
+				{
+					// this operation can not be performed in case we are in pause position 2 already
+					nextPlannerIndex(linesPos);
+					cur = 0;
+					HAL::forbidInterrupts();
+					--linesCount;
+					return 1000;
+				}
+
                 // the printing shall be paused and the printer head shall be moved away
                 if( linesCount )
                 {
-                    g_pausePrint = 1;
-
                     g_nContinueStepsX		 = 0;
                     g_nContinueStepsY		 = 0;
                     g_nContinueStepsZ		 = 0;
 					g_nContinueStepsExtruder = 0;
 
-                    if( g_nPauseStepsExtruder )
-                    {
-                        Printer::targetPositionStepsE += g_nPauseStepsExtruder;
-						g_nContinueStepsExtruder	  =  g_nPauseStepsExtruder;
-                    }
-                    if( g_nPauseStepsZ )
+					if( !g_pausePrint )
+					{
+						// move the extruder only in case we are not in pause position 1 already
+						if( g_nPauseStepsExtruder )
+						{
+							Printer::targetPositionStepsE += g_nPauseStepsExtruder;
+							g_nContinueStepsExtruder	  =  g_nPauseStepsExtruder;
+						}
+					}
+
+                    g_pausePrint = 2;
+
+					if( g_nPauseStepsZ )
                     {
 						Temp = g_nPauseStepsZ;
 

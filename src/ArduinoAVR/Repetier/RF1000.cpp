@@ -241,7 +241,7 @@ void scanHeatBed( void )
 			Com::printFLN( PSTR( "scanHeatBed(): the scan has been aborted" ) );
 		}
 
-		UI_STATUS_UPD(UI_TEXT_IDLE);
+		UI_STATUS_UPD(UI_TEXT_HEAT_BED_SCAN_ABORTED);
 
 		// restore the compensation values from the EEPROM
 		restoreCompensationMatrix();
@@ -697,7 +697,7 @@ void scanHeatBed( void )
 				{
 					Com::printFLN( PSTR( "scanHeatBed(): the scan has been completed" ) );
 				}
-				UI_STATUS_UPD(UI_TEXT_IDLE);
+				UI_STATUS_UPD(UI_TEXT_HEAT_BED_SCAN_DONE);
 				g_nHeatBedScanStatus = 0;
 				break;
 			}
@@ -839,7 +839,7 @@ short readIdlePressure( short* pnIdlePressure )
 		Com::printFLN( PSTR( "readIdlePressure(): idle pressure: " ), *pnIdlePressure );
 	}
 
-	if( *pnIdlePressure < -2000 || *pnIdlePressure > 2000 )
+	if( *pnIdlePressure < SCAN_IDLE_PRESSURE_MIN || *pnIdlePressure > SCAN_IDLE_PRESSURE_MAX )
 	{
 		// the idle pressure is out of range
 		if( Printer::debugErrors() )
@@ -2027,7 +2027,7 @@ void loopRF1000( void )
 		g_lastTime = uTime;
 
 #if FEATURE_EMERGENCY_PAUSE
-	if( g_pausePrint == 0 &&  PrintLine::linesCount )
+	if( g_pausePrint == 0 && PrintLine::linesCount )
 	{
 		nPressure = readStrainGauge( SCAN_STRAIN_GAUGE );
 		if( (EMERGENCY_PAUSE_DIGITS < 0 && nPressure < EMERGENCY_PAUSE_DIGITS) ||
