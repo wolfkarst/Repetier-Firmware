@@ -722,7 +722,7 @@ void initializeLCD()
 char printCols[MAX_COLS+1];
 UIDisplay::UIDisplay()
 {
-
+	locked = 0;
 }
 #if UI_ANIMATION
 void slideIn(uint8_t row,FSTRINGPARAM(text))
@@ -1357,6 +1357,12 @@ void UIDisplay::parse(char *txt,bool ram)
 }
 void UIDisplay::setStatusP(PGM_P txt)
 {
+	if( locked )
+	{
+		// we shall not update the display
+		return;
+	}
+
     uint8_t i=0;
     while(i<16)
     {
@@ -1368,6 +1374,12 @@ void UIDisplay::setStatusP(PGM_P txt)
 }
 void UIDisplay::setStatus(char *txt)
 {
+	if( locked )
+	{
+		// we shall not update the display
+		return;
+	}
+
     uint8_t i=0;
     while(*txt && i<16)
         statusMsg[i++] = *txt++;
@@ -3049,6 +3061,23 @@ void UIDisplay::fastAction()
     HAL::allowInterrupts();
 #endif
 }
+
+
+void UIDisplay::lock()
+{
+	locked = 1;
+	return;
+
+} // lock
+
+
+void UIDisplay::unlock()
+{
+	locked = 0;
+	return;
+
+} // unlock
+
 
 #endif
 

@@ -1937,6 +1937,46 @@ void outputPressureMatrix( void )
 } // outputPressureMatrix
 #endif // FEATURE_Z_COMPENSATION
 
+
+char clearExternalEEPROM( void )
+{
+	unsigned short	i;
+	unsigned short	uMax = 32768;
+	unsigned short	uTemp;
+	unsigned short	uLast = 0;
+
+
+	if( Printer::debugInfo() )
+	{
+		Com::printFLN( PSTR( "clearExternalEEPROM(): erasing external memory ..." ) );
+	}
+
+	for( i=0; i<uMax; i++ )
+	{
+		HAL::delayMilliseconds( EEPROM_DELAY );
+		writeByte24C256( 0x50, i, 0 );
+
+		if( Printer::debugInfo() )
+		{
+			uTemp = i / 1000;
+			if( uTemp != uLast )
+			{
+				Com::printF( PSTR( "clearExternalEEPROM(): " ), (int)i );
+				Com::printFLN( PSTR( " / " ), (int)uMax );
+				uLast = uTemp;
+			}
+		}
+	}
+
+	if( Printer::debugInfo() )
+	{
+		Com::printFLN( PSTR( "clearExternalEEPROM(): erasing complete" ) );
+	}
+	return 0;
+
+} // clearExternalEEPROM
+
+
 void writeByte24C256( int addressI2C, unsigned int addressEEPROM, unsigned char data )
 {
     Wire.beginTransmission( addressI2C );
@@ -3258,6 +3298,12 @@ void processCommand( GCode* pCommand )
 				break;
 			}
 
+			case 3091: // M3091 - erase the external EEPROM
+			{
+				clearExternalEEPROM();
+				break;
+			}
+
 #if FEATURE_EXTENDED_BUTTONS
 			case 3100: // M3100 - configure the number of manual z steps after the "Z up" or "Z down" button has been pressed
 			{
@@ -3502,6 +3548,26 @@ void processCommand( GCode* pCommand )
 			}
 #endif // FEATURE_OUTPUT_PRINTED_OBJECT
 
+			case 3110:	// M3110 - force a status text
+			{
+				if( pCommand->hasS() )
+				{
+					// take over the specified value
+					if( pCommand->S )
+					{
+						// ensure that the current text won't be overwritten
+						Com::printFLN( PSTR( "M3110: lock" ) );
+						uid.lock();
+					}
+					else
+					{
+						// allow to overwrite the current string again
+						uid.unlock();
+						Com::printFLN( PSTR( "M3110: unlock" ) );
+					}
+				}
+				break;
+			}
 		}
 	}
 

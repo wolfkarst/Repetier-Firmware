@@ -65,12 +65,15 @@
 - M3080 - park the printer
 
 - M3090 - test the watchdog (this command resets the firmware)
+- M3091 - erase the external EEPROM
 
 - M3100 - configure the number of manual z steps after the "Heat Bed up" or "Heat Bed down" button has been pressed
 - M3101 - configure the number of manual extruder steps after the "Extruder output" or "Extruder retract" button has been pressed
 - M3102 - configure the offset in x, y and z direction as well as the extruder retract which shall be applied in case the "Pause Printing" button has been pressed
 - M3103 - configure the x, y and z position which shall set when the printer is parked
 - M3104 - configure the x, y and z position which shall set when the printed object is output
+
+- M3110 - lock the current status text
 */
 
 #define	SCAN_STRAIN_GAUGE				ACTIVE_STRAIN_GAUGE
@@ -228,6 +231,9 @@ extern void clearCompensationMatrix( void );
 // outputPressureMatrix()
 extern void outputPressureMatrix( void );
 #endif // FEATURE_Z_COMPENSATION
+
+// clearExternalEEPROM()
+extern char clearExternalEEPROM( void );
 
 // writeByte24C256()
 extern void writeByte24C256( int addressI2C, unsigned int addressEEPROM, unsigned char data );

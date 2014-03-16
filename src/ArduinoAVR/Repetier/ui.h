@@ -374,6 +374,7 @@ class UIDisplay {
     int8_t encoderPos;
     int8_t encoderLast;
     PGM_P statusText;
+	char locked;
     UIDisplay();
     void createChar(uint8_t location,const uint8_t charmap[]);
     void initialize(); // Initialize display and keys
@@ -401,6 +402,8 @@ class UIDisplay {
     char cwd[SD_MAX_FOLDER_DEPTH*LONG_FILENAME_LENGTH+2];
     uint8_t folderLevel;
 #endif
+	void lock();
+	void unlock();
 };
 extern UIDisplay uid;
 
