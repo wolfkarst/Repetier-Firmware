@@ -104,6 +104,12 @@ short			g_nOutputOffsetY			= OUTPUT_OFFSET_Y;
 short			g_nOutputOffsetZ			= OUTPUT_OFFSET_Z;
 #endif // FEATURE_OUTPUT_PRINTED_OBJECT
 
+#if FEATURE_EMERGENCY_PAUSE
+unsigned long	g_uLastPressureTime			= 0;
+long			g_nPressureSum				= 0;
+char			g_nPressureChecks			= 0;
+#endif // FEATURE_EMERGENCY_PAUSE
+
 
 void initRF1000( void )
 {
@@ -2061,28 +2067,51 @@ void loopRF1000( void )
 	}
 #endif // FEATURE_Z_COMPENSATION
 
+#if FEATURE_EMERGENCY_PAUSE
+	if( (uTime - g_uLastPressureTime) > EMERGENCY_PAUSE_INTERVAL )
+	{
+		g_uLastPressureTime = uTime;
+
+		if( g_pausePrint == 0 && PrintLine::linesCount )
+		{
+			g_nPressureSum	  += readStrainGauge( SCAN_STRAIN_GAUGE );
+			g_nPressureChecks += 1;
+
+			if( g_nPressureChecks == EMERGENCY_PAUSE_CHECKS )
+			{
+				nPressure		 = g_nPressureSum / g_nPressureChecks;
+
+//				Com::printF( PSTR( "loopRF1000(): average = " ), nPressure );
+//				Com::printFLN( PSTR( " / " ), g_nPressureChecks );
+
+				g_nPressureSum	  = 0;
+				g_nPressureChecks = 0;
+
+				if( (nPressure < EMERGENCY_PAUSE_DIGITS_MIN) ||
+					(nPressure > EMERGENCY_PAUSE_DIGITS_MAX) )
+				{
+					// the pressure is outside the allowed range, we must perform the emergency pause
+					if( Printer::debugErrors() )
+					{
+						Com::printFLN( PSTR( "loopRF1000(): emergency pause: " ), nPressure );
+					}
+
+					pausePrint();
+				}
+			}
+		}
+		else
+		{
+			g_nPressureSum	  = 0;
+			g_nPressureChecks = 0;
+		}
+	}
+#endif // FEATURE_EMERGENCY_PAUSE
+
 	if( (uTime - g_lastTime) > LOOP_INTERVAL )
 	{
 		// it is time for another processing
 		g_lastTime = uTime;
-
-#if FEATURE_EMERGENCY_PAUSE
-	if( g_pausePrint == 0 && PrintLine::linesCount )
-	{
-		nPressure = readStrainGauge( SCAN_STRAIN_GAUGE );
-		if( (EMERGENCY_PAUSE_DIGITS < 0 && nPressure < EMERGENCY_PAUSE_DIGITS) ||
-			(EMERGENCY_PAUSE_DIGITS > 0 && nPressure > EMERGENCY_PAUSE_DIGITS) )
-		{
-			// the pressure is outside the allowed range, we must perform the emergency pause
-			if( Printer::debugErrors() )
-			{
-				Com::printFLN( PSTR( "loopRF1000(): emergency pause" ) );
-			}
-
-			pausePrint();
-		}
-	}
-#endif // FEATURE_EMERGENCY_PAUSE
 
 #if FEATURE_Z_COMPENSATION
 		if( g_debugLevel && Printer::debugInfo() )

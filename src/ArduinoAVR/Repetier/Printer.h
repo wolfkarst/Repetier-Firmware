@@ -170,8 +170,15 @@ public:
     static short currentPositionStepsE;
 #endif // FEATURE_EXTENDED_BUTTONS
 
-    static short allowedZStepsAfterEndstop;
+#if STEPPER_ON_DELAY
+	static char	enabledX;
+	static char	enabledY;
+	static char	enabledZ;
+#endif // STEPPER_ON_DELAY
+
+	static short allowedZStepsAfterEndstop;
     static short currentZStepsAfterEndstop;
+
 
 	static inline void setMenuMode(uint8_t mode,bool on) {
         if(on)
@@ -212,7 +219,11 @@ public:
 #if FEATURE_TWO_XSTEPPER && (X2_ENABLE_PIN > -1)
         WRITE(X2_ENABLE_PIN,!X_ENABLE_ON);
 #endif
-    }
+
+#if STEPPER_ON_DELAY
+		Printer::enabledX = 0;
+#endif // STEPPER_ON_DELAY
+	}
     /** \brief Disable stepper motor for y direction. */
     static inline void disableYStepper()
     {
@@ -222,7 +233,11 @@ public:
 #if FEATURE_TWO_YSTEPPER && (Y2_ENABLE_PIN > -1)
         WRITE(Y2_ENABLE_PIN,!Y_ENABLE_ON);
 #endif
-    }
+
+#if STEPPER_ON_DELAY
+		Printer::enabledY = 0;
+#endif // STEPPER_ON_DELAY
+	}
     /** \brief Disable stepper motor for z direction. */
     static inline void disableZStepper()
     {
@@ -232,7 +247,11 @@ public:
 #if FEATURE_TWO_ZSTEPPER && (Z2_ENABLE_PIN > -1)
         WRITE(Z2_ENABLE_PIN,!Z_ENABLE_ON);
 #endif
-    }
+
+#if STEPPER_ON_DELAY
+		Printer::enabledZ = 0;
+#endif // STEPPER_ON_DELAY
+	}
     /** \brief Enable stepper motor for x direction. */
     static inline void  enableXStepper()
     {
@@ -242,6 +261,14 @@ public:
 #if FEATURE_TWO_XSTEPPER && (X2_ENABLE_PIN > -1)
         WRITE(X2_ENABLE_PIN,X_ENABLE_ON);
 #endif
+
+#if STEPPER_ON_DELAY
+		if( !Printer::enabledX )
+		{
+			Printer::enabledX = 1;
+			HAL::delayMilliseconds( STEPPER_ON_DELAY );
+		}
+#endif // STEPPER_ON_DELAY
     }
     /** \brief Enable stepper motor for y direction. */
     static inline void  enableYStepper()
@@ -252,6 +279,14 @@ public:
 #if FEATURE_TWO_YSTEPPER && (Y2_ENABLE_PIN > -1)
         WRITE(Y2_ENABLE_PIN,Y_ENABLE_ON);
 #endif
+
+#if STEPPER_ON_DELAY
+		if( !Printer::enabledY )
+		{
+			Printer::enabledY = 1;
+			HAL::delayMilliseconds( STEPPER_ON_DELAY );
+		}
+#endif // STEPPER_ON_DELAY
     }
     /** \brief Enable stepper motor for z direction. */
     static inline void  enableZStepper()
@@ -262,6 +297,14 @@ public:
 #if FEATURE_TWO_ZSTEPPER && (Z2_ENABLE_PIN > -1)
         WRITE(Z2_ENABLE_PIN,Z_ENABLE_ON);
 #endif
+
+#if STEPPER_ON_DELAY
+		if( !Printer::enabledZ )
+		{
+			Printer::enabledZ = 1;
+			HAL::delayMilliseconds( STEPPER_ON_DELAY );
+		}
+#endif // STEPPER_ON_DELAY
     }
     static inline void setXDirection(bool positive)
     {

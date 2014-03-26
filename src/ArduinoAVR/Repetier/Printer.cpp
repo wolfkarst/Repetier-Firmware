@@ -166,6 +166,13 @@ short Printer::currentPositionStepsZ;
 short Printer::currentPositionStepsE;
 #endif // FEATURE_EXTENDED_BUTTONS
 
+#if STEPPER_ON_DELAY
+char Printer::enabledX;
+char Printer::enabledY;
+char Printer::enabledZ;
+#endif // STEPPER_ON_DELAY
+
+
 short Printer::allowedZStepsAfterEndstop;
 short Printer::currentZStepsAfterEndstop;
 
@@ -785,7 +792,13 @@ void Printer::setup()
     targetPositionStepsE  = 0;
 #endif // FEATURE_EXTENDED_BUTTONS
 
-    currentZStepsAfterEndstop = 0;
+#if STEPPER_ON_DELAY
+	enabledX = 0;
+	enabledY = 0;
+	enabledZ = 0;
+#endif // STEPPER_ON_DELAY
+
+	currentZStepsAfterEndstop = 0;
     CalculateAllowedZStepsAfterEndStop();
 
 #if defined(USE_ADVANCE)

@@ -1347,28 +1347,41 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Enables/diables the emergency pause in case of too high pressure
 */
-#define FEATURE_EMERGENCY_PAUSE				0													// 1 = on, 0 = off
+#define FEATURE_EMERGENCY_PAUSE				1													// 1 = on, 0 = off
 
 /** \brief Specifies the pressure at which the emergency pause shall be performed, in [digits]
 */
-#define EMERGENCY_PAUSE_DIGITS				12000
+#define EMERGENCY_PAUSE_DIGITS_MIN			-12000
+#define EMERGENCY_PAUSE_DIGITS_MAX			12000
+
+/** \brief Specifies the interval at which the pressure check shall be performed, in [ms]
+*/
+#define	EMERGENCY_PAUSE_INTERVAL			100
+
+/** \brief Specifies the number of pressure values which shall be averaged. The emergency pause can be detected each EMERGENCY_PAUSE_INTERVAL * EMERGENCY_PAUSE_CHECKS [ms]
+*/
+#define	EMERGENCY_PAUSE_CHECKS				10
 
 /** \brief Configuration of the external watchdog
 */
 #define WATCHDOG_TIMEOUT					10	// [ms]
+
+/** \brief Specifies whether the firmware shall wait a short time after turning on of the stepper motors - this shall avoid that the first steps are sent to the stepper before it is ready
+*/
+#define	STEPPER_ON_DELAY					25	// [ms]
 
 #if MOTHERBOARD == 13
 
 /** \brief Configuration of the DRV8711
 */
 #define DRV8711_NUM_CHANNELS	5
-#define DRV8711_REGISTER_00		0x0E19	// 0000 1110 0001 1001: ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 0011, EXSTALL = 0, ISGAIN = 10, DTIME = 11
-#define DRV8711_REGISTER_02		0x2028	// 0010 0000 0010 1000: TOFF = 00101000, PWMMODE = 0
-#define DRV8711_REGISTER_03		0x3096  // 0011 0000 1001 0110: TBLANK = 10010110, ABT = 0
-#define DRV8711_REGISTER_04		0x4414	// 0100 0100 0001 0100: TDECAY = 00010100, DECMOD = 100
-#define DRV8711_REGISTER_05		0x583C	// 0101 1000 0011 1100: SDTHR = 00111100, SDCNT = 00, VDIV = 10
-#define DRV8711_REGISTER_06		0x60F0	// 0110 0000 1111 0000: OCPTH = 00, OCPDEG = 00, TDRIVEN = 11, TDRIVEP = 11, IDRIVEN = 00, IDRIVEP = 00
-#define DRV8711_REGISTER_07		0x7000	// 0111 0000 0000 0000: OTS = 0, AOCP = 0, BOCP = 0, UVLO = 0, APDF = 0, BPDF = 0, STD = 0, STDLAT = 0
+#define DRV8711_REGISTER_00		0x0E19	// 0000 1110 0010 0001
+#define DRV8711_REGISTER_02		0x2028	// 0010 0000 1001 0111
+#define DRV8711_REGISTER_03		0x3096  // 0011 0001 1101 0111
+#define DRV8711_REGISTER_04		0x4414	// 0100 0101 0011 0000
+#define DRV8711_REGISTER_05		0x583C	// 0101 1000 0011 1100
+#define DRV8711_REGISTER_06		0x60F0	// 0110 0000 1111 0000
+#define DRV8711_REGISTER_07		0x7000	// 0111 0000 0000 0000
 
 /** \brief Configuration of optional outputs
 */
@@ -1434,6 +1447,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".13"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".15"
 
 #endif

@@ -341,7 +341,12 @@ void Extruder::selectExtruderById(uint8_t extruderId)
         executeSelect = true;
     }
 #endif
-    Extruder::current->extrudePosition = Printer::currentPositionSteps[E_AXIS];
+
+#if STEPPER_ON_DELAY
+	Extruder::current->enabled = 0;
+#endif // STEPPER_ON_DELAY
+
+	Extruder::current->extrudePosition = Printer::currentPositionSteps[E_AXIS];
     Extruder::current = &extruder[extruderId];
 #ifdef SEPERATE_EXTRUDER_POSITIONS
     // Use seperate extruder positions only if beeing told. Slic3r e.g. creates a continuous extruder position increment
@@ -456,6 +461,9 @@ void Extruder::disableCurrentExtruderMotor()
             digitalWrite(extruder[1].enablePin,!extruder[1].enableOn);
     }
 #endif
+#if STEPPER_ON_DELAY
+	Extruder::current->enabled = 0;
+#endif // STEPPER_ON_DELAY
 }
 #define NUMTEMPS_1 28
 // Epcos B57560G0107F000
