@@ -2624,12 +2624,24 @@ void processCommand( GCode* pCommand )
 #if FEATURE_Z_COMPENSATION
 			case 3000: // M3000 - turn off the Z compensation
 			{
+				Com::printFLN( PSTR( "M3000: disabling z compensation" ) );
 				PrintLine::queueTask( TASK_DISABLE_Z_COMPENSATION );
 				break;
 			}
 			case 3001: // M3001 - turn on the Z compensation
 			{
-				PrintLine::queueTask( TASK_ENABLE_Z_COMPENSATION );
+				if( g_HeatBedCompensation[0][0] == COMPENSATION_VERSION )
+				{
+					// enable the z compensation only in case we have valid compensation values
+					Com::printFLN( PSTR( "M3001: enabling z compensation" ) );
+					PrintLine::queueTask( TASK_ENABLE_Z_COMPENSATION );
+				}
+				else
+				{
+					Com::printF( PSTR( "M3001: the z compensation can not be enabled because the compensation matrix is not valid ( " ), g_HeatBedCompensation[0][0] );
+					Com::printF( PSTR( " / " ), COMPENSATION_VERSION );
+					Com::printFLN( PSTR( " )" ) );
+				}
 				break;
 			}
 			case 3002: // M3002 - configure the no compensation steps
