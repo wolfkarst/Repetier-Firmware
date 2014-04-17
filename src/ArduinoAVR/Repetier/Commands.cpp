@@ -256,63 +256,6 @@ void motorCurrentControlInit() //Initialize Digipot Motor Current
 }
 #endif
 
-#if STEPPER_CURRENT_CONTROL==CURRENT_CONTROL_LTC2600
-
-void setMotorCurrent( uint8_t channel, unsigned short level )
-{
-    const uint8_t ltc_channels[] =  LTC2600_CHANNELS;
-    if(channel>LTC2600_NUM_CHANNELS) return;
-    uint8_t address = ltc_channels[channel];
-    char i;
-
-
-    // NOTE: Do not increase the current endlessly. In case the engine reaches its current saturation, the engine and the driver can heat up and loss power.
-    // When the saturation is reached, more current causes more heating and more power loss.
-    // In case of engines with lower quality, the saturation current may be reached before the nominal current.
-
-    // configure the pins
-    WRITE( LTC2600_CS_PIN, HIGH );
-    SET_OUTPUT( LTC2600_CS_PIN );
-    WRITE( LTC2600_SCK_PIN, LOW );
-    SET_OUTPUT( LTC2600_SCK_PIN );
-    WRITE( LTC2600_SDI_PIN, LOW );
-    SET_OUTPUT( LTC2600_SDI_PIN );
-
-    // enable the command interface of the LTC2600
-    WRITE( LTC2600_CS_PIN, LOW );
-
-    // transfer command and address
-    for( i=7; i>=0; i-- )
-    {
-        WRITE( LTC2600_SDI_PIN, address & (0x01 << i));
-        WRITE( LTC2600_SCK_PIN, 1 );
-        WRITE( LTC2600_SCK_PIN, 0 );
-    }
-
-    // transfer the data word
-    for( i=15; i>=0; i-- )
-    {
-        WRITE( LTC2600_SDI_PIN, level & (0x01 << i));
-        WRITE( LTC2600_SCK_PIN, 1 );
-        WRITE( LTC2600_SCK_PIN, 0 );
-    }
-
-    // disable the command interface of the LTC2600 -
-    // this carries out the specified command
-    WRITE( LTC2600_CS_PIN, HIGH );
-
-} // setMotorCurrent
-
-void motorCurrentControlInit() //Initialize LTC2600 Motor Current
-{
-    const unsigned int ltc_current[] =  MOTOR_CURRENT;
-    uint8_t i;
-    for(i=0; i<LTC2600_NUM_CHANNELS; i++)
-    {
-        setMotorCurrent(i, ltc_current[i] );
-    }
-}
-#endif
 
 #if defined(X_MS1_PIN) && X_MS1_PIN > -1
 void microstepMS(uint8_t driver, int8_t ms1, int8_t ms2)

@@ -291,7 +291,7 @@ void Printer::kill(uint8_t only_steppers)
 {
     if(areAllSteppersDisabled() && only_steppers) return;
     if(Printer::isAllKilled()) return;
-    setAllSteppersDiabled();
+    setAllSteppersDisabled();
     disableXStepper();
     disableYStepper();
     disableZStepper();

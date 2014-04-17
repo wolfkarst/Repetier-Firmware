@@ -81,6 +81,8 @@ short			g_nScanPressureTolerance	= 0;
 // other configurable parameters
 unsigned short	g_nManualZSteps				= DEFAULT_MANUAL_Z_STEPS;
 unsigned short	g_nManualExtruderSteps		= DEFAULT_MANUAL_EXTRUDER_STEPS;
+
+#if FEATURE_PAUSE_PRINTING
 short			g_nPauseStepsX				= DEFAULT_PAUSE_STEPS_X;
 short			g_nPauseStepsY				= DEFAULT_PAUSE_STEPS_Y;
 short			g_nPauseStepsZ				= DEFAULT_PAUSE_STEPS_Z;
@@ -91,6 +93,12 @@ short			g_nContinueStepsZ			= 0;
 short			g_nContinueStepsExtruder	= 0;
 char			g_pausePrint				= 0;
 char			g_printingPaused			= 0;
+unsigned long	g_uPauseTime				= 0;
+#endif // FEATURE_PAUSE_PRINTING
+
+unsigned short	g_nNextZSteps				= DEFAULT_MANUAL_Z_STEPS;
+unsigned long	g_uLastHeatBedUpTime		= 0;
+unsigned long	g_uLastHeadBedDownTime		= 0;
 
 #if FEATURE_PARK
 short			g_nParkPositionX			= PARK_POSITION_X;
@@ -2067,13 +2075,38 @@ void loopRF1000( void )
 	}
 #endif // FEATURE_Z_COMPENSATION
 
+#if FEATURE_PAUSE_PRINTING
+	if( g_uPauseTime )
+	{
+		if( g_pausePrint )
+		{
+			if( (uTime - g_uPauseTime) > EXTRUDER_CURRENT_PAUSE_DELAY )
+			{
+				// we have paused a few moments ago - reduce the current of the extruder motor in order to avoid unwanted heating of the filament for use cases where the printing is paused for several minutes
+/*				Com::printF( PSTR( "loopRF1000(): PauseTime = " ), g_uPauseTime );
+				Com::printF( PSTR( ", Time = " ), uTime );
+				Com::printFLN( PSTR( ", Diff = " ), uTime - g_uPauseTime );
+*/
+				setExtruderCurrent( EXTRUDER_CURRENT_PAUSED );
+				g_uPauseTime = 0;
+			}
+		}
+		else
+		{
+			// we are not paused any more
+			g_uPauseTime = 0;
+		}
+	}
+#endif // FEATURE_PAUSE_PRINTING
+
 #if FEATURE_EMERGENCY_PAUSE
 	if( (uTime - g_uLastPressureTime) > EMERGENCY_PAUSE_INTERVAL )
 	{
 		g_uLastPressureTime = uTime;
 
-		if( g_pausePrint == 0 && PrintLine::linesCount )
+		if( g_pausePrint == 0 && PrintLine::linesCount > 5 )
 		{
+			// this check shall be done only during the printing (for example, it shall not be done in case filament is extruded manually)
 			g_nPressureSum	  += readStrainGauge( SCAN_STRAIN_GAUGE );
 			g_nPressureChecks += 1;
 
@@ -2093,7 +2126,8 @@ void loopRF1000( void )
 					// the pressure is outside the allowed range, we must perform the emergency pause
 					if( Printer::debugErrors() )
 					{
-						Com::printFLN( PSTR( "loopRF1000(): emergency pause: " ), nPressure );
+						Com::printF( PSTR( "loopRF1000(): emergency pause: " ), nPressure );
+						Com::printFLN( PSTR( " / " ), PrintLine::linesCount );
 					}
 
 					pausePrint();
@@ -2250,6 +2284,16 @@ void outputObject( void )
 		return;
 	}
 
+	if( !Printer::isHomed() )
+	{
+		// the printer does not know its home position, thus we can not output the object
+		if( Printer::debugErrors() )
+		{
+			Com::printFLN( PSTR( "outputObject(): the object can not be output because the home position is unknown" ) );
+		}
+		return;
+	}
+
 	if( Printer::debugInfo() )
 	{
 		Com::printFLN( PSTR( "outputObject()" ) );
@@ -2259,13 +2303,32 @@ void outputObject( void )
     HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
 
-	PrintLine::moveRelativeDistanceInSteps( g_nOutputOffsetX * XAXIS_STEPS_PER_MM,
-											g_nOutputOffsetY * YAXIS_STEPS_PER_MM,
+	PrintLine::moveRelativeDistanceInSteps( 0,
+											0,
 											g_nOutputOffsetZ * ZAXIS_STEPS_PER_MM,
 											0,
 											Printer::homingFeedrate[0],
 											true,
 											ALWAYS_CHECK_ENDSTOPS);
+
+#if FEATURE_WATCHDOG
+    HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+	PrintLine::moveRelativeDistanceInSteps( g_nOutputOffsetX * XAXIS_STEPS_PER_MM,
+											g_nOutputOffsetY * YAXIS_STEPS_PER_MM,
+											0,
+											0,
+											Printer::homingFeedrate[0],
+											true,
+											ALWAYS_CHECK_ENDSTOPS);
+
+	// disable all steppers
+	Printer::setAllSteppersDisabled();
+	Printer::disableXStepper();
+	Printer::disableYStepper();
+	Printer::disableZStepper();
+	Extruder::disableCurrentExtruderMotor();
 
 } // outputObject
 #endif // FEATURE_OUTPUT_PRINTED_OBJECT
@@ -2316,7 +2379,13 @@ void pausePrint( void )
 			while( !g_printingPaused )
 			{
 				HAL::delayMilliseconds( 1 );
+				Commands::checkForPeriodicalActions();
 			}
+
+#if EXTRUDER_CURRENT_PAUSE_DELAY
+			// remember the pause time only in case we shall lower the extruder current
+			g_uPauseTime = millis();
+#endif // EXTRUDER_CURRENT_PAUSE_DELAY
 
 			if( Printer::debugInfo() )
 			{
@@ -2475,6 +2544,7 @@ void pausePrint( void )
 		{
 			HAL::delayMilliseconds( 1 );
 			loopRF1000();
+			Commands::checkForPeriodicalActions();
 
 			// NOTE: do not run runStandardTasks() within this loop
 			//runStandardTasks();
@@ -2517,6 +2587,9 @@ void pausePrint( void )
 void continuePrint( void )
 {
 #if FEATURE_PAUSE_PRINTING
+	const unsigned short	uMotorCurrents[] =  MOTOR_CURRENT;
+
+
 	if( g_pausePrint )
 	{
 		if( g_pausePrint == 2 )
@@ -2526,6 +2599,8 @@ void continuePrint( void )
 			{
 				Com::printFLN( PSTR( "continuePrint(): moving to the continue position" ) );
 			}
+
+			setExtruderCurrent( uMotorCurrents[E_AXIS] );
 
 			if( g_nContinueStepsY )			Printer::targetPositionStepsY += g_nContinueStepsY;
 			if( g_nContinueStepsX )			Printer::targetPositionStepsX += g_nContinueStepsX;
@@ -2547,6 +2622,7 @@ void continuePrint( void )
 			{
 				HAL::delayMilliseconds( 1 );
 				loopRF1000();
+				Commands::checkForPeriodicalActions();
 
 				// NOTE: do not run runStandardTasks() within this loop
 				//runStandardTasks();
@@ -2554,6 +2630,8 @@ void continuePrint( void )
 		}
 		else if( g_pausePrint == 1 )
 		{
+			setExtruderCurrent( uMotorCurrents[E_AXIS] );
+
 			if( g_nContinueStepsExtruder )	Printer::targetPositionStepsE -= g_nContinueStepsExtruder;
 
 			// wait until the continue position has been reached
@@ -2566,6 +2644,7 @@ void continuePrint( void )
 			{
 				HAL::delayMilliseconds( 1 );
 				loopRF1000();
+				Commands::checkForPeriodicalActions();
 
 				// NOTE: do not run runStandardTasks() within this loop
 				//runStandardTasks();
@@ -2587,6 +2666,7 @@ void continuePrint( void )
 			}
 			HAL::delayMilliseconds( 1 );
 			loopRF1000();
+			Commands::checkForPeriodicalActions();
 
 			// NOTE: do not run runStandardTasks() within this loop
 			//runStandardTasks();
@@ -2610,6 +2690,20 @@ void continuePrint( void )
 	return;
 
 } // continuePrint
+
+
+void setExtruderCurrent( unsigned short level )
+{
+	// set the current for the extruder motor
+	setMotorCurrent( 4, level );
+
+	if( Printer::debugInfo() )
+	{
+		Com::printFLN( PSTR( "setExtruderCurrent(): new extruder current level: " ), (unsigned long)level );
+	}
+	return;
+
+} // setExtruderCurrent
 
 
 void processCommand( GCode* pCommand )
@@ -3353,7 +3447,7 @@ void processCommand( GCode* pCommand )
 					// test and take over the specified value
 					nTemp = pCommand->S;
 					if( nTemp < 1 )							nTemp = 1;
-					if( nTemp > (ZAXIS_STEPS_PER_MM *10) )	nTemp = ZAXIS_STEPS_PER_MM *10;
+					if( nTemp > MAXIMAL_MANUAL_Z_STEPS )	nTemp = MAXIMAL_MANUAL_Z_STEPS;
 
 					g_nManualZSteps = nTemp;
 					if( Printer::debugInfo() )
@@ -3686,14 +3780,52 @@ extern void processButton( int nAction )
 #endif // FEATURE_ENABLE_MANUAL_Z_SAFETY
 			{
 				// in case the user moves the z-axis manually, we also must allow the endstop violation for the rest of the firmware
+				if( g_uLastHeadBedDownTime )
+				{
+					g_uLastHeadBedDownTime = 0;
+					g_nNextZSteps = g_nManualZSteps;
+				}
+
+				if( g_uLastHeatBedUpTime )
+				{
+					if( (millis() - g_uLastHeatBedUpTime) < 500 )
+					{
+						// the user keeps the button pressed - we shall move faster and faster
+						g_nNextZSteps *= 2;
+						if( g_nNextZSteps > MAXIMAL_MANUAL_Z_STEPS )	g_nNextZSteps = MAXIMAL_MANUAL_Z_STEPS;
+					}
+					else
+					{
+						// this is the first movement after some time
+						g_nNextZSteps = g_nManualZSteps;
+					}
+				}
+				g_uLastHeatBedUpTime = millis();
+
+				if( (long(Printer::targetPositionStepsZ) - long(g_nNextZSteps)) < -32767 )
+				{
+					if( Printer::targetPositionStepsZ == -32767 )
+					{
+						// we can not allow to move up forever
+						if( Printer::debugInfo() )
+						{
+							Com::printFLN( PSTR( "processButton(): heat bed up: aborted (the topmost manual position has been reached)" ) );
+						}
+						break;
+					}
+
+					// move the last path until the topmost manual position
+					g_nNextZSteps = 32767 + Printer::targetPositionStepsZ;
+				}
+
 				if( Printer::debugInfo() )
 				{
-					Com::printF( PSTR( "processButton(): heat bed up: " ), (int)g_nManualZSteps );
+					Com::printF( PSTR( "processButton(): heat bed up: " ), (int)g_nNextZSteps );
 					Com::printFLN( PSTR( " [steps]" ) );
 				}
 
 				Printer::enableZStepper();
-				Printer::targetPositionStepsZ -= g_nManualZSteps;
+				Printer::targetPositionStepsZ -= g_nNextZSteps;
 
 				if( Printer::debugInfo() )
 				{
@@ -3720,14 +3852,52 @@ extern void processButton( int nAction )
 #endif // FEATURE_ENABLE_MANUAL_Z_SAFETY
 			{
 				// in case the user moves the z-axis manually, we also must allow the endstop violation for the rest of the firmware
+				if( g_uLastHeatBedUpTime )
+				{
+					g_uLastHeatBedUpTime = 0;
+					g_nNextZSteps = g_nManualZSteps;
+				}
+
+				if( g_uLastHeadBedDownTime )
+				{
+					if( (millis() - g_uLastHeadBedDownTime) < 500 )
+					{
+						// the user keeps the button pressed - we shall move faster and faster
+						g_nNextZSteps *= 2;
+						if( g_nNextZSteps > MAXIMAL_MANUAL_Z_STEPS )	g_nNextZSteps = MAXIMAL_MANUAL_Z_STEPS;
+					}
+					else
+					{
+						// this is the first movement after some time
+						g_nNextZSteps = g_nManualZSteps;
+					}
+				}
+				g_uLastHeadBedDownTime = millis();
+
+				if( (long(Printer::targetPositionStepsZ) + long(g_nNextZSteps)) > 32767 )
+				{
+					if( Printer::targetPositionStepsZ == 32767 )
+					{
+						// we can not allow to move down forever
+						if( Printer::debugInfo() )
+						{
+							Com::printFLN( PSTR( "processButton(): heat bed down: moving aborted (the bottommost manual position has been reached)" ) );
+						}
+						break;
+					}
+
+					// move the last path until the bottommost manual position
+					g_nNextZSteps = 32767 - Printer::targetPositionStepsZ;
+				}
+
 				if( Printer::debugInfo() )
 				{
-					Com::printF( PSTR( "processButton(): heat bed down: " ), (int)g_nManualZSteps );
+					Com::printF( PSTR( "processButton(): heat bed down: " ), (int)g_nNextZSteps );
 					Com::printFLN( PSTR( " [steps]" ) );
 				}
 
 				Printer::enableZStepper();
-				Printer::targetPositionStepsZ += g_nManualZSteps;
+				Printer::targetPositionStepsZ += g_nNextZSteps;
 
 				if( Printer::debugInfo() )
 				{
@@ -3862,6 +4032,67 @@ void CalculateAllowedZStepsAfterEndStop( void )
 	Printer::allowedZStepsAfterEndstop = nTemp;
 
 } // CalculateAllowedZStepsAfterEndStop
+
+
+#if STEPPER_CURRENT_CONTROL==CURRENT_CONTROL_LTC2600
+
+void setMotorCurrent( uint8_t channel, unsigned short level )
+{
+    const uint8_t ltc_channels[] =  LTC2600_CHANNELS;
+    if(channel>LTC2600_NUM_CHANNELS) return;
+    uint8_t address = ltc_channels[channel];
+    char i;
+
+
+    // NOTE: Do not increase the current endlessly. In case the engine reaches its current saturation, the engine and the driver can heat up and loss power.
+    // When the saturation is reached, more current causes more heating and more power loss.
+    // In case of engines with lower quality, the saturation current may be reached before the nominal current.
+
+    // configure the pins
+    WRITE( LTC2600_CS_PIN, HIGH );
+    SET_OUTPUT( LTC2600_CS_PIN );
+    WRITE( LTC2600_SCK_PIN, LOW );
+    SET_OUTPUT( LTC2600_SCK_PIN );
+    WRITE( LTC2600_SDI_PIN, LOW );
+    SET_OUTPUT( LTC2600_SDI_PIN );
+
+    // enable the command interface of the LTC2600
+    WRITE( LTC2600_CS_PIN, LOW );
+
+    // transfer command and address
+    for( i=7; i>=0; i-- )
+    {
+        WRITE( LTC2600_SDI_PIN, address & (0x01 << i));
+        WRITE( LTC2600_SCK_PIN, 1 );
+        WRITE( LTC2600_SCK_PIN, 0 );
+    }
+
+    // transfer the data word
+    for( i=15; i>=0; i-- )
+    {
+        WRITE( LTC2600_SDI_PIN, level & (0x01 << i));
+        WRITE( LTC2600_SCK_PIN, 1 );
+        WRITE( LTC2600_SCK_PIN, 0 );
+    }
+
+    // disable the command interface of the LTC2600 -
+    // this carries out the specified command
+    WRITE( LTC2600_CS_PIN, HIGH );
+
+} // setMotorCurrent
+
+
+void motorCurrentControlInit( void )
+{
+    const unsigned int ltc_current[] =  MOTOR_CURRENT;
+    uint8_t i;
+    for(i=0; i<LTC2600_NUM_CHANNELS; i++)
+    {
+        setMotorCurrent(i, ltc_current[i] );
+    }
+}
+
+#endif // CURRENT_CONTROL_LTC2600
 
 
 #if STEPPER_CURRENT_CONTROL==CURRENT_CONTROL_DRV8711
@@ -4079,7 +4310,7 @@ void setMotorCurrent( unsigned char driver, unsigned short level )
 } // setMotorCurrent
 
 
-void motorCurrentControlInit()
+void motorCurrentControlInit( void )
 {
   const unsigned short	drv_current[] =  MOTOR_CURRENT;
   unsigned char			i;

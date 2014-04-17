@@ -144,6 +144,7 @@ extern	short			g_nContinueStepsZ;
 extern	short			g_nContinueStepsExtruder;
 extern	char			g_pausePrint;
 extern	char			g_printingPaused;
+extern	unsigned long	g_uPauseTime;
 #endif // FEATURE_PAUSE_PRINTING
 
 
@@ -271,6 +272,9 @@ extern void pausePrint( void );
 // continuePrint()
 extern void continuePrint( void );
 
+// setExtruderCurrent()
+extern void setExtruderCurrent( unsigned short level );
+
 // processCommand()
 extern void processCommand( GCode* pCommand );
 
@@ -285,12 +289,25 @@ extern void processButton( int nAction );
 
 // CalculateAllowedZStepsAfterEndStop()
 extern void CalculateAllowedZStepsAfterEndStop( void );
+
+
+#if STEPPER_CURRENT_CONTROL==CURRENT_CONTROL_LTC2600
+
+// setMotorCurrent()
+void setMotorCurrent( uint8_t channel, unsigned short level );
+
+// motorCurrentControlInit()
+void motorCurrentControlInit( void );
+
+#endif // CURRENT_CONTROL_LTC2600
+
+
 #if STEPPER_CURRENT_CONTROL==CURRENT_CONTROL_DRV8711
 
 // setMotorCurrent()
 void setMotorCurrent( unsigned char driver, unsigned short level );
 
 // motorCurrentControlInit()
-void motorCurrentControlInit();
+void motorCurrentControlInit( void );
 
 #endif // CURRENT_CONTROL_DRV8711

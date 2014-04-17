@@ -683,7 +683,7 @@ on this endstop.
 // and the platform when the printer is at its home position.
 // If EEPROM is enabled these values will be overidden with the values in the EEPROM
 #define X_MAX_LENGTH 245
-#define Y_MAX_LENGTH 240
+#define Y_MAX_LENGTH 245
 #define Z_MAX_LENGTH 202
 
 // Coordinates for the minimum axis. Can also be negative if you want to have the bed start at 0 and the printer can go to the left side
@@ -705,7 +705,8 @@ on this endstop.
 #elif MOTHERBOARD==12
 #define MOTOR_CURRENT {53570,65535,53570,65535,53570} // Values 0-65535 (53570 = ~1.5A)
 #elif MOTHERBOARD==13
-#define MOTOR_CURRENT {160,160,126,160,126} // Values 0-255 (126 = ~2A), order: driver 1 (x), driver 2 (y), driver 3 (z), driver 4 (extruder 1), driver 5 (reserved)
+//#define MOTOR_CURRENT {160,160,126,160,126} // Values 0-255 (126 = ~2A), order: driver 1 (x), driver 2 (y), driver 3 (z), driver 4 (extruder 1), driver 5 (reserved)
+#define MOTOR_CURRENT {110,110,110,110,110} // Values 0-255 (126 = ~2A), order: driver 1 (x), driver 2 (y), driver 3 (z), driver 4 (extruder 1), driver 5 (reserved)
 #endif
 
 /** \brief Number of segments to generate for delta conversions per second of move
@@ -1250,8 +1251,9 @@ Values must be in range 1..255
 /** \brief Allows to use 6 additional hardware buttons
 */
 #define FEATURE_EXTENDED_BUTTONS			1													// 1 = on, 0 = off
-#define EXTENDED_BUTTONS_COUNTER_NORMAL		10													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
+#define EXTENDED_BUTTONS_COUNTER_NORMAL		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
 #define EXTENDED_BUTTONS_COUNTER_FAST		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
+#define	EXTENDED_BUTTONS_BLOCK_INTERVAL		100													// [ms]
 
 /** \brief Allows to pause the processing of G-Codes
 */
@@ -1351,8 +1353,8 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Specifies the pressure at which the emergency pause shall be performed, in [digits]
 */
-#define EMERGENCY_PAUSE_DIGITS_MIN			-12000
-#define EMERGENCY_PAUSE_DIGITS_MAX			12000
+#define EMERGENCY_PAUSE_DIGITS_MIN			-15000
+#define EMERGENCY_PAUSE_DIGITS_MAX			15000
 
 /** \brief Specifies the interval at which the pressure check shall be performed, in [ms]
 */
@@ -1361,6 +1363,18 @@ the Cura PC application may fall over the debug outputs of the firmware.
 /** \brief Specifies the number of pressure values which shall be averaged. The emergency pause can be detected each EMERGENCY_PAUSE_INTERVAL * EMERGENCY_PAUSE_CHECKS [ms]
 */
 #define	EMERGENCY_PAUSE_CHECKS				10
+
+/** \brief Specifies the time interval after the pausing of the print at which the extruder current is reduced
+*/
+#define EXTRUDER_CURRENT_PAUSE_DELAY	  5000	// [ms] or 0, in order to disable the lowering of the extruder current
+
+/** \brief Specifies the extruder current which shall be use after pausing of the print and before continuing of the print
+*/
+#if MOTHERBOARD==12
+#define	EXTRUDER_CURRENT_PAUSED			 18204	// ~0.5A
+#elif MOTHERBOARD==13
+#define	EXTRUDER_CURRENT_PAUSED				32	// ~0.5A
+#endif
 
 /** \brief Configuration of the external watchdog
 */
@@ -1434,7 +1448,8 @@ the Cura PC application may fall over the debug outputs of the firmware.
 /** \brief Configuration of the manual steps
 */
 #define DEFAULT_MANUAL_Z_STEPS			16
-#define DEFAULT_MANUAL_EXTRUDER_STEPS	(EXT0_STEPS_PER_MM /2)
+#define MAXIMAL_MANUAL_Z_STEPS			(ZAXIS_STEPS_PER_MM *10)
+#define DEFAULT_MANUAL_EXTRUDER_STEPS	(EXT0_STEPS_PER_MM /5)
 
 /** \brief Configuration of the pause steps
 */
@@ -1447,6 +1462,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".17"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".19"
 
 #endif

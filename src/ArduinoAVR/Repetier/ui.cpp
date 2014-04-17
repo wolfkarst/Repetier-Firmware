@@ -443,12 +443,22 @@ void lcdWriteByte(uint8_t c,uint8_t rs)
 }
 void initializeLCD()
 {
+	// bring all display pins into a defined state
+    SET_INPUT(UI_DISPLAY_D4_PIN);
+    SET_INPUT(UI_DISPLAY_D5_PIN);
+    SET_INPUT(UI_DISPLAY_D6_PIN);
+    SET_INPUT(UI_DISPLAY_D7_PIN);
+    SET_INPUT(UI_DISPLAY_RS_PIN);
+#if UI_DISPLAY_RW_PIN>-1
+    SET_INPUT(UI_DISPLAY_RW_PIN);
+#endif
+    SET_INPUT(UI_DISPLAY_ENABLE_PIN);
 
     // SEE PAGE 45/46 FOR INITIALIZATION SPECIFICATION!
     // according to datasheet, we need at least 40ms after power rises above 2.7V
     // before sending commands. Arduino can turn on way before 4.5V.
     // is this delay long enough for all cases??
-    HAL::delayMilliseconds(235);
+	HAL::delayMilliseconds(500);
     SET_OUTPUT(UI_DISPLAY_D4_PIN);
     SET_OUTPUT(UI_DISPLAY_D5_PIN);
     SET_OUTPUT(UI_DISPLAY_D6_PIN);
@@ -2645,6 +2655,30 @@ void UIDisplay::executeAction(int action)
             break;
         case UI_ACTION_SD_STOP:
             sd.stopPrint();
+
+			// wait until all moves are done
+			while( PrintLine::linesCount )
+			{
+				HAL::delayMilliseconds( 1 );
+				Commands::checkForPeriodicalActions();
+			}
+
+			// disable all heaters
+			Extruder::setHeatedBedTemperature(0,false);
+            Extruder::setTemperatureForExtruder(0,0,false);
+
+#if FEATURE_OUTPUT_PRINTED_OBJECT
+			// output the object
+			outputObject();
+#endif // FEATURE_OUTPUT_PRINTED_OBJECT
+
+			// disable all steppers
+			Printer::setAllSteppersDisabled();
+			Printer::disableXStepper();
+			Printer::disableYStepper();
+			Printer::disableZStepper();
+			Extruder::disableCurrentExtruderMotor();
+
             break;
         case UI_ACTION_SD_UNMOUNT:
             sd.unmount();

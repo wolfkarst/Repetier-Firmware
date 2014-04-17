@@ -653,10 +653,10 @@ void ui_check_slow_keys(int &action) {}
 #define UI_DISPLAY_RS_PIN		63		// PINK.1, 88, D_RS
 #define UI_DISPLAY_RW_PIN		-1
 #define UI_DISPLAY_ENABLE_PIN	65		// PINK.3, 86, D_E
-#define UI_DISPLAY_D0_PIN		59		// PINF.5, 92, D_D4
-#define UI_DISPLAY_D1_PIN		64		// PINK.2, 87, D_D5
-#define UI_DISPLAY_D2_PIN		44		// PINL.5, 40, D_D6
-#define UI_DISPLAY_D3_PIN		66		// PINK.4, 85, D_D7
+#define UI_DISPLAY_D0_PIN		-1
+#define UI_DISPLAY_D1_PIN		-1
+#define UI_DISPLAY_D2_PIN		-1
+#define UI_DISPLAY_D3_PIN		-1
 #define UI_DISPLAY_D4_PIN		59		// PINF.5, 92, D_D4
 #define UI_DISPLAY_D5_PIN		64		// PINK.2, 87, D_D5
 #define UI_DISPLAY_D6_PIN		44		// PINL.5, 40, D_D6

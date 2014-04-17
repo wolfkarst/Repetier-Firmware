@@ -730,6 +730,7 @@ ISR(PWM_TIMER_VECTOR)
 	char			nDirectionX;
 	char			nDirectionY;
 	char			nDirectionZ;
+	unsigned long	uStartTime;
 #endif // FEATURE_EXTENDED_BUTTONS
   
     static uint8_t pwm_count = 0;
@@ -1123,6 +1124,7 @@ ISR(PWM_TIMER_VECTOR)
 				}
 			}
 
+			uStartTime = millis();
 			while( nDirectionX || nDirectionY || nDirectionZ )
 			{
 #if FEATURE_WATCHDOG
@@ -1167,6 +1169,12 @@ ISR(PWM_TIMER_VECTOR)
 						nDirectionZ = 0;
 					}
 				}
+
+				if( (millis() - uStartTime) > EXTENDED_BUTTONS_BLOCK_INTERVAL )
+				{
+					// we shall not loop here too long - when we exit here, we will come back to here later and continue the remaining steps
+					break;
+				}
 			}
 		}
 		
@@ -1205,6 +1213,7 @@ ISR(PWM_TIMER_VECTOR)
 		HAL::allowInterrupts();
 	}
 #endif // FEATURE_EXTENDED_BUTTONS
+
 }
 #if defined(USE_ADVANCE)
 

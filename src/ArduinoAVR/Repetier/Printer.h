@@ -223,6 +223,9 @@ public:
 #if STEPPER_ON_DELAY
 		Printer::enabledX = 0;
 #endif // STEPPER_ON_DELAY
+
+		// when the stepper is disabled we loose our home position because somebody else can move our mechanical parts
+		setHomed(false);
 	}
     /** \brief Disable stepper motor for y direction. */
     static inline void disableYStepper()
@@ -237,6 +240,9 @@ public:
 #if STEPPER_ON_DELAY
 		Printer::enabledY = 0;
 #endif // STEPPER_ON_DELAY
+
+		// when the stepper is disabled we loose our home position because somebody else can move our mechanical parts
+		setHomed(false);
 	}
     /** \brief Disable stepper motor for z direction. */
     static inline void disableZStepper()
@@ -251,6 +257,9 @@ public:
 #if STEPPER_ON_DELAY
 		Printer::enabledZ = 0;
 #endif // STEPPER_ON_DELAY
+
+		// when the stepper is disabled we loose our home position because somebody else can move our mechanical parts
+		setHomed(false);
 	}
     /** \brief Enable stepper motor for x direction. */
     static inline void  enableXStepper()
@@ -494,9 +503,12 @@ public:
     {
         return flag0 & PRINTER_FLAG0_STEPPER_DISABLED;
     }
-    static inline void setAllSteppersDiabled()
+    static inline void setAllSteppersDisabled()
     {
         flag0 |= PRINTER_FLAG0_STEPPER_DISABLED;
+
+		// when the stepper is disabled we loose our home position because somebody else can move our mechanical parts
+		setHomed(false);
     }
     static inline void unsetAllSteppersDisabled()
     {

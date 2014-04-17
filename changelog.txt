@@ -1,3 +1,40 @@
+V 0.91.19 (2014-04-17)
+- Moving of the z-axis via the hardware buttons supports acceleration and allows faster speeds now.
+- Manual outputting of filament (via the Host software and/or via the hardware button) could cause an unwanted emergency pause.
+- When the printing is paused, the extruder current is lowered now.
+  - EXTRUDER_CURRENT_PAUSED can be used in order to configure the to-be-used current while the printing is paused.
+  - EXTRUDER_CURRENT_PAUSE_DELAY can be used in order to configure after which time interval in status "paused" the extruder current shall be lowered.
+- Output object has been changed so that it moves into z-direction first and into x and y direction afterwards.
+- The entry "Bed Temp" has been removed from the quick settings.
+- In case the printing via the SD card is active, the quick menu provides the "Stop Print" entry now which can be used in order to cancel the print.
+- The order of the entries within the quick settings menu has been changed.
+- Stopping of the print via the menu now also disables all heaters, outputs the object and disables all steppers.
+  - All steppers are disabled also after a manual "Output Object".
+- Improved initialization of the display.
+
+V 0.91.17 (2014-03-27)
+- Correcting of the comments about the DRV8711 register settings.
+
+V 0.91.15 (2014-03-26)
+- Adding of averaging to the pressure measurement for the emergency pause.
+  - EMERGENCY_PAUSE_INTERVAL can be used in order to configure the interval at which the emergency pause functionality shall determine the current pressure
+  - EMERGENCY_PAUSE_CHECKS can be used in order to configure the number of measurements which shall be averaged
+- The minimal and maximal allowed pause pressure can be configured separately now.
+  - See EMERGENCY_PAUSE_DIGITS_MIN and EMERGENCY_PAUSE_DIGITS_MAX.
+- Changing of the configuration of the DRV8711 drivers in order to achieve a more precise stepping.
+- Adding of a configurable delay after enabling of the x/y/z/extruder steppers.
+  - STEPPER_ON_DELAY can be used in order to configure the to-be-used delay.
+
+V 0.91.13 (2014-03-16)
+- Adding of M3110, which allows to lock the currently shown status text.
+
+V 0.91.11 (2014-03-05)
+- All acceleration values within the "Configuration" -> "Acceleration" menu can be increased by 100 now.
+- At the end of the heat bed scan, the status display provides information about whether the scan was successful or whether it had to be aborted.
+- The menu option "Set to Origin" has been disabled (via the FEATURE_SET_TO_ORIGIN definition).
+- The "Quick Settings" -> "Home All" operation has been disabled during the print.
+- "M3070 S2" (= pause print and move away) has been corrected so that the printing can be continued properly again.
+
 V 0.91.09 (2014-02-04)
 - Minor adaptations for the hardware support.
 

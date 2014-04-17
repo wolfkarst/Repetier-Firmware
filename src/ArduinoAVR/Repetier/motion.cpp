@@ -1948,8 +1948,6 @@ long PrintLine::bresenhamStep() // version for cartesian printer
                 // the printing shall be paused without moving of the printer head
                 if( linesCount )
                 {
-                    g_pausePrint = 1;
-
                     g_nContinueStepsX		 = 0;
                     g_nContinueStepsY		 = 0;
                     g_nContinueStepsZ		 = 0;
@@ -1960,7 +1958,14 @@ long PrintLine::bresenhamStep() // version for cartesian printer
                         Printer::targetPositionStepsE += g_nPauseStepsExtruder;
 						g_nContinueStepsExtruder	  =  g_nPauseStepsExtruder;
                     }
-                }
+
+					g_pausePrint = 1;
+
+#if EXTRUDER_CURRENT_PAUSE_DELAY
+					// remember the pause time only in case we shall lower the extruder current
+					g_uPauseTime = millis();
+#endif // EXTRUDER_CURRENT_PAUSE_DELAY
+				}
                 
                 nextPlannerIndex(linesPos);
                 cur = 0;
@@ -1999,6 +2004,11 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 					}
 
                     g_pausePrint = 2;
+
+#if EXTRUDER_CURRENT_PAUSE_DELAY
+					// remember the pause time only in case we shall lower the extruder current
+					g_uPauseTime = millis();
+#endif // EXTRUDER_CURRENT_PAUSE_DELAY
 
 					if( g_nPauseStepsZ )
                     {
