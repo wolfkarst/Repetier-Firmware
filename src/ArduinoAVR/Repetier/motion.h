@@ -216,9 +216,7 @@ private:
     long totalStepsRemaining;
 #endif
 
-#ifdef FEATURE_Z_COMPENSATION
 	char task;
-#endif // FEATURE_Z_COMPENSATION
 
 public:
     long stepsRemaining;            ///< Remaining steps, until move is finished

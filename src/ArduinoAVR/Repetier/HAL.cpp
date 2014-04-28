@@ -1027,11 +1027,13 @@ ISR(PWM_TIMER_VECTOR)
 				
 				Printer::currentPositionStepsE ++;
 
+#if FEATURE_PAUSE_PRINTING
 				if( g_printingPaused )
 				{
 					// we move faster while the printing is paused
 					nCounterExtendedButtons = EXTENDED_BUTTONS_COUNTER_FAST;
 				}
+#endif // FEATURE_PAUSE_PRINTING
 
 				if( Printer::currentPositionStepsE == Printer::targetPositionStepsE )
 				{

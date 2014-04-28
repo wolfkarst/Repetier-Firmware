@@ -2663,22 +2663,7 @@ void UIDisplay::executeAction(int action)
 				Commands::checkForPeriodicalActions();
 			}
 
-			// disable all heaters
-			Extruder::setHeatedBedTemperature(0,false);
-            Extruder::setTemperatureForExtruder(0,0,false);
-
-#if FEATURE_OUTPUT_PRINTED_OBJECT
-			// output the object
-			outputObject();
-#endif // FEATURE_OUTPUT_PRINTED_OBJECT
-
-			// disable all steppers
-			Printer::setAllSteppersDisabled();
-			Printer::disableXStepper();
-			Printer::disableYStepper();
-			Printer::disableZStepper();
-			Extruder::disableCurrentExtruderMotor();
-
+			g_uStopTime = millis();
             break;
         case UI_ACTION_SD_UNMOUNT:
             sd.unmount();

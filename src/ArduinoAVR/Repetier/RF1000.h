@@ -126,6 +126,7 @@ extern	long			g_recalculatedCompensation;
 extern	char			g_debugLevel;
 //extern	short			g_debugCounter[10];
 extern	short			g_nHeatBedScanZ;
+extern	unsigned long	g_uStopTime;
 
 // other configurable parameters
 #if FEATURE_EXTENDED_BUTTONS

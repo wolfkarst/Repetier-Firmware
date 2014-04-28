@@ -1,3 +1,7 @@
+V 0.91.21 (2014-04-28)
+- Improved clean-up and output of the object after a stop of the printing from the SD card.
+- Minor clean-ups and corrections.
+
 V 0.91.19 (2014-04-17)
 - Moving of the z-axis via the hardware buttons supports acceleration and allows faster speeds now.
 - Manual outputting of filament (via the Host software and/or via the hardware button) could cause an unwanted emergency pause.

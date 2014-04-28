@@ -131,9 +131,7 @@ void PrintLine::queueCartesianMove(uint8_t check_endstops,uint8_t pathOptimize)
     uint8_t newPath=insertWaitMovesIfNeeded(pathOptimize, 0);
     PrintLine *p = getNextWriteLine();
 
-#if FEATURE_Z_COMPENSATION
     p->task = 0;
-#endif // FEATURE_Z_COMPENSATION
 
     float axis_diff[4]; // Axis movement in mm
     if(check_endstops) p->flags = FLAG_CHECK_ENDSTOPS;
@@ -2091,66 +2089,66 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 #endif // FEATURE_PAUSE_PRINTING
 
 #if FEATURE_Z_COMPENSATION
-	if( cur->task )
-	{
-		if( cur->task == TASK_ENABLE_Z_COMPENSATION )
+		if( cur->task )
 		{
-			// enable the z compensation
-			if( g_HeatBedCompensation[0][0] == COMPENSATION_VERSION )
+			if( cur->task == TASK_ENABLE_Z_COMPENSATION )
 			{
-				// enable the z compensation only in case we have valid compensation values
-				Printer::doZCompensation	  = 1;
-				Printer::targetCompensationZ  = 0;
-				Printer::currentCompensationZ = 0;
-				g_recalculatedCompensation	  = 0;
+				// enable the z compensation
+				if( g_HeatBedCompensation[0][0] == COMPENSATION_VERSION )
+				{
+					// enable the z compensation only in case we have valid compensation values
+					Printer::doZCompensation	  = 1;
+					Printer::targetCompensationZ  = 0;
+					Printer::currentCompensationZ = 0;
+					g_recalculatedCompensation	  = 0;
 				
-				Printer::targetPositionStepsX	= 
-				Printer::targetPositionStepsY	= 
-				Printer::targetPositionStepsZ	= 
-				Printer::targetPositionStepsE	= 
-				Printer::currentPositionStepsX	= 
-				Printer::currentPositionStepsY	= 
-				Printer::currentPositionStepsZ	= 
-				Printer::currentPositionStepsE	= 0;
+					Printer::targetPositionStepsX	= 
+					Printer::targetPositionStepsY	= 
+					Printer::targetPositionStepsZ	= 
+					Printer::targetPositionStepsE	= 
+					Printer::currentPositionStepsX	= 
+					Printer::currentPositionStepsY	= 
+					Printer::currentPositionStepsZ	= 
+					Printer::currentPositionStepsE	= 0;
 
-				CalculateAllowedZStepsAfterEndStop();
+					CalculateAllowedZStepsAfterEndStop();
+				}
+			
+				nextPlannerIndex(linesPos);
+				cur = 0;
+				HAL::forbidInterrupts();
+				--linesCount;
+				return 1000;
 			}
-			
-			nextPlannerIndex(linesPos);
-			cur = 0;
-			HAL::forbidInterrupts();
-			--linesCount;
-			return 1000;
-		}
-		if( cur->task == TASK_DISABLE_Z_COMPENSATION )
-		{
-			// disable the z compensation
-			Printer::doZCompensation = 0;
-			
-			nextPlannerIndex(linesPos);
-			cur = 0;
-			HAL::forbidInterrupts();
-			--linesCount;
-			return 1000;
-		}
-		if( cur->task == TASK_INIT_Z_COMPENSATION )
-		{
-			// initialize the z compensation
-			if( g_HeatBedCompensation[0][0] == COMPENSATION_VERSION )
+			if( cur->task == TASK_DISABLE_Z_COMPENSATION )
 			{
-				// initialize the z compensation only in case we have valid compensation values
-				Printer::targetCompensationZ  = 0;
-				Printer::currentCompensationZ = 0;
-				g_recalculatedCompensation	  = 0;
-			}
+				// disable the z compensation
+				Printer::doZCompensation = 0;
 			
-			nextPlannerIndex(linesPos);
-			cur = 0;
-			HAL::forbidInterrupts();
-			--linesCount;
-			return 1000;
+				nextPlannerIndex(linesPos);
+				cur = 0;
+				HAL::forbidInterrupts();
+				--linesCount;
+				return 1000;
+			}
+			if( cur->task == TASK_INIT_Z_COMPENSATION )
+			{
+				// initialize the z compensation
+				if( g_HeatBedCompensation[0][0] == COMPENSATION_VERSION )
+				{
+					// initialize the z compensation only in case we have valid compensation values
+					Printer::targetCompensationZ  = 0;
+					Printer::currentCompensationZ = 0;
+					g_recalculatedCompensation	  = 0;
+				}
+			
+				nextPlannerIndex(linesPos);
+				cur = 0;
+				HAL::forbidInterrupts();
+				--linesCount;
+				return 1000;
+			}
 		}
-	}
 #endif // FEATURE_Z_COMPENSATION
 
 		if(cur->isBlocked())   // This step is in computation - shouldn't happen

@@ -1340,7 +1340,7 @@ STEPPER_CURRENT_CONTROL
 #define O1_STALL_PIN	   96	// PING.4, 29, STALLn_5
 
 #define	DRV_FAULT		   97	// PINE.6, 8, FAULTn
-#define DRV_RESET		   90	// PINE.7, 9, RESET_DRV
+#define DRV_RESET1		   90	// PINE.7, 9, RESET_DRV
 #define DRV_SCLK		   93	// PIND.5, 48, SCLK
 #define DRV_SDATO		   92	// PIND.4, 47, SDATO
 #define DRV_SDATI		   94	// PIND.6, 49, SDATI

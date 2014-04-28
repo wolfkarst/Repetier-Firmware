@@ -1103,7 +1103,7 @@ is always running and is not hung up for some unknown reason. */
    This feature requires a working z-probe and you should have z-endstop at the top not at the bottom.
    The same 3 points are used for the G29 command.
 */
-#define FEATURE_AUTOLEVEL true
+#define FEATURE_AUTOLEVEL false
 #define Z_PROBE_X1 100
 #define Z_PROBE_Y1 20
 #define Z_PROBE_X2 160
@@ -1319,6 +1319,10 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define FEATURE_SET_TO_ORIGIN				0													// 1 = on, 0 = off
 
+/** \brief Configures the delay between the stop of a print and the clean-up like disabling of heaters, disabling of steppers and the outputting of the object
+*/
+#define	CLEAN_UP_DELAY_AFTER_STOP_PRINT		100													// [ms]
+
 /** \brief Enables/disables the output of the printed object feature
 */
 #define FEATURE_OUTPUT_PRINTED_OBJECT		1													// 1 = on, 0 = off
@@ -1462,6 +1466,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".19"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".21"
 
 #endif

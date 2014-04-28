@@ -54,6 +54,7 @@ char			g_debugLevel				= 0;
 //short			g_debugCounter[10]			= { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 short			g_nHeatBedScanZ				= 0;
 short			g_nLastHeatBedScanZ			= 0;
+unsigned long	g_uStopTime					= 0;
 
 // configurable scan parameters - the proper default values are set by restoreDefaultScanParameters()
 unsigned short	g_nScanXStartSteps			= 0;
@@ -766,6 +767,7 @@ short testExtruderTemperature( void )
 
 short testHeatBedTemperature( void )
 {
+#if HAVE_HEATED_BED
 	if( heatedBedController.targetTemperatureC > 40 )
 	{
 		// we have to wait until the target temperature is reached
@@ -797,6 +799,7 @@ short testHeatBedTemperature( void )
 			return -1;
 		}
 	}
+#endif // HAVE_HEATED_BED
 
 	// at this point we have reached the proper temperature
 	return 0;
@@ -2142,6 +2145,41 @@ void loopRF1000( void )
 	}
 #endif // FEATURE_EMERGENCY_PAUSE
 
+	if( g_uStopTime )
+	{
+		if( (uTime - g_uStopTime) > CLEAN_UP_DELAY_AFTER_STOP_PRINT )
+		{
+			// we have stopped the printing a few moments ago, output the object now
+
+			if( PrintLine::linesCount )
+			{
+				// wait until all moves are done
+				g_uStopTime = uTime;
+			}
+			else
+			{
+				// there is no printing in progress any more, do all clean-up now
+				g_uStopTime = 0;
+
+				// disable all heaters
+				Extruder::setHeatedBedTemperature(0,false);
+				Extruder::setTemperatureForExtruder(0,0,false);
+
+#if FEATURE_OUTPUT_PRINTED_OBJECT
+				// output the object
+				outputObject();
+#endif // FEATURE_OUTPUT_PRINTED_OBJECT
+
+				// disable all steppers
+				Printer::setAllSteppersDisabled();
+				Printer::disableXStepper();
+				Printer::disableYStepper();
+				Printer::disableZStepper();
+				Extruder::disableCurrentExtruderMotor();
+			}
+		}
+	}
+		
 	if( (uTime - g_lastTime) > LOOP_INTERVAL )
 	{
 		// it is time for another processing
@@ -2218,6 +2256,7 @@ void loopRF1000( void )
 			}
 */		}
 #endif // FEATURE_Z_COMPENSATION
+
 	}
 
 	nEntered --;
@@ -2307,7 +2346,7 @@ void outputObject( void )
 											0,
 											g_nOutputOffsetZ * ZAXIS_STEPS_PER_MM,
 											0,
-											Printer::homingFeedrate[0],
+											Printer::homingFeedrate[Z_AXIS],
 											true,
 											ALWAYS_CHECK_ENDSTOPS);
 
@@ -2319,7 +2358,7 @@ void outputObject( void )
 											g_nOutputOffsetY * YAXIS_STEPS_PER_MM,
 											0,
 											0,
-											Printer::homingFeedrate[0],
+											Printer::homingFeedrate[X_AXIS],
 											true,
 											ALWAYS_CHECK_ENDSTOPS);
 
@@ -2708,7 +2747,7 @@ void setExtruderCurrent( unsigned short level )
 
 void processCommand( GCode* pCommand )
 {
-	long	nTemp;
+  	long	nTemp;
 
 
 	if( pCommand->hasM() )
@@ -3422,6 +3461,7 @@ void processCommand( GCode* pCommand )
 			}
 #endif // FEATURE_PARK
 
+#if FEATURE_WATCHDOG
 			case 3090: // M3090 - test the watchdog (this command resets the firmware)
 			{
 				if( Printer::debugInfo() )
@@ -3432,6 +3472,7 @@ void processCommand( GCode* pCommand )
 				HAL::testWatchdog();
 				break;
 			}
+#endif // FEATURE_WATCHDOG
 
 			case 3091: // M3091 - erase the external EEPROM
 			{
@@ -3683,6 +3724,7 @@ void processCommand( GCode* pCommand )
 			}
 #endif // FEATURE_OUTPUT_PRINTED_OBJECT
 
+#if FEATURE_CONTROLLER == 4 || FEATURE_CONTROLLER == 33
 			case 3110:	// M3110 - force a status text
 			{
 				if( pCommand->hasS() )
@@ -3703,6 +3745,8 @@ void processCommand( GCode* pCommand )
 				}
 				break;
 			}
+#endif // FEATURE_CONTROLLER == 4 || FEATURE_CONTROLLER == 33
+
 		}
 	}
 
@@ -3977,11 +4021,13 @@ extern void processButton( int nAction )
 		}
 #endif // FEATURE_EXTENDED_BUTTONS
 
+#if FEATURE_Z_COMPENSATION
 		case UI_ACTION_RF1000_DO_HEAT_BED_SCAN:
 		{
 			startHeatBedScan();
 			break;
 		}
+#endif // FEATURE_Z_COMPENSATION
 
 #if FEATURE_OUTPUT_PRINTED_OBJECT
 		case UI_ACTION_RF1000_OUTPUT_OBJECT:
@@ -4223,8 +4269,14 @@ void drv8711Init( void )
   
 
   // configure the pins
-  WRITE( DRV_RESET, LOW );
-  SET_OUTPUT( DRV_RESET );
+  WRITE( DRV_RESET1, LOW );
+  SET_OUTPUT( DRV_RESET1 );
+
+#if DRV_RESET2
+  WRITE( DRV_RESET2, LOW );
+  SET_OUTPUT( DRV_RESET2 );
+#endif // DRV_RESET2
+
   WRITE( DRV_SCLK, LOW );
   SET_OUTPUT( DRV_SCLK );
   WRITE( DRV_SDATI, LOW );
@@ -4240,9 +4292,19 @@ void drv8711Init( void )
   WRITE( O1_STALL_PIN, HIGH );
 
   // reset all DRV8711 (active high)
-  WRITE( DRV_RESET, HIGH );
+  WRITE( DRV_RESET1, HIGH );
+
+#if DRV_RESET2
+  WRITE( DRV_RESET2, HIGH );
+#endif // DRV_RESET2
+
   HAL::delayMicroseconds( 5000 );
-  WRITE( DRV_RESET, LOW );
+  WRITE( DRV_RESET1, LOW );
+
+#if DRV_RESET2
+  WRITE( DRV_RESET2, LOW );
+#endif // DRV_RESET2
+
   HAL::delayMicroseconds( 5000 );
   
   // configure all registers except the motor current (= register 01)
