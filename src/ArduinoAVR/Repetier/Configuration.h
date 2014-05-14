@@ -1332,7 +1332,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 #if FEATURE_OUTPUT_PRINTED_OBJECT
 #define OUTPUT_OFFSET_X						0
 #define	OUTPUT_OFFSET_Y						Y_MAX_LENGTH
-#define	OUTPUT_OFFSET_Z						20
+#define	OUTPUT_OFFSET_Z						Z_MAX_LENGTH
 #endif // FEATURE_OUTPUT_PRINTED_OBJECT
 
 /** \brief Enables/disables the park feature
@@ -1466,6 +1466,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".21"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".23"
 
 #endif

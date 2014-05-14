@@ -1126,7 +1126,7 @@ ISR(PWM_TIMER_VECTOR)
 				}
 			}
 
-			uStartTime = millis();
+			uStartTime = HAL::timeInMilliseconds();
 			while( nDirectionX || nDirectionY || nDirectionZ )
 			{
 #if FEATURE_WATCHDOG
@@ -1172,7 +1172,7 @@ ISR(PWM_TIMER_VECTOR)
 					}
 				}
 
-				if( (millis() - uStartTime) > EXTENDED_BUTTONS_BLOCK_INTERVAL )
+				if( (HAL::timeInMilliseconds() - uStartTime) > EXTENDED_BUTTONS_BLOCK_INTERVAL )
 				{
 					// we shall not loop here too long - when we exit here, we will come back to here later and continue the remaining steps
 					break;

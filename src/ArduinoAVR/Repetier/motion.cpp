@@ -1961,7 +1961,7 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 
 #if EXTRUDER_CURRENT_PAUSE_DELAY
 					// remember the pause time only in case we shall lower the extruder current
-					g_uPauseTime = millis();
+					g_uPauseTime = HAL::timeInMilliseconds();
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
 				}
                 
@@ -2005,7 +2005,7 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 
 #if EXTRUDER_CURRENT_PAUSE_DELAY
 					// remember the pause time only in case we shall lower the extruder current
-					g_uPauseTime = millis();
+					g_uPauseTime = HAL::timeInMilliseconds();
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
 
 					if( g_nPauseStepsZ )

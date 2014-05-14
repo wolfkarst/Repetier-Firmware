@@ -108,9 +108,9 @@ short			g_nParkPositionZ			= PARK_POSITION_Z;
 #endif // FEATURE_PARK
 
 #if FEATURE_OUTPUT_PRINTED_OBJECT
-short			g_nOutputOffsetX			= OUTPUT_OFFSET_X;
-short			g_nOutputOffsetY			= OUTPUT_OFFSET_Y;
-short			g_nOutputOffsetZ			= OUTPUT_OFFSET_Z;
+long			g_nOutputOffsetX			= OUTPUT_OFFSET_X;
+long			g_nOutputOffsetY			= OUTPUT_OFFSET_Y;
+long			g_nOutputOffsetZ			= OUTPUT_OFFSET_Z;
 #endif // FEATURE_OUTPUT_PRINTED_OBJECT
 
 #if FEATURE_EMERGENCY_PAUSE
@@ -264,7 +264,7 @@ void scanHeatBed( void )
 	}
 
 	// show that we are active
-	previousMillisCmd = millis();
+	previousMillisCmd = HAL::timeInMilliseconds();
 
 	if( g_nHeatBedScanStatus )
 	{
@@ -281,7 +281,7 @@ void scanHeatBed( void )
 		{
 			case 1:
 			{
-				g_scanStartTime   = millis();
+				g_scanStartTime   = HAL::timeInMilliseconds();
 				g_abortScan		  = 0;
 				nContactPressure  = 0;
 				g_nLastZDirection = 0;
@@ -314,12 +314,12 @@ void scanHeatBed( void )
 				Printer::disableYStepper();
 				Printer::disableZStepper();
 				g_nHeatBedScanStatus = 15;
-				g_lastScanTime		 = millis();
+				g_lastScanTime		 = HAL::timeInMilliseconds();
 				break;
 			}
 			case 15:
 			{
-				if( (millis() - g_lastScanTime) < 1000 )
+				if( (HAL::timeInMilliseconds() - g_lastScanTime) < 1000 )
 				{
 					// do not check too often
 					break;
@@ -328,16 +328,16 @@ void scanHeatBed( void )
 				if( testExtruderTemperature() )
 				{
 					// we did not reach the proper temperature
-					g_lastScanTime = millis();
+					g_lastScanTime = HAL::timeInMilliseconds();
 					break;
 				}
 				g_nHeatBedScanStatus = 20;
-				g_lastScanTime		 = millis();
+				g_lastScanTime		 = HAL::timeInMilliseconds();
 				break;
 			}
 			case 20:
 			{
-				if( (millis() - g_lastScanTime) < 1000 )
+				if( (HAL::timeInMilliseconds() - g_lastScanTime) < 1000 )
 				{
 					// do not check too often
 					break;
@@ -346,11 +346,11 @@ void scanHeatBed( void )
 				if( testHeatBedTemperature() )
 				{
 					// we did not reach the proper temperature
-					g_lastScanTime = millis();
+					g_lastScanTime = HAL::timeInMilliseconds();
 					break;
 				}
 				g_nHeatBedScanStatus = 25;
-				g_lastScanTime		 = millis();
+				g_lastScanTime		 = HAL::timeInMilliseconds();
 				break;
 			}
 			case 25:
@@ -361,12 +361,12 @@ void scanHeatBed( void )
 				PrintLine::moveRelativeDistanceInSteps( 0, g_nScanYStartSteps, 0, 0, MAX_FEEDRATE_Y, true, true );
 
 				g_nHeatBedScanStatus = 30;
-				g_lastScanTime		 = millis();
+				g_lastScanTime		 = HAL::timeInMilliseconds();
 				break;
 			}
 			case 30:
 			{
-				if( (millis() - g_lastScanTime) < 1000 )
+				if( (HAL::timeInMilliseconds() - g_lastScanTime) < 1000 )
 				{
 					// do not check too early
 					break;
@@ -379,7 +379,7 @@ void scanHeatBed( void )
 				}
 
 				g_nHeatBedScanStatus = 35;
-				g_lastScanTime		 = millis();
+				g_lastScanTime		 = HAL::timeInMilliseconds();
 				break;
 			}
 			case 35:
@@ -449,7 +449,7 @@ void scanHeatBed( void )
 					g_HeatBedCompensation[nIndexX][0] = nX;
 
 					g_nHeatBedScanStatus = 49;
-					g_lastScanTime		 = millis();
+					g_lastScanTime		 = HAL::timeInMilliseconds();
 					break;
 				}
 
@@ -466,7 +466,7 @@ void scanHeatBed( void )
 				g_nHeatBedScanZ		 = 0;
 				nZ					 = 0;
 				g_nHeatBedScanStatus = 50;
-				g_lastScanTime		 = millis();
+				g_lastScanTime		 = HAL::timeInMilliseconds();
 				break;
 			}
 			case 49:
@@ -477,7 +477,7 @@ void scanHeatBed( void )
 			}
 			case 50:
 			{
-				if( (millis() - g_lastScanTime) < g_nScanIdleDelay )
+				if( (HAL::timeInMilliseconds() - g_lastScanTime) < g_nScanIdleDelay )
 				{
 					// do not check too early
 					break;
@@ -603,7 +603,7 @@ void scanHeatBed( void )
 				}
 		
 				g_nHeatBedScanStatus = 49;
-				g_lastScanTime		 = millis();
+				g_lastScanTime		 = HAL::timeInMilliseconds();
 				break;
 			}
 			case 60:
@@ -645,7 +645,7 @@ void scanHeatBed( void )
 				if( Printer::debugInfo() )
 				{
 					// output the pure scan time
-					Com::printF( PSTR( "scanHeatBed(): total scan time: " ), long((millis() - g_scanStartTime) / 1000) );
+					Com::printF( PSTR( "scanHeatBed(): total scan time: " ), long((HAL::timeInMilliseconds() - g_scanStartTime) / 1000) );
 					Com::printFLN( PSTR( " [s]" ) );
 				}
 
@@ -683,12 +683,12 @@ void scanHeatBed( void )
 				}
 
 				g_nHeatBedScanStatus = 80;
-				g_lastScanTime		 = millis();
+				g_lastScanTime		 = HAL::timeInMilliseconds();
 				break;
 			}
 			case 80:
 			{
-				if( (millis() - g_lastScanTime) < 1000 )
+				if( (HAL::timeInMilliseconds() - g_lastScanTime) < 1000 )
 				{
 					// do not check too early
 					break;
@@ -2069,7 +2069,7 @@ void loopRF1000( void )
 	}
 	nEntered ++;
 
-	uTime = millis();
+	uTime = HAL::timeInMilliseconds();
 
 #if FEATURE_Z_COMPENSATION
 	if( g_nHeatBedScanStatus )
@@ -2423,7 +2423,7 @@ void pausePrint( void )
 
 #if EXTRUDER_CURRENT_PAUSE_DELAY
 			// remember the pause time only in case we shall lower the extruder current
-			g_uPauseTime = millis();
+			g_uPauseTime = HAL::timeInMilliseconds();
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
 
 			if( Printer::debugInfo() )
@@ -3684,7 +3684,7 @@ void processCommand( GCode* pCommand )
 						if( nTemp < 0 )				nTemp = 0;
 						if( nTemp > X_MAX_LENGTH )	nTemp = X_MAX_LENGTH;
 
-						g_nOutputOffsetX = (short)nTemp;
+						g_nOutputOffsetX = nTemp;
 						if( Printer::debugInfo() )
 						{
 							Com::printF( PSTR( "M3104: new x output offset: " ), (int)g_nOutputOffsetX );
@@ -3698,7 +3698,7 @@ void processCommand( GCode* pCommand )
 						if( nTemp < 0 )				nTemp = 0;
 						if( nTemp > Y_MAX_LENGTH )	nTemp = Y_MAX_LENGTH;
 
-						g_nOutputOffsetY = (short)nTemp;
+						g_nOutputOffsetY = nTemp;
 						if( Printer::debugInfo() )
 						{
 							Com::printF( PSTR( "M3104: new y output offset: " ), (int)g_nOutputOffsetY );
@@ -3710,9 +3710,9 @@ void processCommand( GCode* pCommand )
 						// test and take over the specified value
 						nTemp = pCommand->Z;
 						if( nTemp < 0 )				nTemp = 0;
-						if( nTemp > Z_MAX_LENGTH )	nTemp = Y_MAX_LENGTH;
+						if( nTemp > Z_MAX_LENGTH )	nTemp = Z_MAX_LENGTH;
 
-						g_nOutputOffsetZ = (short)nTemp;
+						g_nOutputOffsetZ = nTemp;
 						if( Printer::debugInfo() )
 						{
 							Com::printF( PSTR( "M3104: new z output offset: " ), (int)g_nOutputOffsetZ );
@@ -3832,7 +3832,7 @@ extern void processButton( int nAction )
 
 				if( g_uLastHeatBedUpTime )
 				{
-					if( (millis() - g_uLastHeatBedUpTime) < 500 )
+					if( (HAL::timeInMilliseconds() - g_uLastHeatBedUpTime) < 500 )
 					{
 						// the user keeps the button pressed - we shall move faster and faster
 						g_nNextZSteps *= 2;
@@ -3844,7 +3844,7 @@ extern void processButton( int nAction )
 						g_nNextZSteps = g_nManualZSteps;
 					}
 				}
-				g_uLastHeatBedUpTime = millis();
+				g_uLastHeatBedUpTime = HAL::timeInMilliseconds();
 
 				if( (long(Printer::targetPositionStepsZ) - long(g_nNextZSteps)) < -32767 )
 				{
@@ -3904,7 +3904,7 @@ extern void processButton( int nAction )
 
 				if( g_uLastHeadBedDownTime )
 				{
-					if( (millis() - g_uLastHeadBedDownTime) < 500 )
+					if( (HAL::timeInMilliseconds() - g_uLastHeadBedDownTime) < 500 )
 					{
 						// the user keeps the button pressed - we shall move faster and faster
 						g_nNextZSteps *= 2;
@@ -3916,7 +3916,7 @@ extern void processButton( int nAction )
 						g_nNextZSteps = g_nManualZSteps;
 					}
 				}
-				g_uLastHeadBedDownTime = millis();
+				g_uLastHeadBedDownTime = HAL::timeInMilliseconds();
 
 				if( (long(Printer::targetPositionStepsZ) + long(g_nNextZSteps)) > 32767 )
 				{
@@ -4011,6 +4011,8 @@ extern void processButton( int nAction )
 		}
 		case UI_ACTION_RF1000_PAUSE:
 		{
+			Com::printFLN( PSTR( "Pause" ) );
+
 			pausePrint();
 			break;
 		}

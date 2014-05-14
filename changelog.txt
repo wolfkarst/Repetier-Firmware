@@ -1,3 +1,9 @@
+V 0.91.23 (2014-05-14)
+- Removing of a possible value overflow in case very big values were assigned to OUTPUT_OFFSET_Z.
+- Homing of an axis always sets previousMillisCmd to the current time in order to avoid that all steppers are disabled again directly after the homing.
+  - In case of an operation like "Home all" via the menu of the printer, all steppers could become disabled before this change.
+  - As a result, "Output Object" could not work (because per definition, it can work only in case the steppers are enabled and there was a homing since the last enabling of the steppers).
+
 V 0.91.21 (2014-04-28)
 - Improved clean-up and output of the object after a stop of the printing from the SD card.
 - Minor clean-ups and corrections.

@@ -1065,7 +1065,10 @@ void Printer::homeXAxis()
 #if NUM_EXTRUDER>1
         PrintLine::moveRelativeDistanceInSteps((Extruder::current->xOffset-offX) * X_HOME_DIR,0,0,0,homingFeedrate[X_AXIS],true,false);
 #endif
-    }
+
+		// show that we are active
+		previousMillisCmd = HAL::timeInMilliseconds();
+	}
 }
 void Printer::homeYAxis()
 {
@@ -1107,6 +1110,9 @@ void Printer::homeYAxis()
 #if NUM_EXTRUDER>1
         PrintLine::moveRelativeDistanceInSteps(0,(Extruder::current->yOffset-offY) * Y_HOME_DIR,0,0,homingFeedrate[Y_AXIS],true,false);
 #endif
+
+		// show that we are active
+		previousMillisCmd = HAL::timeInMilliseconds();
     }
 }
 #endif
@@ -1148,6 +1154,9 @@ void Printer::homeZAxis()
 
         CalculateAllowedZStepsAfterEndStop();
         currentZStepsAfterEndstop = 0;
+
+		// show that we are active
+		previousMillisCmd = HAL::timeInMilliseconds();
 	}
 }
 
