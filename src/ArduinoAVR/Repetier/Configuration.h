@@ -1221,15 +1221,24 @@ same setting.
 /** \brief Lowest repeat time. */
 #define UI_KEY_MIN_REPEAT 50
 
-#define FEATURE_BEEPER true
+#define FEATURE_BEEPER	true
+#define BEEPER_MODE		1	// 1 = on, 0 = off
 /**
 Beeper sound definitions for short beeps during key actions
 and longer beeps for important actions.
 Parameter is delay in microseconds and the secons is the number of repetitions.
 Values must be in range 1..255
 */
-#define BEEPER_SHORT_SEQUENCE 2,2
-#define BEEPER_LONG_SEQUENCE 8,8
+#define BEEPER_SHORT_SEQUENCE				2,2
+#define BEEPER_LONG_SEQUENCE				8,8
+#define BEEPER_START_PRINTING_SEQUENCE		100,2
+#define BEEPER_ABORT_PRINTING_SEQUENCE		250,5
+#define BEEPER_STOP_PRINTING_SEQUENCE		100,3
+#define BEEPER_PAUSE_SEQUENCE				50,3
+#define BEEPER_CONTINUE_SEQUENCE			50,2
+#define BEEPER_START_HEAT_BED_SCAN_SEQUENCE	100,2
+#define BEEPER_ABORT_HEAT_BED_SCAN_SEQUENCE	250,5
+#define BEEPER_STOP_HEAT_BED_SCAN_SEQUENCE	100,3
 
 // ###############################################################################
 // ##                         Values for menu settings                          ##
@@ -1351,6 +1360,23 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define	FEATURE_RESET_VIA_MENU				1													// 1 = on, 0 = off
 
+/** \brief Enables/diables the emergency z-stop in case of too high pressure
+*/
+#define FEATURE_EMERGENCY_Z_STOP			0													// 1 = on, 0 = off
+
+/** \brief Specifies the pressure at which the emergency z-stop shall be performed, in [digits]
+*/
+#define EMERGENCY_Z_STOP_DIGITS_MIN			-5000
+#define EMERGENCY_Z_STOP_DIGITS_MAX			5000
+
+/** \brief Specifies the interval at which the pressure check shall be performed, in [ms]
+*/
+#define	EMERGENCY_Z_STOP_INTERVAL			10
+
+/** \brief Specifies the number of pressure values which shall be averaged. The emergency z-stop can be detected each EMERGENCY_Z_STOP_INTERVAL * EMERGENCY_Z_STOP_CHECKS [ms]
+*/
+#define	EMERGENCY_Z_STOP_CHECKS				3
+
 /** \brief Enables/diables the emergency pause in case of too high pressure
 */
 #define FEATURE_EMERGENCY_PAUSE				1													// 1 = on, 0 = off
@@ -1379,6 +1405,10 @@ the Cura PC application may fall over the debug outputs of the firmware.
 #elif MOTHERBOARD==13
 #define	EXTRUDER_CURRENT_PAUSED				32	// ~0.5A
 #endif
+
+/** \brief Specifies whether the current print shall be aborted in case a temperature sensor is defect
+*/
+#define FEATURE_ABORT_PRINT_AFTER_TEMPERATURE_ERROR		1										// 1 = abort, 0 = do not abort
 
 /** \brief Configuration of the external watchdog
 */
@@ -1466,6 +1496,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".23"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".25"
 
 #endif

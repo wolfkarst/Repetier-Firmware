@@ -12,6 +12,7 @@
 char			g_nDirectionX	= 0;
 char			g_nDirectionY	= 0;
 char			g_nDirectionZ	= 0;
+char			g_nBlockZ		= 0;
 char			g_nDirectionE	= 0;
 unsigned long	g_lastTime		= 0;
 
@@ -95,6 +96,7 @@ short			g_nContinueStepsExtruder	= 0;
 char			g_pausePrint				= 0;
 char			g_printingPaused			= 0;
 unsigned long	g_uPauseTime				= 0;
+char			g_pauseBeepDone				= 0;
 #endif // FEATURE_PAUSE_PRINTING
 
 unsigned short	g_nNextZSteps				= DEFAULT_MANUAL_Z_STEPS;
@@ -118,6 +120,12 @@ unsigned long	g_uLastPressureTime			= 0;
 long			g_nPressureSum				= 0;
 char			g_nPressureChecks			= 0;
 #endif // FEATURE_EMERGENCY_PAUSE
+
+#if FEATURE_EMERGENCY_Z_STOP
+unsigned long	g_uLastZPressureTime		= 0;
+long			g_nZPressureSum				= 0;
+char			g_nZPressureChecks			= 0;
+#endif // FEATURE_EMERGENCY_Z_STOP
 
 
 void initRF1000( void )
@@ -257,6 +265,7 @@ void scanHeatBed( void )
 		}
 
 		UI_STATUS_UPD(UI_TEXT_HEAT_BED_SCAN_ABORTED);
+		BEEP_ABORT_HEAT_BED_SCAN
 
 		// restore the compensation values from the EEPROM
 		restoreCompensationMatrix();
@@ -713,6 +722,8 @@ void scanHeatBed( void )
 					Com::printFLN( PSTR( "scanHeatBed(): the scan has been completed" ) );
 				}
 				UI_STATUS_UPD(UI_TEXT_HEAT_BED_SCAN_DONE);
+				BEEP_STOP_HEAT_BED_SCAN
+
 				g_nHeatBedScanStatus = 0;
 				break;
 			}
@@ -1321,7 +1332,7 @@ int moveZ( int nSteps )
 	// Warning: this function does not check any end stops
 /*	if( g_nDirectionZ )
 	{
-		// this function must not move the z-axis in case the "main" interrupt (bresenham_step()) is running at the moment
+		// this function must not move the z-axis in case the "main" interrupt (bresenhamStep()) is running at the moment
 		return 0;
 	}			
 */
@@ -2081,6 +2092,12 @@ void loopRF1000( void )
 #if FEATURE_PAUSE_PRINTING
 	if( g_uPauseTime )
 	{
+		if( !g_pauseBeepDone )
+		{
+			BEEP_PAUSE
+			g_pauseBeepDone = 1;
+		}
+
 		if( g_pausePrint )
 		{
 			if( (uTime - g_uPauseTime) > EXTRUDER_CURRENT_PAUSE_DELAY )
@@ -2145,6 +2162,50 @@ void loopRF1000( void )
 	}
 #endif // FEATURE_EMERGENCY_PAUSE
 
+#if FEATURE_EMERGENCY_Z_STOP
+	if( (uTime - g_uLastZPressureTime) > EMERGENCY_Z_STOP_INTERVAL )
+	{
+		g_uLastZPressureTime = uTime;
+
+		if( g_nDirectionZ && !g_nDirectionE )
+		{
+			// this check shall be done only when there is some moving into z-direction in progress and the extruder is not doing anything
+			g_nZPressureSum	   += readStrainGauge( SCAN_STRAIN_GAUGE );
+			g_nZPressureChecks += 1;
+
+			if( g_nZPressureChecks == EMERGENCY_Z_STOP_CHECKS )
+			{
+				nPressure		 = g_nZPressureSum / g_nZPressureChecks;
+
+//				Com::printF( PSTR( "loopRF1000(): average = " ), nPressure );
+//				Com::printFLN( PSTR( " / " ), g_nZPressureChecks );
+
+				g_nZPressureSum	   = 0;
+				g_nZPressureChecks = 0;
+
+				if( (nPressure < EMERGENCY_Z_STOP_DIGITS_MIN) ||
+					(nPressure > EMERGENCY_Z_STOP_DIGITS_MAX) )
+				{
+					// the pressure is outside the allowed range, we must perform the emergency z-stop
+					if( Printer::debugErrors() )
+					{
+						Com::printFLN( PSTR( "loopRF1000(): emergency z-stop: " ), nPressure );
+					}
+
+					// block any further movement into the z-direction
+					g_nBlockZ	  = 1;
+					g_nDirectionZ = 0;
+				}
+			}
+		}
+		else
+		{
+			g_nZPressureSum	   = 0;
+			g_nZPressureChecks = 0;
+		}
+	}
+#endif // FEATURE_EMERGENCY_Z_STOP
+
 	if( g_uStopTime )
 	{
 		if( (uTime - g_uStopTime) > CLEAN_UP_DELAY_AFTER_STOP_PRINT )
@@ -2170,6 +2231,11 @@ void loopRF1000( void )
 				outputObject();
 #endif // FEATURE_OUTPUT_PRINTED_OBJECT
 
+#if FAN_PIN>-1
+				// disable the fan
+				Commands::setFanSpeed(0,false);
+#endif // FAN_PIN>-1
+
 				// disable all steppers
 				Printer::setAllSteppersDisabled();
 				Printer::disableXStepper();
@@ -2179,7 +2245,17 @@ void loopRF1000( void )
 			}
 		}
 	}
-		
+	
+#if FEATURE_ABORT_PRINT_AFTER_TEMPERATURE_ERROR
+	if( Printer::isAnyTempsensorDefect() && sd.sdmode && PrintLine::linesCount )
+	{
+		// we are printing from the SD card and a temperature sensor got defect - abort the current printing
+		Com::printFLN( PSTR( "loopRF1000(): aborting print because of a temperature sensor defect" ) );
+
+		sd.abortPrint();
+	}
+#endif // FEATURE_ABORT_PRINT_AFTER_TEMPERATURE_ERROR
+
 	if( (uTime - g_lastTime) > LOOP_INTERVAL )
 	{
 		// it is time for another processing
@@ -2291,11 +2367,11 @@ void startHeatBedScan( void )
 		{
 			// start the heat bed scan
 			g_nHeatBedScanStatus = 1;
+			BEEP_START_HEAT_BED_SCAN
 
 			// when the heat bed is scanned, the z-compensation must be disabled
 			if( Printer::doZCompensation )
 			{
-				// there is some printing in progress at the moment - do not start the heat bed scan in this case
 				if( Printer::debugInfo() )
 				{
 					Com::printFLN( PSTR( "startHeatBedScan(): the z compensation has been disabled" ) );
@@ -2337,6 +2413,11 @@ void outputObject( void )
 	{
 		Com::printFLN( PSTR( "outputObject()" ) );
 	}
+
+#if FAN_PIN>-1
+	// disable the fan
+    Commands::setFanSpeed(0,false);
+#endif // FAN_PIN>-1
 
 #if FEATURE_WATCHDOG
     HAL::pingWatchdog();
@@ -2423,7 +2504,8 @@ void pausePrint( void )
 
 #if EXTRUDER_CURRENT_PAUSE_DELAY
 			// remember the pause time only in case we shall lower the extruder current
-			g_uPauseTime = HAL::timeInMilliseconds();
+			g_uPauseTime	= HAL::timeInMilliseconds();
+			g_pauseBeepDone	= 0;
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
 
 			if( Printer::debugInfo() )
@@ -2631,6 +2713,8 @@ void continuePrint( void )
 
 	if( g_pausePrint )
 	{
+		BEEP_CONTINUE
+
 		if( g_pausePrint == 2 )
 		{
 			// move the the continue position
@@ -3747,6 +3831,39 @@ void processCommand( GCode* pCommand )
 			}
 #endif // FEATURE_CONTROLLER == 4 || FEATURE_CONTROLLER == 33
 
+			case 3200: // M3200 - reserved for test and debug
+			{
+/*				// simulate a temp sensor error
+				Com::printFLN( PSTR( "M3200: simulating a defect temperature sensor" ) );
+                Printer::flag0 |= PRINTER_FLAG0_TEMPSENSOR_DEFECT;
+                reportTempsensorError();
+*/
+/*				if( pCommand->hasS() )
+				{
+					switch( pCommand->S )
+					{
+						case  1:	BEEP_SHORT					break;
+						case  2:	BEEP_LONG					break;
+						case  3:	BEEP_START_PRINTING			break;
+						case  4:	BEEP_ABORT_PRINTING			break;
+						case  5:	BEEP_STOP_PRINTING			break;
+						case  6:	BEEP_PAUSE					break;
+						case  7:	BEEP_CONTINUE				break;
+						case  8:	BEEP_START_HEAT_BED_SCAN	break;
+						case  9:	BEEP_ABORT_HEAT_BED_SCAN	break;
+						case 10:	BEEP_STOP_HEAT_BED_SCAN		break;
+
+						case 11:
+						{
+							Com::printFLN( PSTR( "M3200: block" ) );
+							g_nBlockZ = 1;
+							break;
+						}
+					}
+				}
+*/
+				break;
+			}
 		}
 	}
 
@@ -4011,8 +4128,6 @@ extern void processButton( int nAction )
 		}
 		case UI_ACTION_RF1000_PAUSE:
 		{
-			Com::printFLN( PSTR( "Pause" ) );
-
 			pausePrint();
 			break;
 		}

@@ -1,3 +1,19 @@
+V 0.91.25 (2014-05-22)
+- In case the printing is aborted because of any reason, also the fan is turned off now.
+- In case there is a printing from the SD card going on and a temperature sensor becomes defect, the printing is aborted.
+  - This functionality can be turned on and off via the FEATURE_ABORT_PRINT_AFTER_TEMPERATURE_ERROR switch.
+  - A printing via the PC is not affected by this functionality and the printer continues to run in dry mode like it did until now already.
+- Adding of additional beeper outputs for various changes of the printer state:
+  - start/abort/stop printing via the SD card
+  - pause/continue printing
+  - start/abort/stop heat bed scan
+- The beeper can be turned on and off via the menu "Configuration" -> "General" -> "Beeper".
+  - BEEPER_MODE from Configuration.h can be used in order to define whether the beeper shall be on or off by default.
+  - The beeper mode also can be stored to/restored from the EEPROM.
+- Optional emergency z-stop in order to detect a possible collision (extruder against heat bed).
+  - This feature can be turned on via FEATURE_EMERGENCY_Z_STOP.
+  - This feature can be configured via EMERGENCY_Z_STOP_DIGITS_MIN, EMERGENCY_Z_STOP_DIGITS_MAX, EMERGENCY_Z_STOP_INTERVAL and EMERGENCY_Z_STOP_CHECKS.
+
 V 0.91.23 (2014-05-14)
 - Removing of a possible value overflow in case very big values were assigned to OUTPUT_OFFSET_Z.
 - Homing of an axis always sets previousMillisCmd to the current time in order to avoid that all steppers are disabled again directly after the homing.

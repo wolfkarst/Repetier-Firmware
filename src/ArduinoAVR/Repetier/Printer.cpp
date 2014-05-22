@@ -172,6 +172,9 @@ char Printer::enabledY;
 char Printer::enabledZ;
 #endif // STEPPER_ON_DELAY
 
+#if FEATURE_BEEPER
+char Printer::enableBeeper;
+#endif // FEATURE_BEEPER
 
 short Printer::allowedZStepsAfterEndstop;
 short Printer::currentZStepsAfterEndstop;
@@ -291,7 +294,13 @@ void Printer::kill(uint8_t only_steppers)
 {
     if(areAllSteppersDisabled() && only_steppers) return;
     if(Printer::isAllKilled()) return;
-    setAllSteppersDisabled();
+
+#if FAN_PIN>-1
+	// disable the fan
+	Commands::setFanSpeed(0,false);
+#endif // FAN_PIN>-1
+
+	setAllSteppersDisabled();
     disableXStepper();
     disableYStepper();
     disableZStepper();
@@ -797,6 +806,10 @@ void Printer::setup()
 	enabledY = 0;
 	enabledZ = 0;
 #endif // STEPPER_ON_DELAY
+
+#if FEATURE_BEEPER
+	enableBeeper = BEEPER_MODE;
+#endif // FEATURE_BEEPER
 
 	currentZStepsAfterEndstop = 0;
     CalculateAllowedZStepsAfterEndStop();

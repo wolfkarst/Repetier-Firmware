@@ -378,7 +378,7 @@ void PrintLine::calculateMove(float axis_diff[],uint8_t pathOptimize)
 #endif
 #endif
 
-    // Correct integers for fixed point math used in bresenham_step
+    // Correct integers for fixed point math used in bresenhamStep()
     if(fullInterval<MAX_HALFSTEP_INTERVAL || critical)
         halfStep = 4;
     else
@@ -1961,7 +1961,8 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 
 #if EXTRUDER_CURRENT_PAUSE_DELAY
 					// remember the pause time only in case we shall lower the extruder current
-					g_uPauseTime = HAL::timeInMilliseconds();
+					g_uPauseTime	= HAL::timeInMilliseconds();
+					g_pauseBeepDone	= 0;
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
 				}
                 
@@ -2005,7 +2006,8 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 
 #if EXTRUDER_CURRENT_PAUSE_DELAY
 					// remember the pause time only in case we shall lower the extruder current
-					g_uPauseTime = HAL::timeInMilliseconds();
+					g_uPauseTime	= HAL::timeInMilliseconds();
+					g_pauseBeepDone	= 0;
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
 
 					if( g_nPauseStepsZ )
@@ -2317,7 +2319,7 @@ long PrintLine::bresenhamStep() // version for cartesian printer
             Printer::executeXYGantrySteps();
 #endif
 
-            if(cur->isZMove())
+            if(cur->isZMove() && !g_nBlockZ )
             {
                 if((cur->error[Z_AXIS] -= cur->delta[Z_AXIS]) < 0)
                 {

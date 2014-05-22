@@ -74,6 +74,8 @@
 - M3104 - configure the x, y and z position which shall set when the printed object is output
 
 - M3110 - lock the current status text
+
+- M3200 - reserved for test and debug
 */
 
 #define	SCAN_STRAIN_GAUGE				ACTIVE_STRAIN_GAUGE
@@ -104,6 +106,7 @@ extern	char			g_nDirectionX;
 extern	char			g_nDirectionY;
 extern	char			g_nDirectionZ;
 extern	char			g_nDirectionE;
+extern	char			g_nBlockZ;
 
 #if FEATURE_Z_COMPENSATION
 extern	char			g_abortScan;
@@ -146,6 +149,7 @@ extern	short			g_nContinueStepsExtruder;
 extern	char			g_pausePrint;
 extern	char			g_printingPaused;
 extern	unsigned long	g_uPauseTime;
+extern	char			g_pauseBeepDone;
 #endif // FEATURE_PAUSE_PRINTING
 
 

@@ -158,13 +158,24 @@ void SDCard::continuePrint(bool intern)
 #endif
     sdmode = true;
 }
-void SDCard::stopPrint()
+void SDCard::abortPrint()
 {
     if(!sd.sdactive) return;
     sdmode = false;
     Printer::setMenuMode(MENU_MODE_SD_PRINTING,false);
     Printer::setMenuMode(MENU_MODE_SD_PAUSED,false);
-    Com::printFLN(PSTR("SD print stopped by user."));
+    Com::printFLN(PSTR("SD print aborted."));
+
+	BEEP_ABORT_PRINTING
+
+	// wait until all moves are done
+	while( PrintLine::linesCount )
+	{
+		HAL::delayMilliseconds( 1 );
+		Commands::checkForPeriodicalActions();
+	}
+
+	g_uStopTime = millis();
 }
 
 void SDCard::writeCommand(GCode *code)

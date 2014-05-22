@@ -418,6 +418,11 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
         HAL::eprSetFloat(EPR_PRINTING_DISTANCE,0);
         initalizeUncached();
     }
+
+#if FEATURE_BEEPER
+	HAL::eprSetByte( EPR_RF1000_BEEPER_MODE, Printer::enableBeeper );
+#endif // FEATURE_BEEPER
+
     // Save version and build checksum
     HAL::eprSetByte(EPR_VERSION,EEPROM_PROTOCOL_VERSION);
     HAL::eprSetByte(EPR_INTEGRITY_BYTE,computeChecksum());
@@ -551,6 +556,11 @@ void EEPROM::readDataFromEEPROM()
         if(version>1)
             e->coolerSpeed = HAL::eprGetByte(o+EPR_EXTRUDER_COOLER_SPEED);
     }
+
+#if FEATURE_BEEPER
+	Printer::enableBeeper = HAL::eprGetByte( EPR_RF1000_BEEPER_MODE );
+#endif // FEATURE_BEEPER
+
     if(version!=EEPROM_PROTOCOL_VERSION)
     {
         Com::printInfoFLN(Com::tEPRProtocolChanged);
@@ -788,6 +798,11 @@ void EEPROM::writeSettings()
         writeFloat(o+EPR_EXTRUDER_ADVANCE_L,Com::tEPRAdvanceL);
 #endif
     }
+
+#if FEATURE_BEEPER
+	HAL::eprSetByte( EPR_RF1000_BEEPER_MODE, Printer::enableBeeper );
+#endif // FEATURE_BEEPER
+
 #else
     Com::printErrorF(Com::tNoEEPROMSupport);
 #endif

@@ -456,6 +456,8 @@ void GCode::readFromSerial()
     commandsReceivingWritePosition = 0;
     commentDetected = false;
     Printer::setMenuMode(MENU_MODE_SD_PRINTING,false);
+
+	BEEP_STOP_PRINTING
 #endif
 }
 

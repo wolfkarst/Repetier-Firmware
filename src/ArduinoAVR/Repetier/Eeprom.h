@@ -102,6 +102,8 @@ have problems with other modules using the eeprom */
 #define EPR_DELTA_RADIUS_CORR_B   917
 #define EPR_DELTA_RADIUS_CORR_C   921
 
+#define EPR_RF1000_BEEPER_MODE	 1000
+
 #define EEPROM_EXTRUDER_OFFSET 200
 // bytes per extruder needed, leave some space for future development
 #define EEPROM_EXTRUDER_LENGTH 100
@@ -127,6 +129,7 @@ have problems with other modules using the eeprom */
 #define EPR_EXTRUDER_WAIT_RETRACT_TEMP  50
 #define EPR_EXTRUDER_WAIT_RETRACT_UNITS 52
 #define EPR_EXTRUDER_COOLER_SPEED       54
+
 
 class EEPROM
 {

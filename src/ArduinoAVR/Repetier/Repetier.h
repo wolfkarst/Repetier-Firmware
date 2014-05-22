@@ -426,7 +426,7 @@ public:
   void startPrint();
   void pausePrint(bool intern = false);
   void continuePrint(bool intern=false);
-  void stopPrint();
+  void abortPrint();
   inline void setIndex(uint32_t  newpos) { if(!sdactive) return; sdpos = newpos;file.seekSet(sdpos);}
   void printStatus();
   void ls();

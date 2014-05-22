@@ -176,6 +176,10 @@ public:
 	static char	enabledZ;
 #endif // STEPPER_ON_DELAY
 
+#if FEATURE_BEEPER
+	static char enableBeeper;
+#endif // FEATURE_BEEPER
+
 	static short allowedZStepsAfterEndstop;
     static short currentZStepsAfterEndstop;
 
@@ -371,6 +375,11 @@ public:
     }
     static inline void setZDirection(bool positive)
     {
+		if( g_nBlockZ )
+		{
+			return;
+		}
+
         if(positive)
         {
             // heat bed moves to the bottom

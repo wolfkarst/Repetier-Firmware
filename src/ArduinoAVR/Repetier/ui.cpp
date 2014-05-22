@@ -52,6 +52,12 @@ long ui_autoreturn_time=0;
 void beep(uint8_t duration,uint8_t count)
 {
 #if FEATURE_BEEPER
+	if( !Printer::enableBeeper )
+	{
+		// we shall not beep
+		return;
+	}
+
 #if BEEPER_TYPE!=0
 #if BEEPER_TYPE==1 && defined(BEEPER_PIN) && BEEPER_PIN>=0
     SET_OUTPUT(BEEPER_PIN);
@@ -1032,6 +1038,7 @@ void UIDisplay::parse(char *txt,bool ram)
             else if(c2=='i') addStringP(Printer::debugInfo()?ui_text_on:ui_text_off);
             else if(c2=='e') addStringP(Printer::debugErrors()?ui_text_on:ui_text_off);
             else if(c2=='d') addStringP(Printer::debugDryrun()?ui_text_on:ui_text_off);
+			else if(c2=='b') addStringP(Printer::enableBeeper?ui_text_on:ui_text_off);
             break;
 
         case 'e': // Extruder temperature
@@ -1145,33 +1152,57 @@ void UIDisplay::parse(char *txt,bool ram)
                 printCols[col++]='%';
             break;
         case 'x':
+		{
+			char	bDefect = false;
+
             if(c2>='0' && c2<='3')
+			{
                 if(c2=='0')
                     fvalue = Printer::realXPosition();
                 else if(c2=='1')
                     fvalue = Printer::realYPosition();
                 else if(c2=='2')
                 {
-                    fvalue = 0;
+					if( g_nBlockZ )
+					{
+						// we can not move into z-direction any more
+						bDefect = true;
+					}
+					else
+					{
+	                    fvalue = 0;
 
 #if FEATURE_Z_COMPENSATION
-                    // add the current z-compensation
-                    fvalue += (float)Printer::currentCompensationZ;
-                    fvalue += (float)g_nHeatBedScanZ;
+		                // add the current z-compensation
+			            fvalue += (float)Printer::currentCompensationZ;
+				        fvalue += (float)g_nHeatBedScanZ;
 #endif // FEATURE_Z_COMPENSATION
 
 #if FEATURE_EXTENDED_BUTTONS
-                    // add the current manual z-steps
-                    fvalue += (float)Printer::targetPositionStepsZ;
+					    // add the current manual z-steps
+						fvalue += (float)Printer::targetPositionStepsZ;
 #endif // FEATURE_EXTENDED_BUTTONS
 
-                    fvalue *= Printer::invAxisStepsPerMM[Z_AXIS];
-                    fvalue += Printer::realZPosition();
+						fvalue *= Printer::invAxisStepsPerMM[Z_AXIS];
+						fvalue += Printer::realZPosition();
+					}
                 }
                 else
+				{
                     fvalue = (float)Printer::currentPositionSteps[3]*Printer::invAxisStepsPerMM[3];
-            addFloat(fvalue,4,2);
+				}
+
+				if( bDefect )
+				{
+					addStringP( PSTR(" def") );
+				}
+				else
+				{
+					addFloat(fvalue,4,2);
+				}
+			}
             break;
+		}
         case 'y':
 #if DRIVE_SYSTEM==3
             if(c2>='0' && c2<='3') fvalue = (float)Printer::currentDeltaPositionSteps[c2-'0']*Printer::invAxisStepsPerMM[c2-'0'];
@@ -1964,7 +1995,7 @@ void UIDisplay::okAction()
             if (sd.selectFile(filename, false))
             {
                 sd.startPrint();
-                BEEP_LONG;
+                BEEP_START_PRINTING
                 menuLevel = 0;
             }
             break;
@@ -2619,14 +2650,14 @@ void UIDisplay::executeAction(int action)
         case UI_ACTION_STORE_EEPROM:
             EEPROM::storeDataIntoEEPROM(false);
             pushMenu((void*)&ui_menu_eeprom_saved,false);
-            BEEP_LONG;
+            BEEP_LONG
             skipBeep = true;
             break;
         case UI_ACTION_LOAD_EEPROM:
             EEPROM::readDataFromEEPROM();
             Extruder::selectExtruderById(Extruder::current->id);
             pushMenu((void*)&ui_menu_eeprom_loaded,false);
-            BEEP_LONG;
+            BEEP_LONG
             skipBeep = true;
             break;
 #endif
@@ -2654,18 +2685,13 @@ void UIDisplay::executeAction(int action)
             sd.continuePrint();
             break;
         case UI_ACTION_SD_STOP:
-            sd.stopPrint();
-
-			// wait until all moves are done
-			while( PrintLine::linesCount )
-			{
-				HAL::delayMilliseconds( 1 );
-				Commands::checkForPeriodicalActions();
-			}
-
-			g_uStopTime = millis();
+            sd.abortPrint();
             break;
-        case UI_ACTION_SD_UNMOUNT:
+		case UI_ACTION_BEEPER:
+			if( Printer::enableBeeper )	Printer::enableBeeper = 0;
+            else						Printer::enableBeeper = 1;
+			break;
+		case UI_ACTION_SD_UNMOUNT:
             sd.unmount();
             break;
         case UI_ACTION_SD_MOUNT:

@@ -59,6 +59,7 @@ List of placeholder:
 %di : Debug info state.
 %de : Debug error state.
 %dd : Debug dry run state.
+%db : beeper state.
 %O0 : OPS mode = 0
 %O1 : OPS mode = 1
 %O2 : OPS mode = 2
@@ -535,8 +536,18 @@ UI_MENU_ACTION2C(ui_menu_maxinactive2,UI_ACTION_MAX_INACTIVE,UI_TEXT_POWER_INACT
 UI_MENU_CHANGEACTION(ui_menu_general_baud,UI_TEXT_BAUDRATE,UI_ACTION_BAUDRATE);
 UI_MENU_ACTIONSELECTOR(ui_menu_general_stepper_inactive,UI_TEXT_STEPPER_INACTIVE,ui_menu_stepper2);
 UI_MENU_ACTIONSELECTOR(ui_menu_general_max_inactive,UI_TEXT_POWER_INACTIVE,ui_menu_maxinactive2);
-#define UI_MENU_GENERAL {UI_MENU_ADDCONDBACK &ui_menu_general_baud,&ui_menu_general_stepper_inactive,&ui_menu_general_max_inactive}
-UI_MENU(ui_menu_general,UI_MENU_GENERAL,3+UI_MENU_BACKCNT);
+
+#if FEATURE_BEEPER
+UI_MENU_ACTIONCOMMAND(ui_menu_general_beeper,UI_TEXT_BEEPER,UI_ACTION_BEEPER);
+#define BEEPER_MODE_COUNT	1
+#define BEEPER_MODE_ENTRY	,&ui_menu_general_beeper
+#else
+#define BEEPER_MODE_COUNT	0
+#define BEEPER_MODE_ENTRY	
+#endif // FEATURE_BEEPER
+
+#define UI_MENU_GENERAL {UI_MENU_ADDCONDBACK &ui_menu_general_baud,&ui_menu_general_stepper_inactive,&ui_menu_general_max_inactive BEEPER_MODE_ENTRY}
+UI_MENU(ui_menu_general,UI_MENU_GENERAL,3+UI_MENU_BACKCNT+BEEPER_MODE_COUNT);
 
 // **** Extruder configuration
 

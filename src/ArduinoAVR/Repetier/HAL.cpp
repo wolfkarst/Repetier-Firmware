@@ -958,9 +958,9 @@ ISR(PWM_TIMER_VECTOR)
 				}
 			}
 
-			if( g_nDirectionZ == 0 )
+			if( g_nDirectionZ == 0 && !g_nBlockZ )
 			{
-				// this interrupt shall move the z-axis only in case the "main" interrupt (bresenham_step()) is not running at the moment
+				// this interrupt shall move the z-axis only in case the "main" interrupt (bresenhamStep()) is not running at the moment
 				HAL::forbidInterrupts();
 				if( Printer::currentCompensationZ < Printer::targetCompensationZ )
 				{
@@ -1009,7 +1009,7 @@ ISR(PWM_TIMER_VECTOR)
 		{
 			if( g_nDirectionE <= 0 )
 			{
-				// this interrupt shall move the extruder only in case the "main" interrupt (bresenham_step()) is not running at the moment
+				// this interrupt shall move the extruder only in case the "main" interrupt (bresenhamStep()) is not running at the moment
 				
 				// we must retract filament
 				if( g_nDirectionE == 0 )
@@ -1101,7 +1101,7 @@ ISR(PWM_TIMER_VECTOR)
 				}
 			}
 
-			if( Printer::currentPositionStepsZ != Printer::targetPositionStepsZ )
+			if( Printer::currentPositionStepsZ != Printer::targetPositionStepsZ && !g_nBlockZ )
 			{
 				// we have to move into z-direction
 				if( Printer::currentPositionStepsZ < Printer::targetPositionStepsZ )
@@ -1134,6 +1134,12 @@ ISR(PWM_TIMER_VECTOR)
 #endif // FEATURE_WATCHDOG
 
 				HAL::delayMicroseconds( 250 );
+
+				if( g_nBlockZ )
+				{
+					// (probably) paranoid check
+					nDirectionZ = 0;
+				}
 
 				if( nDirectionX )	WRITE( X_STEP_PIN, HIGH );
 				if( nDirectionY )	WRITE( Y_STEP_PIN, HIGH );
@@ -1186,7 +1192,7 @@ ISR(PWM_TIMER_VECTOR)
 			{
 				if( g_nDirectionE >= 0 )
 				{
-					// this interrupt shall move the extruder only in case the "main" interrupt (bresenham_step()) is not running at the moment
+					// this interrupt shall move the extruder only in case the "main" interrupt (bresenhamStep()) is not running at the moment
 				
 					// we must output filament
 					if( g_nDirectionE == 0 )
