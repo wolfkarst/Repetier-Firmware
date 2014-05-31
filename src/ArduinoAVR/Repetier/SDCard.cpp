@@ -160,13 +160,49 @@ void SDCard::continuePrint(bool intern)
 }
 void SDCard::abortPrint()
 {
-    if(!sd.sdactive) return;
-    sdmode = false;
+    if( !sd.sdactive )
+	{
+		return;
+	}
+
+	HAL::forbidInterrupts();
+
+	sdmode	 = false;
+	sdpos	 = 0;
+	filesize = 0;
+
+    Com::printFLN(PSTR("G-Code buffer reset"));
+	GCode::resetBuffer();
+
+    Com::printFLN(PSTR("Line buffer reset"));
+	PrintLine::resetPathPlanner();
+
     Printer::setMenuMode(MENU_MODE_SD_PRINTING,false);
     Printer::setMenuMode(MENU_MODE_SD_PAUSED,false);
     Com::printFLN(PSTR("SD print aborted."));
 
+	HAL::allowInterrupts();
+
 	BEEP_ABORT_PRINTING
+
+#if FEATURE_PAUSE_PRINTING
+	if( g_printingPaused )
+	{
+		// the printing is paused at the moment
+		HAL::forbidInterrupts();
+
+		g_uPauseTime			 = 0;
+		g_pausePrint			 = 0;
+		g_printingPaused		 = 0;
+
+        g_nContinueStepsX		 = 0;
+        g_nContinueStepsY		 = 0;
+        g_nContinueStepsZ		 = 0;
+		g_nContinueStepsExtruder = 0;
+
+		HAL::allowInterrupts();
+	}
+#endif // FEATURE_PAUSE_PRINTING
 
 	// wait until all moves are done
 	while( PrintLine::linesCount )
@@ -174,6 +210,18 @@ void SDCard::abortPrint()
 		HAL::delayMilliseconds( 1 );
 		Commands::checkForPeriodicalActions();
 	}
+
+	HAL::forbidInterrupts();
+    g_nDirectionX = 0;
+    g_nDirectionY = 0;
+    g_nDirectionZ = 0;
+    g_nDirectionE = 0;
+
+	Printer::targetPositionStepsX = Printer::currentPositionStepsX;
+    Printer::targetPositionStepsY = Printer::currentPositionStepsY;
+    Printer::targetPositionStepsZ = Printer::currentPositionStepsZ;
+    Printer::targetPositionStepsE = Printer::currentPositionStepsE;
+	HAL::allowInterrupts();
 
 	g_uStopTime = millis();
 }

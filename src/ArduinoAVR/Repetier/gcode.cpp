@@ -813,3 +813,12 @@ void GCode::printCommand()
     }
     Com::println();
 }
+
+
+void GCode::resetBuffer()
+{
+	bufferLength	 = 0;
+	bufferWriteIndex = 0;
+	bufferReadIndex	 = 0;
+
+} // resetBuffer

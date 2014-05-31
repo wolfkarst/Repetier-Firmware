@@ -192,6 +192,17 @@ void Printer::constrainDestinationCoords()
     if (destinationSteps[Z_AXIS] < zMinSteps) Printer::destinationSteps[Z_AXIS] = Printer::zMinSteps;
 #endif
 
+#if FEATURE_EXTENDED_BUTTONS
+#if max_software_endstop_x == true
+    if (destinationSteps[X_AXIS] + targetPositionStepsX > Printer::xMaxSteps) Printer::destinationSteps[X_AXIS] = Printer::xMaxSteps - targetPositionStepsX;
+#endif
+#if max_software_endstop_y == true
+    if (destinationSteps[Y_AXIS] + targetPositionStepsY > Printer::yMaxSteps) Printer::destinationSteps[Y_AXIS] = Printer::yMaxSteps - targetPositionStepsY;
+#endif
+#if max_software_endstop_z == true
+    if (destinationSteps[Z_AXIS] + targetPositionStepsZ > Printer::zMaxSteps) Printer::destinationSteps[Z_AXIS] = Printer::zMaxSteps - targetPositionStepsZ;
+#endif
+#else
 #if max_software_endstop_x == true
     if (destinationSteps[X_AXIS] > Printer::xMaxSteps) Printer::destinationSteps[X_AXIS] = Printer::xMaxSteps;
 #endif
@@ -201,6 +212,7 @@ void Printer::constrainDestinationCoords()
 #if max_software_endstop_z == true
     if (destinationSteps[Z_AXIS] > Printer::zMaxSteps) Printer::destinationSteps[Z_AXIS] = Printer::zMaxSteps;
 #endif
+#endif //FEATURE_EXTENDED_BUTTONS
 }
 
 void Printer::updateDerivedParameter()
@@ -1067,7 +1079,7 @@ void Printer::homeXAxis()
         currentPositionSteps[X_AXIS] = (X_HOME_DIR == -1) ? xMinSteps-offX : xMaxSteps+offX;
 
 #if FEATURE_Z_COMPENSATION
-        nonCompensatedPositionStepsX = currentPositionSteps[0];
+        nonCompensatedPositionStepsX = currentPositionSteps[X_AXIS];
 #endif // FEATURE_Z_COMPENSATION
 
 #if FEATURE_EXTENDED_BUTTONS
@@ -1100,9 +1112,9 @@ void Printer::homeYAxis()
 #endif
         UI_STATUS_UPD(UI_TEXT_HOME_Y);
         steps = (yMaxSteps-Printer::yMinSteps) * Y_HOME_DIR;
-        currentPositionSteps[1] = -steps;
+        currentPositionSteps[Y_AXIS] = -steps;
         PrintLine::moveRelativeDistanceInSteps(0,2*steps,0,0,homingFeedrate[1],true,true);
-        currentPositionSteps[1] = (Y_HOME_DIR == -1) ? yMinSteps-offY : yMaxSteps+offY;
+        currentPositionSteps[Y_AXIS] = (Y_HOME_DIR == -1) ? yMinSteps-offY : yMaxSteps+offY;
         PrintLine::moveRelativeDistanceInSteps(0,axisStepsPerMM[Y_AXIS]*-ENDSTOP_Y_BACK_MOVE * Y_HOME_DIR,0,0,homingFeedrate[Y_AXIS]/ENDSTOP_X_RETEST_REDUCTION_FACTOR,true,false);
         PrintLine::moveRelativeDistanceInSteps(0,axisStepsPerMM[Y_AXIS]*2*ENDSTOP_Y_BACK_MOVE * Y_HOME_DIR,0,0,homingFeedrate[Y_AXIS]/ENDSTOP_X_RETEST_REDUCTION_FACTOR,true,true);
 #if defined(ENDSTOP_Y_BACK_ON_HOME)
@@ -1112,7 +1124,7 @@ void Printer::homeYAxis()
         currentPositionSteps[Y_AXIS] = (Y_HOME_DIR == -1) ? yMinSteps-offY : yMaxSteps+offY;
 
 #if FEATURE_Z_COMPENSATION
-        nonCompensatedPositionStepsY = currentPositionSteps[1];
+        nonCompensatedPositionStepsY = currentPositionSteps[Y_AXIS];
 #endif // FEATURE_Z_COMPENSATION
 
 #if FEATURE_EXTENDED_BUTTONS
@@ -1137,9 +1149,9 @@ void Printer::homeZAxis()
     {
         UI_STATUS_UPD(UI_TEXT_HOME_Z);
         steps = (zMaxSteps - zMinSteps) * Z_HOME_DIR;
-        currentPositionSteps[2] = -steps;
+        currentPositionSteps[Z_AXIS] = -steps;
         PrintLine::moveRelativeDistanceInSteps(0,0,2*steps,0,homingFeedrate[2],true,true);
-        currentPositionSteps[2] = (Z_HOME_DIR == -1) ? zMinSteps : zMaxSteps;
+        currentPositionSteps[Z_AXIS] = (Z_HOME_DIR == -1) ? zMinSteps : zMaxSteps;
         PrintLine::moveRelativeDistanceInSteps(0,0,axisStepsPerMM[Z_AXIS]*-ENDSTOP_Z_BACK_MOVE * Z_HOME_DIR,0,homingFeedrate[Z_AXIS]/ENDSTOP_Z_RETEST_REDUCTION_FACTOR,true,false);
         PrintLine::moveRelativeDistanceInSteps(0,0,axisStepsPerMM[Z_AXIS]*2*ENDSTOP_Z_BACK_MOVE * Z_HOME_DIR,0,homingFeedrate[Z_AXIS]/ENDSTOP_Z_RETEST_REDUCTION_FACTOR,true,true);
 #if defined(ENDSTOP_Z_BACK_ON_HOME)
@@ -1153,7 +1165,7 @@ void Printer::homeZAxis()
 
 #if FEATURE_Z_COMPENSATION
         g_nHeatBedScanZ = 0;
-        nonCompensatedPositionStepsZ = currentPositionSteps[2];
+        nonCompensatedPositionStepsZ = currentPositionSteps[Z_AXIS];
 
         PrintLine::queueTask( TASK_INIT_Z_COMPENSATION );
 #endif // FEATURE_Z_COMPENSATION
@@ -1255,9 +1267,9 @@ float Printer::runZMaxProbe()
         return -1;
     }
     setZProbingActive(false);
-    currentPositionSteps[2] -= stepsRemainingAtZHit;
+    currentPositionSteps[Z_AXIS] -= stepsRemainingAtZHit;
     probeDepth -= stepsRemainingAtZHit;
-    float distance = (float)probeDepth*invAxisStepsPerMM[2];
+    float distance = (float)probeDepth*invAxisStepsPerMM[Z_AXIS];
     Com::printF(Com::tZProbeMax,distance);
     Com::printF(Com::tSpaceXColon,realXPosition());
     Com::printFLN(Com::tSpaceYColon,realYPosition());

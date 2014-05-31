@@ -1189,7 +1189,7 @@ void UIDisplay::parse(char *txt,bool ram)
                 }
                 else
 				{
-                    fvalue = (float)Printer::currentPositionSteps[3]*Printer::invAxisStepsPerMM[3];
+                    fvalue = (float)Printer::currentPositionSteps[E_AXIS]*Printer::invAxisStepsPerMM[E_AXIS];
 				}
 
 				if( bDefect )
@@ -2628,7 +2628,7 @@ void UIDisplay::executeAction(int action)
             Printer::kill(true);
             break;
         case UI_ACTION_RESET_EXTRUDER:
-            Printer::currentPositionSteps[3] = 0;
+            Printer::currentPositionSteps[E_AXIS] = 0;
             break;
         case UI_ACTION_EXTRUDER_RELATIVE:
             Printer::relativeExtruderCoordinateMode=!Printer::relativeExtruderCoordinateMode;

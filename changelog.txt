@@ -1,3 +1,6 @@
+V 0.91.27 (2014-05-31)
+- Calling of "Stop Print" while the printing was paused could hang the firmware.
+
 V 0.91.25 (2014-05-22)
 - In case the printing is aborted because of any reason, also the fan is turned off now.
 - In case there is a printing from the SD card going on and a temperature sensor becomes defect, the printing is aborted.

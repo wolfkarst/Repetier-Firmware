@@ -1013,7 +1013,7 @@ uncommented, you will see the last command executed. To be more specific: It is 
 execution. This helps tracking errors, because there may be 8 or more commands in the queue
 and it is elsewise difficult to know, what your reprap is currently doing.
 */
-#define ECHO_ON_EXECUTE
+#define ECHO_ON_EXECUTE 1
 
 /** \brief EEPROM storage mode
 
@@ -1496,6 +1496,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".25"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".27"
 
 #endif

@@ -548,7 +548,7 @@ void Commands::executeGCode(GCode *com)
             Com::printFLN(Com::tZProbeAverage,sum);
             if(com->hasS() && com->S)
             {
-                Printer::currentPositionSteps[2] = sum*Printer::axisStepsPerMM[2];
+                Printer::currentPositionSteps[Z_AXIS] = sum*Printer::axisStepsPerMM[Z_AXIS];
                 Com::printInfoFLN(Com::tZProbeZReset);
 #if MAX_HARDWARE_ENDSTOP_Z
                 Printer::zLength = Printer::runZMaxProbe()+sum-ENDSTOP_Z_BACK_ON_HOME;
@@ -610,7 +610,7 @@ void Commands::executeGCode(GCode *com)
                 /* Printer::offsetX = 0;
                  Printer::offsetY = 0;
                  Printer::moveToReal(0,0,cz,IGNORE_COORDINATE,Printer::homingFeedrate[X_AXIS]);
-                     PrintLine::moveRelativeDistanceInSteps(Printer::offsetX-Printer::currentPositionSteps[0],Printer::offsetY-Printer::currentPositionSteps[1],0,0,Printer::homingFeedrate[0],true,ALWAYS_CHECK_ENDSTOPS);
+                     PrintLine::moveRelativeDistanceInSteps(Printer::offsetX-Printer::currentPositionSteps[X_AXIS],Printer::offsetY-Printer::currentPositionSteps[Y_AXIS],0,0,Printer::homingFeedrate[X_AXIS],true,ALWAYS_CHECK_ENDSTOPS);
                      Printer::offsetX = 0;
                      Printer::offsetY = 0;*/
                 Printer::zLength += (h3+z)-Printer::currentPosition[Z_AXIS];
