@@ -84,7 +84,11 @@ void SDCard::initsd()
 {
     sdactive = false;
 #if SDSS >- 1
-    /*if(dir[0].isOpen())
+ #if defined(SDCARDDETECT) && SDCARDDETECT>-1
+    if(READ(SDCARDDETECT) != SDCARDDETECTINVERTED)
+        return;
+#endif
+   /*if(dir[0].isOpen())
         dir[0].close();*/
     if(!fat.begin(SDSS,SPI_FULL_SPEED))
     {

@@ -1,3 +1,16 @@
+V 0.91.29 (2014-05-31)
+- Merging of the changes from the repetier firmware V 0.91.7 from 2014-03-15:
+  - Adding of M99.
+  - Adding of support for FEATURE_BABYSTEPPING.
+    - This feature allows change the z-position via the menu.
+  - Adding of support for HEATER_PWM_SPEED.
+    - This feature allows to configure the update speed for the heater PWMs.
+  - Adding of one retry before a SD card error is detected.
+  - Adding of the menu mode MENU_MODE_PRINTING.
+  - Improved delta moves.
+  - Several minor clean-ups and improvements.
+  - Additions for improvded debugging capabilities.
+
 V 0.91.27 (2014-05-31)
 - Calling of "Stop Print" while the printing was paused could hang the firmware.
 
