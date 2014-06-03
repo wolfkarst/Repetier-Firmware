@@ -1,3 +1,9 @@
+V 0.91.31 (2014-06-03)
+- Increasing of the motor driver currents.
+- Switching from UI_MENU_ACTIONCOMMAND_FILTER to UI_MENU_ACTIONCOMMAND for all menu entries which used MENU_MODE_PRINTING.
+- The menu entry "Configuration" -> "General" -> "Lights" can be used now in order to turn the lights (Arduino pin 25) on or off.
+- Improved scrolling of long menu entries.
+
 V 0.91.29 (2014-05-31)
 - Merging of the changes from the repetier firmware V 0.91.7 from 2014-03-15:
   - Adding of M99.

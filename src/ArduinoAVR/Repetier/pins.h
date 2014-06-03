@@ -1480,7 +1480,7 @@ STEPPER_CURRENT_CONTROL
 
 // other pin mappings
 #define RF1000_HZ3_PIN		     8	// PINH.5, 17, HZ3
-#define	RF1000_OUT1_PIN		    25	// PINA.3, 75, OUT1
+//#define	RF1000_OUT1_PIN		    25	// PINA.3, 75, OUT1
 
 #endif // MOTHERBOARD == 13
 

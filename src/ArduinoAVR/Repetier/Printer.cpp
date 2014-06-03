@@ -188,6 +188,10 @@ char Printer::enabledZ;
 char Printer::enableBeeper;
 #endif // FEATURE_BEEPER
 
+#if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN >= 0
+char Printer::enableLights;
+#endif // CASE_LIGHTS_PIN >= 0
+
 short Printer::allowedZStepsAfterEndstop;
 short Printer::currentZStepsAfterEndstop;
 
@@ -781,12 +785,6 @@ void Printer::setup()
     SET_OUTPUT(EXT5_EXTRUDER_COOLER_PIN);
     WRITE(EXT5_EXTRUDER_COOLER_PIN,LOW);
 #endif
-#if CASE_LIGHTS_PIN>=0
-    SET_OUTPUT(CASE_LIGHTS_PIN);
-    #if PROTOTYPE_PCB == 1
-      WRITE(CASE_LIGHTS_PIN, CASE_LIGHT_DEFAULT_ON);
-    #endif
-#endif // CASE_LIGHTS_PIN
 #ifdef XY_GANTRY
     Printer::motorX = 0;
     Printer::motorY = 0;
@@ -866,6 +864,10 @@ void Printer::setup()
 	enableBeeper = BEEPER_MODE;
 #endif // FEATURE_BEEPER
 
+#if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN >= 0
+	enableLights = CASE_LIGHTS_DEFAULT_ON;
+#endif // CASE_LIGHTS_PIN >= 0
+
 	currentZStepsAfterEndstop = 0;
     CalculateAllowedZStepsAfterEndStop();
 
@@ -882,7 +884,13 @@ void Printer::setup()
     HAL::showStartReason();
     Extruder::initExtruder();
     EEPROM::init(); // Read settings from eeprom if wanted
-    updateDerivedParameter();
+
+#if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN >= 0
+    SET_OUTPUT(CASE_LIGHTS_PIN);
+	WRITE(CASE_LIGHTS_PIN, enableLights);
+#endif // CASE_LIGHTS_PIN >= 0
+
+	updateDerivedParameter();
     Commands::checkFreeMemory();
     Commands::writeLowestFreeRAM();
     HAL::setupTimer();

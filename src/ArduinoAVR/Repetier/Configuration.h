@@ -710,8 +710,7 @@ on this endstop.
 #elif MOTHERBOARD==12
 #define MOTOR_CURRENT {53570,65535,53570,65535,53570} // Values 0-65535 (53570 = ~1.5A)
 #elif MOTHERBOARD==13
-//#define MOTOR_CURRENT {160,160,126,160,126} // Values 0-255 (126 = ~2A), order: driver 1 (x), driver 2 (y), driver 3 (z), driver 4 (extruder 1), driver 5 (reserved)
-#define MOTOR_CURRENT {110,110,110,110,110} // Values 0-255 (126 = ~2A), order: driver 1 (x), driver 2 (y), driver 3 (z), driver 4 (extruder 1), driver 5 (reserved)
+#define MOTOR_CURRENT {160,160,140,160,126} // Values 0-255 (126 = ~2A), order: driver 1 (x), driver 2 (y), driver 3 (z), driver 4 (extruder 1), driver 5 (reserved)
 #endif
 
 /** \brief Number of segments to generate for delta conversions per second of move
@@ -1133,12 +1132,15 @@ is always running and is not hung up for some unknown reason. */
 #define BABYSTEP_MULTIPLICATOR 1
 
 /* Define a pin to turn light on/off */
-#if PROTOTYPE_PCB == 1 
+/*
+#if PROTOTYPE_PCB == 1
   #define CASE_LIGHTS_PIN 27
 #else
   #define CASE_LIGHTS_PIN -1
 #endif
-#define CASE_LIGHT_DEFAULT_ON 1
+*/
+#define CASE_LIGHTS_PIN			25	// PINA.3, 75, OUT1
+#define CASE_LIGHTS_DEFAULT_ON	 1
 
 /** Set to false to disable SD support: */
 #ifndef SDSUPPORT  // Some boards have sd support on board. These define the values already in pins.h
@@ -1457,8 +1459,8 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Configuration of optional outputs
 */
-#define ENABLE_OUT1				true	// true = OUT1 is used as output, false = OUT1 is used as input
-#define	SET_OUT1				true	// true = OUT1 is high, false = OUT1 is low
+#define ENABLE_OUT1				false	// true = OUT1 is used as output, false = OUT1 is used as input
+#define	SET_OUT1				false	// true = OUT1 is high, false = OUT1 is low
 #define ENABLE_HZ2				true	// true = HZ2 is used as output, false = HZ2 is used as input
 #define	SET_HZ2					true	// true = HZ2 is high, false = HZ2 is low
 
@@ -1520,6 +1522,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".29"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".31"
 
 #endif

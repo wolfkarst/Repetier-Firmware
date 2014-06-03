@@ -196,6 +196,10 @@ public:
 	static char enableBeeper;
 #endif // FEATURE_BEEPER
 
+#if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN >= 0
+	static char	enableLights;
+#endif // CASE_LIGHTS_PIN >= 0
+
 	static short allowedZStepsAfterEndstop;
     static short currentZStepsAfterEndstop;
 

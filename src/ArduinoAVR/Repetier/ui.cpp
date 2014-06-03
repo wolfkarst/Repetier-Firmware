@@ -1082,7 +1082,7 @@ void UIDisplay::parse(char *txt,bool ram)
         case 'l':
             if(c2=='a') addInt(lastAction,4);
 #if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN>=0
-            else if(c2=='o') addStringP(READ(CASE_LIGHTS_PIN)?ui_text_on:ui_text_off);        // Lights on/off
+			else if(c2=='o') addStringP(Printer::enableLights?ui_text_on:ui_text_off);        // Lights on/off
 #endif
             break;
         case 'o':
@@ -1091,7 +1091,7 @@ void UIDisplay::parse(char *txt,bool ram)
 #if SDSUPPORT
                 if(sd.sdactive && sd.sdmode)
                 {
-                    addStringP(PSTR( UI_TEXT_PRINT_POS));
+                    addStringP(PSTR(UI_TEXT_PRINT_POS));
                     unsigned long percent;
                     if(sd.filesize<20000000) percent=sd.sdpos*100/sd.filesize;
                     else percent = (sd.sdpos>>8)*100/(sd.filesize>>8);
@@ -1525,7 +1525,8 @@ void sdrefresh(uint8_t &r,char cache[UI_ROWS][MAX_COLS+1])
                 skip--;
                 continue;
             }
-            uid.col=0;
+
+/*            uid.col=0;
             if(r+offset == uid.menuPos[uid.menuLevel])
                 printCols[uid.col++] = CHAR_SELECTOR;
             else
@@ -1537,7 +1538,45 @@ void sdrefresh(uint8_t &r,char cache[UI_ROWS][MAX_COLS+1])
             memcpy(printCols+uid.col, tempLongFilename, length);
             uid.col += length;
             printCols[uid.col] = 0;
-            strcpy(cache[r++],printCols);
+*/
+			printCols[0] = ' ';
+			uid.col = 1;
+
+            if(DIR_IS_SUBDIR(p))
+                printCols[uid.col++] = 6; // Prepend folder symbol
+            length = RMath::min((int)strlen(tempLongFilename), MAX_COLS-uid.col);
+            memcpy(printCols+uid.col, tempLongFilename, length);
+            uid.col += length;
+            printCols[uid.col] = 0;
+
+			uint8_t curShift = (uid.shift<=0 ? 0 : uid.shift);
+			uint8_t curLen = strlen(printCols);
+
+			if(curLen>UI_COLS)
+			{
+				// this file name is longer than the available width of the display
+				curShift = RMath::min(curLen-UI_COLS,curShift);
+			}
+			else
+			{
+				curShift = 0;
+			}
+
+            if(r+offset == uid.menuPos[uid.menuLevel])
+			{
+				// the menu cursor is placed at this file name at the moment
+                printCols[curShift] = CHAR_SELECTOR;
+			}
+            else
+			{
+				// this file name is above/below the current menu cursor item
+                printCols[curShift] = ' ';
+			}
+
+			if(DIR_IS_SUBDIR(p))
+				printCols[curShift+1] = 6; // Prepend folder symbol
+
+			strcpy(cache[r++],printCols);
         }
     }
 }
@@ -1578,6 +1617,7 @@ void UIDisplay::refreshPage()
         mtype = pgm_read_byte((void*)&(men->menuType));
         uint8_t offset = menuTop[menuLevel];
         UIMenuEntry **entries = (UIMenuEntry**)pgm_read_word(&(men->entries));
+
         for(r=0; r+offset<nr && r<UI_ROWS; )
         {
             UIMenuEntry *ent =(UIMenuEntry *)pgm_read_word(&(entries[r+offset]));
@@ -1588,7 +1628,7 @@ void UIDisplay::refreshPage()
             }
             unsigned char entType = pgm_read_byte(&(ent->menuType));
             unsigned int entAction = pgm_read_word(&(ent->action));
-            col=0;
+/*            col=0;
             if(entType>=2 && entType<=4)
             {
                 if(r+offset==menuPos[menuLevel] && activeAction!=entAction)
@@ -1610,7 +1650,59 @@ void UIDisplay::refreshPage()
                     printCols[col] = CHAR_RIGHT; // Arrow right
                 printCols[++col] = 0;
             }
-            strcpy(cache[r],printCols);
+*/
+			printCols[0] = ' ';
+			col = 1;
+			parse((char*)pgm_read_word(&(ent->text)),false);
+            while(col<UI_COLS-1) printCols[col++] = ' ';
+			printCols[col] = 0;
+
+            if(entType>=2 && entType<=4)
+			{
+				// this is a menu item
+				uint8_t curShift = (shift<=0 ? 0 : shift);
+				uint8_t curLen = strlen(printCols);
+
+				if(entType==2)
+				{
+					// this menu item contains submenus
+					curLen ++;	// one additional character is needed for the submenu marker
+				}
+
+				if(curLen>UI_COLS)
+				{
+					// this menu item is longer than the available width of the display
+					curShift = RMath::min(curLen-UI_COLS,curShift);
+				}
+				else
+				{
+					curShift = 0;
+				}
+
+                if(r+offset==menuPos[menuLevel] && activeAction!=entAction)
+				{
+					// the menu cursor is placed at this item at the moment
+                    printCols[curShift] = CHAR_SELECTOR;
+				}
+                else if(activeAction==entAction)
+				{
+					// this menu item is selected (and can be changed) at the moment
+                    printCols[curShift] = CHAR_SELECTED;
+				}
+                else
+				{
+					// this menu item is above/below the current menu cursor item
+                    printCols[curShift] = ' ';
+				}
+
+				if(entType==2)
+				{
+					printCols[UI_COLS-1 + curShift] = CHAR_RIGHT;	// arrow right
+					printCols[UI_COLS + curShift] = 0;				// arrow right
+				}
+			}
+
+			strcpy(cache[r],printCols);
             r++;
         }
     }
@@ -2605,8 +2697,8 @@ void UIDisplay::executeAction(int action)
             break;
 #if CASE_LIGHTS_PIN > 0
         case UI_ACTION_LIGHTS_ONOFF:
-            TOGGLE(CASE_LIGHTS_PIN);
-            UI_STATUS(UI_TEXT_LIGHTS_ONOFF);
+			if( Printer::enableLights )	Printer::enableLights = 0;
+            else						Printer::enableLights = 1;
             break;
 #endif
         case UI_ACTION_PREHEAT_PLA:

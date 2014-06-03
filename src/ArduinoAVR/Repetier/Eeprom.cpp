@@ -423,7 +423,11 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
 	HAL::eprSetByte( EPR_RF1000_BEEPER_MODE, Printer::enableBeeper );
 #endif // FEATURE_BEEPER
 
-    // Save version and build checksum
+#if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN >= 0
+	HAL::eprSetByte( EPR_RF1000_LIGHTS_MODE, Printer::enableLights );
+#endif // CASE_LIGHTS_PIN >= 0
+
+	// Save version and build checksum
     HAL::eprSetByte(EPR_VERSION,EEPROM_PROTOCOL_VERSION);
     HAL::eprSetByte(EPR_INTEGRITY_BYTE,computeChecksum());
 #endif
@@ -570,7 +574,11 @@ void EEPROM::readDataFromEEPROM()
 	Printer::enableBeeper = HAL::eprGetByte( EPR_RF1000_BEEPER_MODE );
 #endif // FEATURE_BEEPER
 
-    if(version!=EEPROM_PROTOCOL_VERSION)
+#if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN >= 0
+	Printer::enableLights = HAL::eprGetByte( EPR_RF1000_LIGHTS_MODE );
+#endif // CASE_LIGHTS_PIN >= 0
+
+	if(version!=EEPROM_PROTOCOL_VERSION)
     {
         Com::printInfoFLN(Com::tEPRProtocolChanged);
         if(version<3)
@@ -826,6 +834,10 @@ void EEPROM::writeSettings()
 #if FEATURE_BEEPER
 	HAL::eprSetByte( EPR_RF1000_BEEPER_MODE, Printer::enableBeeper );
 #endif // FEATURE_BEEPER
+
+#if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN >= 0
+	HAL::eprSetByte( EPR_RF1000_LIGHTS_MODE, Printer::enableLights );
+#endif // CASE_LIGHTS_PIN >= 0
 
 #else
     Com::printErrorF(Com::tNoEEPROMSupport);
