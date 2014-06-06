@@ -501,7 +501,7 @@ UI_MENU_SUBMENU(ui_menu_sd_sub,UI_TEXT_SD_CARD,ui_menu_sd);
 #define UI_MENU_SD_CNT 0
 #endif
 
-
+#if SHOW_DEBUGGING_MENU
 // **** Debugging menu
 UI_MENU_ACTIONCOMMAND(ui_menu_debug_echo,   UI_TEXT_DBG_ECHO,   UI_ACTION_DEBUG_ECHO);
 UI_MENU_ACTIONCOMMAND(ui_menu_debug_info,   UI_TEXT_DBG_INFO,   UI_ACTION_DEBUG_INFO);
@@ -510,6 +510,7 @@ UI_MENU_ACTIONCOMMAND(ui_menu_debug_dryrun, UI_TEXT_DBG_DRYRUN, UI_ACTION_DEBUG_
 
 #define UI_MENU_DEBUGGING {UI_MENU_ADDCONDBACK &ui_menu_debug_echo,&ui_menu_debug_info,&ui_menu_debug_error,&ui_menu_debug_dryrun}
 UI_MENU(ui_menu_debugging,UI_MENU_DEBUGGING,4+UI_MENU_BACKCNT);
+#endif // SHOW_DEBUGGING_MENU
 
 // **** Acceleration settings
 #if DRIVE_SYSTEM!=3
@@ -576,6 +577,7 @@ UI_MENU_ACTIONCOMMAND(ui_menu_light_mode,UI_TEXT_LIGHTS_ONOFF,UI_ACTION_LIGHTS_O
 #define UI_MENU_GENERAL {UI_MENU_ADDCONDBACK &ui_menu_general_baud,&ui_menu_general_stepper_inactive,&ui_menu_general_max_inactive BEEPER_MODE_ENTRY LIGHT_MODE_ENTRY}
 UI_MENU(ui_menu_general,UI_MENU_GENERAL,3+UI_MENU_BACKCNT+BEEPER_MODE_COUNT+LIGHT_MODE_COUNT);
 
+#if SHOW_EXTRUDER_MENU
 // **** Extruder configuration
 
 UI_MENU_CHANGEACTION(ui_menu_cext_steps,          UI_TEXT_EXTR_STEPS,              UI_ACTION_EXTR_STEPS);
@@ -623,11 +625,22 @@ UI_MENU_CHANGEACTION(ui_menu_cext_yoffset,UI_TEXT_EXTR_YOFF,UI_ACTION_Y_OFFSET);
 #define UI_MENU_CEXTR {UI_MENU_ADDCONDBACK UI_MENU_CONFEXTCOND &ui_menu_cext_steps,&ui_menu_cext_start_feedrate,&ui_menu_cext_max_feedrate,&ui_menu_cext_acceleration,&ui_menu_cext_watch_period,&ui_menu_ext_wait_units,&ui_menu_ext_wait_temp UI_MENU_ADVANCE UI_MENU_PIDCOND}
 UI_MENU(ui_menu_cextr,UI_MENU_CEXTR,7+UI_MENU_BACKCNT+UI_MENU_PIDCNT+UI_MENU_CONFEXTCNT+UI_MENU_ADV_CNT);
 
+#endif // SHOW_EXTRUDER_MENU
+
 // **** Configuration menu
 UI_MENU_SUBMENU(ui_menu_conf_general, UI_TEXT_GENERAL,      ui_menu_general);
 UI_MENU_SUBMENU(ui_menu_conf_accel,   UI_TEXT_ACCELERATION, ui_menu_accel);
 UI_MENU_SUBMENU(ui_menu_conf_feed,    UI_TEXT_FEEDRATE,     ui_menu_feedrate);
+
+#if SHOW_EXTRUDER_MENU
 UI_MENU_SUBMENU(ui_menu_conf_extr,    UI_TEXT_EXTRUDER,     ui_menu_cextr);
+#define EXTRUDER_MENU_ENTRY		&ui_menu_conf_extr,
+#define	EXTRUDER_MENU_COUNT		1
+#else
+#define EXTRUDER_MENU_ENTRY		
+#define	EXTRUDER_MENU_COUNT		0
+#endif // SHOW_EXTRUDER_MENU
+
 #if EEPROM_MODE!=0
 UI_MENU_ACTIONCOMMAND(ui_menu_conf_to_eeprom,UI_TEXT_STORE_TO_EEPROM,UI_ACTION_STORE_EEPROM);
 UI_MENU_ACTIONCOMMAND(ui_menu_conf_from_eeprom,UI_TEXT_LOAD_EEPROM,UI_ACTION_LOAD_EEPROM);
@@ -655,16 +668,27 @@ UI_MENU_SUBMENU(ui_menu_conf_delta, UI_TEXT_ZCALIB, ui_menu_delta);
 #define UI_MENU_DELTA_COND
 #define UI_MENU_DELTA_CNT 0
 #endif
-#define UI_MENU_CONFIGURATION {UI_MENU_ADDCONDBACK &ui_menu_conf_general,&ui_menu_conf_accel,&ui_menu_conf_feed,&ui_menu_conf_extr UI_MENU_EEPROM_COND UI_MENU_DELTA_COND UI_MENU_SL_COND}
-UI_MENU(ui_menu_configuration,UI_MENU_CONFIGURATION,UI_MENU_BACKCNT+UI_MENU_EEPROM_CNT+UI_MENU_DELTA_CNT+UI_MENU_SL_CNT+4);
+UI_MENU_ACTIONCOMMAND(ui_menu_heat_bed_scan,UI_TEXT_DO_HEAT_BED_SCAN,UI_ACTION_RF1000_DO_HEAT_BED_SCAN);
+#define UI_MENU_CONFIGURATION {UI_MENU_ADDCONDBACK &ui_menu_conf_general,&ui_menu_conf_accel,&ui_menu_conf_feed, EXTRUDER_MENU_ENTRY &ui_menu_heat_bed_scan UI_MENU_EEPROM_COND UI_MENU_DELTA_COND UI_MENU_SL_COND}
+UI_MENU(ui_menu_configuration,UI_MENU_CONFIGURATION,UI_MENU_BACKCNT+UI_MENU_EEPROM_CNT+UI_MENU_DELTA_CNT+UI_MENU_SL_CNT+EXTRUDER_MENU_COUNT+4);
 // Main menu
 UI_MENU_SUBMENU(ui_menu_main1, UI_TEXT_QUICK_SETTINGS, ui_menu_quick);
 UI_MENU_SUBMENU(ui_menu_main2, UI_TEXT_POSITION,	   ui_menu_positions);
 UI_MENU_SUBMENU(ui_menu_main3, UI_TEXT_EXTRUDER,	   ui_menu_extruder);
+
+#if SHOW_DEBUGGING_MENU
 UI_MENU_SUBMENU(ui_menu_main4, UI_TEXT_DEBUGGING,	   ui_menu_debugging);
+#define DEBUGGING_MENU_ENTRY	&ui_menu_main4,
+#define DEBUGGING_MENU_COUNT	1
+#else
+#define DEBUGGING_MENU_ENTRY	
+#define DEBUGGING_MENU_COUNT	0
+#endif // SHOW_DEBUGGING_MENU
+
 UI_MENU_SUBMENU(ui_menu_main5, UI_TEXT_CONFIGURATION,  ui_menu_configuration);
-#define UI_MENU_MAIN {UI_MENU_ADDCONDBACK  &ui_menu_main1,&ui_menu_sd_printfile,&ui_menu_main2,&ui_menu_main3,UI_MENU_FAN_COND UI_MENU_SD_COND &ui_menu_main4,&ui_menu_main5}
-UI_MENU(ui_menu_main,UI_MENU_MAIN,6+UI_MENU_BACKCNT+UI_MENU_SD_CNT+UI_MENU_FAN_CNT);
+
+#define UI_MENU_MAIN {UI_MENU_ADDCONDBACK  &ui_menu_main1,&ui_menu_sd_printfile,&ui_menu_main2,&ui_menu_main3,UI_MENU_FAN_COND UI_MENU_SD_COND DEBUGGING_MENU_ENTRY &ui_menu_main5}
+UI_MENU(ui_menu_main,UI_MENU_MAIN,6+UI_MENU_BACKCNT+UI_MENU_SD_CNT+UI_MENU_FAN_CNT+DEBUGGING_MENU_COUNT);
 
 /* Define menus accessible by action commands
 

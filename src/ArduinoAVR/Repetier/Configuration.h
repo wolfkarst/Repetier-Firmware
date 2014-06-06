@@ -1140,7 +1140,7 @@ is always running and is not hung up for some unknown reason. */
 #endif
 */
 #define CASE_LIGHTS_PIN			25	// PINA.3, 75, OUT1
-#define CASE_LIGHTS_DEFAULT_ON	 1
+#define CASE_LIGHTS_DEFAULT_ON	 0
 
 /** Set to false to disable SD support: */
 #ifndef SDSUPPORT  // Some boards have sd support on board. These define the values already in pins.h
@@ -1275,6 +1275,7 @@ Values must be in range 1..255
 #define UI_SET_PRESET_EXTRUDER_TEMP_PLA   180
 #define UI_SET_PRESET_HEATED_BED_TEMP_ABS 110
 #define UI_SET_PRESET_EXTRUDER_TEMP_ABS   240
+
 // Extreme values
 #define UI_SET_MIN_HEATED_BED_TEMP  55
 #define UI_SET_MAX_HEATED_BED_TEMP 200
@@ -1282,6 +1283,9 @@ Values must be in range 1..255
 #define UI_SET_MAX_EXTRUDER_TEMP   270
 #define UI_SET_EXTRUDER_FEEDRATE 2 // mm/sec
 #define UI_SET_EXTRUDER_RETRACT_DISTANCE 3 // mm
+
+#define	SHOW_DEBUGGING_MENU					0													// 1 = show, 0 = hide
+#define	SHOW_EXTRUDER_MENU					0													// 1 = show, 0 = hide
 
 /** \brief Allows to use 6 additional hardware buttons
 */
@@ -1522,6 +1526,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".31"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".33"
 
 #endif

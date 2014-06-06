@@ -1,3 +1,10 @@
+V 0.91.33 (2014-06-06)
+- Disabling of the "Debugging" menu.
+  - SHOW_DEBUGGING_MENU can be used in order to toggle this menu between "shown" and "hidden".
+- Disabling of the "Configuration" -> "Extruder" menu.
+  - SHOW_EXTRUDER_MENU can be used in order to toggle this menu between "shown" and "hidden".
+- Upper-/lowercase review of menu texts.
+
 V 0.91.31 (2014-06-03)
 - Increasing of the motor driver currents.
 - Switching from UI_MENU_ACTIONCOMMAND_FILTER to UI_MENU_ACTIONCOMMAND for all menu entries which used MENU_MODE_PRINTING.

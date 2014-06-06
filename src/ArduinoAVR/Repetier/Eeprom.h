@@ -108,6 +108,7 @@ have problems with other modules using the eeprom */
 #define EPR_DELTA_DIAGONAL_CORR_C 941
 
 #define EPR_RF1000_BEEPER_MODE	 1000
+#define	EPR_RF1000_LIGHTS_MODE	 1001
 
 #define EEPROM_EXTRUDER_OFFSET 200
 // bytes per extruder needed, leave some space for future development
