@@ -2297,6 +2297,22 @@ void loopRF1000( void )
 					Com::printF( PSTR( ";cpsE;" ), Printer::currentPositionStepsE );
 					break;
 				}
+				case 5:
+				{
+					Com::printF( PSTR( "nCPS X;" ), Printer::nonCompensatedPositionStepsX );
+					Com::printF( PSTR( ";nCPS Y;" ), Printer::nonCompensatedPositionStepsY );
+					Com::printF( PSTR( ";nCPS Z;" ), Printer::nonCompensatedPositionStepsZ );
+					Com::printF( PSTR( ";t Z;" ), Printer::targetCompensationZ );
+					Com::printF( PSTR( ";c Z;" ), Printer::currentCompensationZ );
+					Com::printF( PSTR( ";r C;" ), g_recalculatedCompensation );
+					Com::printF( PSTR( ";tPS Z;" ), Printer::targetPositionStepsZ );
+					Com::printF( PSTR( ";cPS Z;" ), Printer::currentPositionStepsZ );
+					Com::printF( PSTR( ";a ZsaE;" ), Printer::allowedZStepsAfterEndstop );
+					Com::printF( PSTR( ";c ZsaE;" ), Printer::currentZStepsAfterEndstop );
+					Com::printF( PSTR( ";DirZ;" ), g_nDirectionZ );
+					break;
+				}
+
 				default:
 				{
 					Com::printF( PSTR( "unsupported debug level: " ), g_debugLevel );
@@ -2305,18 +2321,6 @@ void loopRF1000( void )
 			}
 			Com::printFLN( PSTR( " " ) );
 
-/*			Com::printF( PSTR( "" ), Printer::nonCompensatedPositionStepsX );
-			Com::printF( PSTR( ";" ), Printer::nonCompensatedPositionStepsY );
-			Com::printF( PSTR( ";" ), Printer::nonCompensatedPositionStepsZ );
-			Com::printF( PSTR( ";t Z;" ), Printer::targetCompensationZ );
-			Com::printF( PSTR( ";c Z;" ), Printer::currentCompensationZ );
-			Com::printF( PSTR( ";r C;" ), g_recalculatedCompensation );
-			Com::printF( PSTR( ";tPS Z;" ), Printer::targetPositionStepsZ );
-			Com::printF( PSTR( ";cPS Z;" ), Printer::currentPositionStepsZ );
-			Com::printF( PSTR( ";a ZsaE;" ), Printer::allowedZStepsAfterEndstop );
-			Com::printF( PSTR( ";c ZsaE;" ), Printer::currentZStepsAfterEndstop );
-			Com::printFLN( PSTR( ";" ) );
-*/
 #endif // DEBUG_Z_COMPENSATION
 
 			// NOTE: there is no need to turn off the z compensation automatically
@@ -2944,7 +2948,6 @@ void processCommand( GCode* pCommand )
 						Com::printF( PSTR( "M3004: new manual compensation steps: " ), g_manualCompensationSteps );
 						Com::printFLN( PSTR( " [steps]" ) );
 					}
-
 					CalculateAllowedZStepsAfterEndStop();
 				}
 				else

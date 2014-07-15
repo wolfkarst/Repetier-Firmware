@@ -2525,22 +2525,22 @@ long PrintLine::bresenhamStep() // version for cartesian printer
             Printer::endXYZSteps();
         } // for loop
 
-		if( !(cur->dir & 128) )
+		if( !cur->isEMove() )
 		{
 			g_nDirectionE = 0;
 		}
 
-		if( !(cur->dir & 16) )
+		if( !cur->isXMove() )
 		{
 			g_nDirectionX = 0;
 		}
 
-		if( !(cur->dir & 32) )
+		if( !cur->isYMove() )
 		{
 			g_nDirectionY = 0;
 		}
 
-		if( !(cur->dir & 64) )
+		if( !cur->isZMove() )
 		{
 			g_nDirectionZ = 0;
 		}

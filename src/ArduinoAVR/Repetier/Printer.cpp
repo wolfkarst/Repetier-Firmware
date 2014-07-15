@@ -159,23 +159,23 @@ int debugWaitLoop = 0;
 #endif
 
 #if FEATURE_Z_COMPENSATION
-short Printer::nonCompensatedPositionStepsX;
-short Printer::nonCompensatedPositionStepsY;
-short Printer::nonCompensatedPositionStepsZ;
-short Printer::targetCompensationZ;
-short Printer::currentCompensationZ;
-char  Printer::doZCompensation;
+long Printer::nonCompensatedPositionStepsX;
+long Printer::nonCompensatedPositionStepsY;
+long Printer::nonCompensatedPositionStepsZ;
+long Printer::targetCompensationZ;
+long Printer::currentCompensationZ;
+char Printer::doZCompensation;
 #endif // FEATURE_Z_COMPENSATION
 
 #if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
-short Printer::targetPositionStepsX;
-short Printer::targetPositionStepsY;
-short Printer::targetPositionStepsZ;
-short Printer::targetPositionStepsE;
-short Printer::currentPositionStepsX;
-short Printer::currentPositionStepsY;
-short Printer::currentPositionStepsZ;
-short Printer::currentPositionStepsE;
+long Printer::targetPositionStepsX;
+long Printer::targetPositionStepsY;
+long Printer::targetPositionStepsZ;
+long Printer::targetPositionStepsE;
+long Printer::currentPositionStepsX;
+long Printer::currentPositionStepsY;
+long Printer::currentPositionStepsZ;
+long Printer::currentPositionStepsE;
 #endif // FEATURE_EXTENDED_BUTTONS
 
 #if STEPPER_ON_DELAY
@@ -1224,8 +1224,6 @@ void Printer::homeZAxis()
 #if FEATURE_EXTENDED_BUTTONS
         targetPositionStepsZ  = 0;
         currentPositionStepsZ = 0;
-
-        CalculateAllowedZStepsAfterEndStop();
 #endif // FEATURE_EXTENDED_BUTTONS
 
         CalculateAllowedZStepsAfterEndStop();

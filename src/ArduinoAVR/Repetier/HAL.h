@@ -491,34 +491,66 @@ public:
     }
     static inline void eprSetByte(unsigned int pos,uint8_t value)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         eeprom_write_byte((unsigned char *)(EEPROM_OFFSET+pos), value);
-    }
+	}
     static inline void eprSetInt16(unsigned int pos,int16_t value)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         eeprom_write_word((unsigned int*)(EEPROM_OFFSET+pos),value);
     }
     static inline void eprSetInt32(unsigned int pos,int32_t value)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         eeprom_write_dword((uint32_t*)(EEPROM_OFFSET+pos),value);
     }
     static inline void eprSetFloat(unsigned int pos,float value)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         eeprom_write_block(&value,(void*)(EEPROM_OFFSET+pos), 4);
     }
     static inline uint8_t eprGetByte(unsigned int pos)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         return eeprom_read_byte ((unsigned char *)(EEPROM_OFFSET+pos));
     }
     static inline int16_t eprGetInt16(unsigned int pos)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         return eeprom_read_word((uint16_t *)(EEPROM_OFFSET+pos));
     }
     static inline int32_t eprGetInt32(unsigned int pos)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         return eeprom_read_dword((uint32_t*)(EEPROM_OFFSET+pos));
     }
     static inline float eprGetFloat(unsigned int pos)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         float v;
         eeprom_read_block(&v,(void *)(EEPROM_OFFSET+pos),4); // newer gcc have eeprom_read_block but not arduino 22
         return v;

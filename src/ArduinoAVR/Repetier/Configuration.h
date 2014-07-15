@@ -1526,6 +1526,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".33"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".35"
 
 #endif

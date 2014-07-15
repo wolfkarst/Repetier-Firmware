@@ -167,23 +167,23 @@ public:
 #endif
 
 #if FEATURE_Z_COMPENSATION
-    static short nonCompensatedPositionStepsX;
-    static short nonCompensatedPositionStepsY;
-    static short nonCompensatedPositionStepsZ;
-    static short targetCompensationZ;
-    static short currentCompensationZ;
+    static long nonCompensatedPositionStepsX;
+    static long nonCompensatedPositionStepsY;
+    static long	nonCompensatedPositionStepsZ;
+    static long targetCompensationZ;
+    static long currentCompensationZ;
     static char	doZCompensation;
 #endif // FEATURE_Z_COMPENSATION
 
 #if FEATURE_EXTENDED_BUTTONS
-    static short targetPositionStepsX;
-    static short targetPositionStepsY;
-    static short targetPositionStepsZ;
-    static short targetPositionStepsE;
-    static short currentPositionStepsX;
-    static short currentPositionStepsY;
-    static short currentPositionStepsZ;
-    static short currentPositionStepsE;
+    static long targetPositionStepsX;
+    static long targetPositionStepsY;
+    static long targetPositionStepsZ;
+    static long targetPositionStepsE;
+    static long currentPositionStepsX;
+    static long currentPositionStepsY;
+    static long currentPositionStepsZ;
+    static long currentPositionStepsE;
 #endif // FEATURE_EXTENDED_BUTTONS
 
 #if STEPPER_ON_DELAY

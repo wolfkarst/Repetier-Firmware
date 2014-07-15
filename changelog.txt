@@ -1,3 +1,8 @@
+V 0.91.35 (2014-07-15)
+- Avoiding of a value overflow which could cause a printing error around a z-height of 51 mm.
+- Improvements for the EEPROM_MODE.
+- Review of menu texts.
+
 V 0.91.33 (2014-06-06)
 - Disabling of the "Debugging" menu.
   - SHOW_DEBUGGING_MENU can be used in order to toggle this menu between "shown" and "hidden".
