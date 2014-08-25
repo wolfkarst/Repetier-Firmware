@@ -1626,7 +1626,8 @@ void UIDisplay::refreshPage()
                 offset++;
                 continue;
             }
-            unsigned char entType = pgm_read_byte(&(ent->menuType));
+
+			unsigned char entType = pgm_read_byte(&(ent->menuType));
             unsigned int entAction = pgm_read_word(&(ent->action));
 /*            col=0;
             if(entType>=2 && entType<=4)
@@ -1706,6 +1707,7 @@ void UIDisplay::refreshPage()
             r++;
         }
     }
+
 #if SDSUPPORT
     if(mtype==1)
     {
@@ -2138,7 +2140,15 @@ void UIDisplay::adjustMenuPos()
     {
         if(((UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]])))->showEntry())
             break;
+
         menuPos[menuLevel]--;
+    }
+    while(1)
+    {
+        if(((UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]])))->showEntry())
+            break;
+
+        menuPos[menuLevel]++;
     }
     uint8_t skipped = 0;
     bool modified;
@@ -2219,13 +2229,22 @@ void UIDisplay::nextPreviousAction(int8_t next)
         }
         else if(menuPos[menuLevel]>0)
         {
+			uint8_t	temp = menuPos[menuLevel];
             while(menuPos[menuLevel]>0)
             {
                 menuPos[menuLevel]--;
-                testEnt = (UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]]));
+
+				testEnt = (UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]]));
                 if(testEnt->showEntry())
                     break;
             }
+
+			testEnt = (UIMenuEntry *)pgm_read_word(&(entries[menuPos[menuLevel]]));
+            if(!testEnt->showEntry())
+			{
+				// this new chosen menu item shall not be displayed - revert the so-far used menu item
+				menuPos[menuLevel] = temp;
+			}
         }
         adjustMenuPos();
 		return;
@@ -2238,7 +2257,12 @@ void UIDisplay::nextPreviousAction(int8_t next)
             if(menuPos[menuLevel]<nFilesOnCard) menuPos[menuLevel]++;
         }
         else if(menuPos[menuLevel]>0)
+		{
             menuPos[menuLevel]--;
+
+			Com::printF( PSTR( "SD listing: " ), menuPos[menuLevel] );
+			Com::printFLN( PSTR( " / " ), menuLevel );
+		}
         if(menuTop[menuLevel]>menuPos[menuLevel])
             menuTop[menuLevel]=menuPos[menuLevel];
         else if(menuTop[menuLevel]+UI_ROWS-1<menuPos[menuLevel])
@@ -2699,6 +2723,7 @@ void UIDisplay::executeAction(int action)
         case UI_ACTION_LIGHTS_ONOFF:
 			if( Printer::enableLights )	Printer::enableLights = 0;
             else						Printer::enableLights = 1;
+			WRITE(CASE_LIGHTS_PIN, Printer::enableLights);
             break;
 #endif
         case UI_ACTION_PREHEAT_PLA:
@@ -2761,6 +2786,19 @@ void UIDisplay::executeAction(int action)
         case UI_ACTION_DISABLE_STEPPER:
             Printer::kill(true);
             break;
+		case UI_ACTION_OUTPUT_FILAMENT:
+			if( Extruder::current->tempControl.targetTemperatureC < UI_SET_MIN_EXTRUDER_TEMP )
+			{
+				// we do not allow to move the extruder in case it is not heated up enough
+				if( Printer::debugErrors() )
+				{
+					Com::printFLN( PSTR( "Output Filament: extruder output: aborted" ) );
+				}
+				break;
+			}
+
+			GCode::executeFString(Com::tOutputFilament);
+			break;
         case UI_ACTION_RESET_EXTRUDER:
             Printer::currentPositionSteps[E_AXIS] = 0;
             break;

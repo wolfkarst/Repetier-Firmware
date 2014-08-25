@@ -1,3 +1,19 @@
+V 0.91.37 (2014-08-25)
+- The case lights were not turned on/off when they were switched via the menu.
+  - Removing of ENABLE_OUT1 (this pin is used for the case lights).
+- Adding of support for the case fan.
+  - The case fan is enabled automatically when the extruder heater is on.
+  - Removing of ENABLE_HZ2 (this pin is used for the case fan now).
+  - CASE_FAN_ON_TEMPERATURE can be used in order to configure the temperature at which the case fan shall be turned on
+  - CASE_FAN_OFF_DELAY can be used in order to configure the delay after which the case fan shall be turned off.
+- Adding of M3120, which allows to turn the case fan on.
+- Adding of M3121, which allows to turn the case fan off.
+  - In case the S parameter is passed it is used in order to configure the new delay after which the case fan shall be turned off.
+- When the SD card is unmounted, the menu item selector is set correctly in front of the "Mount Card" menu item.
+- Adding of the "Output Filament" menu entry to the "Quick Settings" menu.
+  - This operation can be used in order to output the filament from the extruder.
+  - OUTPUT_FILAMENT_SCRIPT can be used in order to define the exact command sequence for the output of the filament.
+
 V 0.91.35 (2014-07-15)
 - Avoiding of a value overflow which could cause a printing error around a z-height of 51 mm.
 - Improvements for the EEPROM_MODE.

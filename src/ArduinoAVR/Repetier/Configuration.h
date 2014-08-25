@@ -150,13 +150,13 @@ If a motor turns in the wrong direction change INVERT_X_DIR or INVERT_Y_DIR.
 /** \brief Number of steps for a 1mm move in x direction.
 For xy gantry use 2*belt moved!
 Overridden if EEPROM activated. */
-#define XAXIS_STEPS_PER_MM 38.34
+#define XAXIS_STEPS_PER_MM 38.095
 /** \brief Number of steps for a 1mm move in y direction.
 For xy gantry use 2*belt moved!
 Overridden if EEPROM activated.*/
-#define YAXIS_STEPS_PER_MM 38.34
+#define YAXIS_STEPS_PER_MM 38.095
 /** \brief Number of steps for a 1mm move in z direction  Overridden if EEPROM activated.*/
-#define ZAXIS_STEPS_PER_MM 642
+#define ZAXIS_STEPS_PER_MM 640
 #endif
 
 // ##########################################################################################
@@ -395,7 +395,7 @@ need to increase this value. For one 6.8 Ohm heater 10 is ok. With two 6.8 Ohm h
 #define PID_CONTROL_RANGE 20
 
 /** Prevent extrusions longer then x mm for one command. This is especially important if you abort a print. Then the
-extrusion poistion might be at any value like 23344. If you then have an G1 E-2 it will roll back 23 meter! */
+extrusion position might be at any value like 23344. If you then have an G1 E-2 it will roll back 23 meter! */
 #define EXTRUDE_MAXLENGTH 100
 /** Skip wait, if the extruder temperature is already within x degrees. Only fixed numbers, 0 = off */
 #define SKIP_M109_IF_WITHIN 2
@@ -1131,16 +1131,17 @@ is always running and is not hung up for some unknown reason. */
 /* If you have a threaded rod, you want a higher multiplicator to see an effect. Limit value to 50 or you get easily overflows.*/
 #define BABYSTEP_MULTIPLICATOR 1
 
-/* Define a pin to turn light on/off */
-/*
-#if PROTOTYPE_PCB == 1
-  #define CASE_LIGHTS_PIN 27
-#else
-  #define CASE_LIGHTS_PIN -1
-#endif
-*/
-#define CASE_LIGHTS_PIN			25	// PINA.3, 75, OUT1
-#define CASE_LIGHTS_DEFAULT_ON	 0
+/* Define a pin to turn the case light on/off */
+#define CASE_LIGHTS_PIN				25	// PINA.3, 75, OUT1
+#define CASE_LIGHTS_DEFAULT_ON		 0
+
+/* Define a pin to turn the case fan on/off */
+#define	CASE_FAN_PIN				 9	// PINH.6, 18, HZ2
+#define	CASE_FAN_ON_TEMPERATURE		50	// °C
+#define	CASE_FAN_OFF_DELAY		 60000	// [ms]
+
+/* Enable the following define for applications where the case fan shall always be on */
+//#define	CASE_FAN_ALWAYS_ON
 
 /** Set to false to disable SD support: */
 #ifndef SDSUPPORT  // Some boards have sd support on board. These define the values already in pins.h
@@ -1461,13 +1462,6 @@ the Cura PC application may fall over the debug outputs of the firmware.
 #define DRV8711_REGISTER_06		0x60F0	// 0110 0000 1111 0000: OCPTH = 00, OCPDEG = 00, TDRIVEN = 11, TDRIVEP = 11, IDRIVEN = 00, IDRIVEP = 00
 #define DRV8711_REGISTER_07		0x7000	// 0111 0000 0000 0000: OTS = 0, AOCP = 0, BOCP = 0, UVLO = 0, APDF = 0, BPDF = 0, STD = 0, STDLAT = 0
 
-/** \brief Configuration of optional outputs
-*/
-#define ENABLE_OUT1				false	// true = OUT1 is used as output, false = OUT1 is used as input
-#define	SET_OUT1				false	// true = OUT1 is high, false = OUT1 is low
-#define ENABLE_HZ2				true	// true = HZ2 is used as output, false = HZ2 is used as input
-#define	SET_HZ2					true	// true = HZ2 is high, false = HZ2 is low
-
 #endif // MOTHERBOARD == 13
 
 /** \brief Configuration of the heat bed scan
@@ -1522,10 +1516,14 @@ the Cura PC application may fall over the debug outputs of the firmware.
 #define DEFAULT_PAUSE_STEPS_Z			(ZAXIS_STEPS_PER_MM *2)
 #define	DEFAULT_PAUSE_STEPS_EXTRUDER	(EXT0_STEPS_PER_MM *10)
 
+/** \brief Automatic filament change - ensure that G1 does not attempt to extrude more than EXTRUDE_MAXLENGTH
+*/
+#define	OUTPUT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E50 F100\nG92 E0\nG1 E-90 F250\n"
+
 /** \brief Printer name and firmware version
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".35"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".37"
 
 #endif

@@ -197,8 +197,13 @@ public:
 #endif // FEATURE_BEEPER
 
 #if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN >= 0
-	static char	enableLights;
+	static char				enableLights;
 #endif // CASE_LIGHTS_PIN >= 0
+
+#if defined(CASE_FAN_PIN) && CASE_FAN_PIN >= 0
+	static unsigned long	prepareFanOff;
+	static unsigned long	fanOffDelay;
+#endif // CASE_FAN_PIN >= 0
 
 	static short allowedZStepsAfterEndstop;
     static short currentZStepsAfterEndstop;

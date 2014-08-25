@@ -156,16 +156,6 @@ void initRF1000( void )
 	}
 #endif // FEATURE_Z_COMPENSATION
 
-#if defined ENABLE_OUT1 && ENABLE_OUT1
-	SET_OUTPUT( RF1000_OUT1_PIN );
-	WRITE( RF1000_OUT1_PIN, SET_OUT1 );
-#endif // ENABLE_OUT1
-
-#if defined ENABLE_HZ3 && ENABLE_HZ3
-	SET_OUTPUT( RF1000_HZ3_PIN );
-	WRITE( RF1000_HZ3_PIN, SET_HZ3 );
-#endif // ENABLE_HZ3
-
 	return;
 
 } // initRF1000
@@ -2082,6 +2072,16 @@ void loopRF1000( void )
 
 	uTime = HAL::timeInMilliseconds();
 
+	if( Printer::prepareFanOff )
+	{
+		if( (uTime - Printer::prepareFanOff) > Printer::fanOffDelay )
+		{
+			// it is time to turn the case fan off
+			Printer::prepareFanOff = 0;
+			WRITE( CASE_FAN_PIN, 0 );
+		}
+	}
+
 #if FEATURE_Z_COMPENSATION
 	if( g_nHeatBedScanStatus )
 	{
@@ -3833,6 +3833,40 @@ void processCommand( GCode* pCommand )
 				break;
 			}
 #endif // FEATURE_CONTROLLER == 4 || FEATURE_CONTROLLER == 33
+
+#if defined(CASE_FAN_PIN) && CASE_FAN_PIN >= 0
+			case 3120:	// M3120 - turn on the case fan
+			{
+				// enable the case fan
+				Printer::prepareFanOff = 0;
+				WRITE( CASE_FAN_PIN, 1 );
+				break;
+			}
+
+			case 3121:	// M3121 - turn off the case fan
+			{
+				// disable the case fan
+				if( pCommand->hasS() )
+				{
+					// we shall set a new case fan off delay
+					Printer::fanOffDelay =  pCommand->S;
+					Printer::fanOffDelay *= 1000;	// convert from [s] to [ms]
+				}
+
+				if( Printer::fanOffDelay )
+				{
+					// we are going to disable the case fan after the delay
+					Printer::prepareFanOff = HAL::timeInMilliseconds();
+				}
+				else
+				{
+					// we are going to disable the case fan now
+					Printer::prepareFanOff = 0;
+					WRITE(CASE_FAN_PIN, 0);
+				}
+				break;
+			}
+#endif // defined(CASE_FAN_PIN) && CASE_FAN_PIN >= 0
 
 			case 3200: // M3200 - reserved for test and debug
 			{

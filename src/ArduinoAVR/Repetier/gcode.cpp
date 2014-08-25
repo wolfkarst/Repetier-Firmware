@@ -290,6 +290,47 @@ void GCode::executeFString(FSTRINGPARAM(cmd))
     }
     while(c);
 }
+/** \brief Execute commands in stored string. Multiple commands are seperated by \n */
+void GCode::executeString(char *cmd)
+{
+    char buf[80];
+    uint8_t buflen;
+    char c;
+    GCode code;
+    do
+    {
+        // Wait for a free place in command buffer
+        // Scan next command from string
+        uint8_t comment=0;
+        buflen = 0;
+        do
+        {
+            c = *cmd;
+			cmd++;
+            if(c == 0 || c == '\n') break;
+            if(c == ';') comment = 1;
+            if(comment) continue;
+            buf[buflen++] = c;
+        }
+        while(buflen<79);
+        if(buflen==0)   // empty line ignore
+        {
+            continue;
+        }
+        buf[buflen]=0;
+        // Send command into command buffer
+        if(code.parseAscii((char *)buf,false) && (code.params & 518))   // Success
+        {
+#ifdef DEBUG_PRINT
+			debugWaitLoop = 7;
+#endif
+
+            Commands::executeGCode(&code);
+            Printer::defaultLoopActions();
+        }
+    }
+    while(c);
+}
 /** \brief Read from serial console or sdcard.
 
 This function is the main function to read the commands from serial console or from sdcard.

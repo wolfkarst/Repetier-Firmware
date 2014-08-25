@@ -410,6 +410,31 @@ void Extruder::setTemperatureForExtruder(float temperatureInCelsius,uint8_t extr
     if(temperatureInCelsius>=EXTRUDER_FAN_COOL_TEMP) extruder[extr].coolerPWM = extruder[extr].coolerSpeed;
     Com::printF(Com::tTargetExtr,extr,0);
     Com::printFLN(Com::tColon,temperatureInCelsius,0);
+
+#if CASE_FAN_PIN >= 0 && !defined CASE_FAN_ALWAYS_ON
+	if( temperatureInCelsius >= CASE_FAN_ON_TEMPERATURE )
+	{
+		// enable the case fan in case the extruder is turned on
+		Printer::prepareFanOff = 0;
+		WRITE(CASE_FAN_PIN, 1);
+	}
+	else
+	{
+		// disable the case fan in case the extruder is turned off
+		if( Printer::fanOffDelay )
+		{
+			// we are going to disable the case fan after the delay
+			Printer::prepareFanOff = HAL::timeInMilliseconds();
+		}
+		else
+		{
+			// we are going to disable the case fan now
+			Printer::prepareFanOff = 0;
+			WRITE(CASE_FAN_PIN, 0);
+		}
+	}
+#endif // CASE_FAN_PIN >= 0
+
 #if FEATURE_DITTO_PRINTING
     if(Extruder::dittoMode && extr == 0)
     {

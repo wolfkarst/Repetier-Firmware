@@ -831,14 +831,6 @@ void EEPROM::writeSettings()
 #endif
     }
 
-#if FEATURE_BEEPER
-	HAL::eprSetByte( EPR_RF1000_BEEPER_MODE, Printer::enableBeeper );
-#endif // FEATURE_BEEPER
-
-#if defined(CASE_LIGHTS_PIN) && CASE_LIGHTS_PIN >= 0
-	HAL::eprSetByte( EPR_RF1000_LIGHTS_MODE, Printer::enableLights );
-#endif // CASE_LIGHTS_PIN >= 0
-
 #else
     Com::printErrorF(Com::tNoEEPROMSupport);
 #endif

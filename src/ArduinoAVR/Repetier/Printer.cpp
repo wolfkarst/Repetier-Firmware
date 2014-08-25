@@ -192,6 +192,11 @@ char Printer::enableBeeper;
 char Printer::enableLights;
 #endif // CASE_LIGHTS_PIN >= 0
 
+#if defined(CASE_FAN_PIN) && CASE_FAN_PIN >= 0
+unsigned long Printer::prepareFanOff;
+unsigned long Printer::fanOffDelay;
+#endif // CASE_FAN_PIN >= 0
+
 short Printer::allowedZStepsAfterEndstop;
 short Printer::currentZStepsAfterEndstop;
 
@@ -868,6 +873,10 @@ void Printer::setup()
 	enableLights = CASE_LIGHTS_DEFAULT_ON;
 #endif // CASE_LIGHTS_PIN >= 0
 
+#if defined(CASE_FAN_PIN) && CASE_FAN_PIN >= 0
+	fanOffDelay = CASE_FAN_OFF_DELAY;
+#endif // CASE_FAN_PIN >= 0
+
 	currentZStepsAfterEndstop = 0;
     CalculateAllowedZStepsAfterEndStop();
 
@@ -889,6 +898,16 @@ void Printer::setup()
     SET_OUTPUT(CASE_LIGHTS_PIN);
 	WRITE(CASE_LIGHTS_PIN, enableLights);
 #endif // CASE_LIGHTS_PIN >= 0
+
+#if defined(CASE_FAN_PIN) && CASE_FAN_PIN >= 0
+    SET_OUTPUT(CASE_FAN_PIN);
+
+#if defined CASE_FAN_ALWAYS_ON
+	WRITE(CASE_FAN_PIN, 1);
+#else
+	WRITE(CASE_FAN_PIN, 0);
+#endif // CASE_FAN_ALWAYS_ON
+#endif // CASE_FAN_PIN >= 0
 
 	updateDerivedParameter();
     Commands::checkFreeMemory();

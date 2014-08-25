@@ -75,6 +75,9 @@
 
 - M3110 - lock the current status text
 
+- M3120 - turn on the case fan
+- M3121 - turn off the case fan
+
 - M3200 - reserved for test and debug
 */
 
