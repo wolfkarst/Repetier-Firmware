@@ -38,10 +38,10 @@ short			g_nMinPressureIdle;
 short			g_nFirstIdlePressure;
 short			g_nCurrentIdlePressure;
 char			g_nLastZDirection			= 0;
-short			g_noZCompensationSteps		= Z_COMPENSATION_NO_STEPS;
-short			g_maxZCompensationSteps		= Z_COMPENSATION_MAX_STEPS;
-short			g_diffZCompensationSteps	= Z_COMPENSATION_MAX_STEPS - Z_COMPENSATION_NO_STEPS;
-short			g_manualCompensationSteps	= 0;
+long			g_noZCompensationSteps		= Z_COMPENSATION_NO_STEPS;
+long			g_maxZCompensationSteps		= Z_COMPENSATION_MAX_STEPS;
+long			g_diffZCompensationSteps	= Z_COMPENSATION_MAX_STEPS - Z_COMPENSATION_NO_STEPS;
+long			g_manualCompensationSteps	= 0;
 short			g_offsetHeatBedCompensation = 0;
 char			g_nHeatBedScanStatus		= 0;
 unsigned char	g_uHeatBedMaxX				= 0;
@@ -53,23 +53,23 @@ long			g_maxY						= 0;
 long			g_recalculatedCompensation	= 0;
 char			g_debugLevel				= 0;
 //short			g_debugCounter[10]			= { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-short			g_nHeatBedScanZ				= 0;
-short			g_nLastHeatBedScanZ			= 0;
+long			g_nHeatBedScanZ				= 0;
+long			g_nLastHeatBedScanZ			= 0;
 unsigned long	g_uStopTime					= 0;
 
 // configurable scan parameters - the proper default values are set by restoreDefaultScanParameters()
-unsigned short	g_nScanXStartSteps			= 0;
-unsigned short	g_nScanXStepSizeSteps		= 0;
-unsigned short	g_nScanXEndSteps			= 0;
-unsigned short	g_nScanXMaxPositionSteps	= 0;
-unsigned short	g_nScanYStartSteps			= 0;
-unsigned short	g_nScanYStepSizeSteps		= 0;
-unsigned short	g_nScanYEndSteps			= 0;
-unsigned short	g_nScanYMaxPositionSteps	= 0;
-char			g_nScanHeatBedUpFastSteps	= 0;
-char			g_nScanHeatBedUpSlowSteps	= 0;
+unsigned long	g_nScanXStartSteps			= 0;
+unsigned long	g_nScanXStepSizeSteps		= 0;
+unsigned long	g_nScanXEndSteps			= 0;
+unsigned long	g_nScanXMaxPositionSteps	= 0;
+unsigned long	g_nScanYStartSteps			= 0;
+unsigned long	g_nScanYStepSizeSteps		= 0;
+unsigned long	g_nScanYEndSteps			= 0;
+unsigned long	g_nScanYMaxPositionSteps	= 0;
+short			g_nScanHeatBedUpFastSteps	= 0;
+short			g_nScanHeatBedUpSlowSteps	= 0;
 short			g_nScanHeatBedDownFastSteps	= 0;
-char			g_nScanHeatBedDownSlowSteps	= 0;
+short			g_nScanHeatBedDownSlowSteps	= 0;
 unsigned short	g_nScanFastStepDelay		= 0;
 unsigned short	g_nScanSlowStepDelay		= 0;
 unsigned short	g_nScanIdleDelay			= 0;
@@ -81,32 +81,28 @@ unsigned short	g_nScanPressureReadDelay	= 0;
 short			g_nScanPressureTolerance	= 0;
 
 // other configurable parameters
-unsigned short	g_nManualZSteps				= DEFAULT_MANUAL_Z_STEPS;
-unsigned short	g_nManualExtruderSteps		= DEFAULT_MANUAL_EXTRUDER_STEPS;
+unsigned long	g_nManualZSteps				= DEFAULT_MANUAL_Z_STEPS;
+unsigned long	g_nManualExtruderSteps		= DEFAULT_MANUAL_EXTRUDER_STEPS;
 
 #if FEATURE_PAUSE_PRINTING
-short			g_nPauseStepsX				= DEFAULT_PAUSE_STEPS_X;
-short			g_nPauseStepsY				= DEFAULT_PAUSE_STEPS_Y;
-short			g_nPauseStepsZ				= DEFAULT_PAUSE_STEPS_Z;
-short			g_nPauseStepsExtruder		= DEFAULT_PAUSE_STEPS_EXTRUDER;
-short			g_nContinueStepsX			= 0;
-short			g_nContinueStepsY			= 0;
-short			g_nContinueStepsZ			= 0;
-short			g_nContinueStepsExtruder	= 0;
+long			g_nPauseStepsX				= DEFAULT_PAUSE_STEPS_X;
+long			g_nPauseStepsY				= DEFAULT_PAUSE_STEPS_Y;
+long			g_nPauseStepsZ				= DEFAULT_PAUSE_STEPS_Z;
+long			g_nPauseStepsExtruder		= DEFAULT_PAUSE_STEPS_EXTRUDER;
+long			g_nContinueStepsX			= 0;
+long			g_nContinueStepsY			= 0;
+long			g_nContinueStepsZ			= 0;
+long			g_nContinueStepsExtruder	= 0;
 char			g_pausePrint				= 0;
 char			g_printingPaused			= 0;
 unsigned long	g_uPauseTime				= 0;
 char			g_pauseBeepDone				= 0;
 #endif // FEATURE_PAUSE_PRINTING
 
-unsigned short	g_nNextZSteps				= DEFAULT_MANUAL_Z_STEPS;
-unsigned long	g_uLastHeatBedUpTime		= 0;
-unsigned long	g_uLastHeadBedDownTime		= 0;
-
 #if FEATURE_PARK
-short			g_nParkPositionX			= PARK_POSITION_X;
-short			g_nParkPositionY			= PARK_POSITION_Y;
-short			g_nParkPositionZ			= PARK_POSITION_Z;
+long			g_nParkPositionX			= PARK_POSITION_X;
+long			g_nParkPositionY			= PARK_POSITION_Y;
+long			g_nParkPositionZ			= PARK_POSITION_Z;
 #endif // FEATURE_PARK
 
 #if FEATURE_OUTPUT_PRINTED_OBJECT
@@ -356,6 +352,8 @@ void scanHeatBed( void )
 			{
 				// move to the first position
 				Printer::enableZStepper();
+				Printer::unsetAllSteppersDisabled();
+
 				PrintLine::moveRelativeDistanceInSteps( g_nScanXStartSteps, 0, 0, 0, MAX_FEEDRATE_X, true, true );
 				PrintLine::moveRelativeDistanceInSteps( 0, g_nScanYStartSteps, 0, 0, MAX_FEEDRATE_Y, true, true );
 
@@ -445,7 +443,7 @@ void scanHeatBed( void )
 					g_HeatBedPressure[nIndexX][0]	  = nX;
 #endif // REMEMBER_PRESSURE
 
-					g_HeatBedCompensation[nIndexX][0] = nX;
+					g_HeatBedCompensation[nIndexX][0] = (short)((float)nX / XAXIS_STEPS_PER_MM);	// convert to mm
 
 					g_nHeatBedScanStatus = 49;
 					g_lastScanTime		 = HAL::timeInMilliseconds();
@@ -564,7 +562,7 @@ void scanHeatBed( void )
 
 				// remember the z-position and the exact y-position of this row/column
 				g_HeatBedCompensation[nIndexX][nIndexY] = (short)nZ;
-				g_HeatBedCompensation[0][nIndexY]		= nY;
+				g_HeatBedCompensation[0][nIndexY]		= (short)((float)nY / YAXIS_STEPS_PER_MM);	// convert to mm
 
 #if REMEMBER_PRESSURE
 				// remember the pressure and the exact y-position of this row/column
@@ -1221,98 +1219,6 @@ short moveZDownFast( void )
 } // moveZDownFast
 
 
-int moveX( int nSteps )
-{
-	int		i;
-	int		nMaxLoops;
-	
-
-	// Warning: this function does not check any end stops
-
-	// choose the direction
-	if( nSteps >= 0 )
-	{
-		HAL::forbidInterrupts();
-		nMaxLoops = nSteps;
-
-		WRITE( X_DIR_PIN, !INVERT_X_DIR );
-		HAL::delayMicroseconds( XYZ_DIRECTION_CHANGE_DELAY );
-	}
-	else
-	{
-		HAL::forbidInterrupts();
-		nMaxLoops = -nSteps;
-
-		WRITE( X_DIR_PIN, INVERT_X_DIR );
-		HAL::delayMicroseconds( XYZ_DIRECTION_CHANGE_DELAY );
-	}
-	
-	// perform the steps
-	for( i=0; i<nMaxLoops; i++ )
-	{
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
-        HAL::delayMicroseconds( XYZ_STEPPER_HIGH_DELAY );
-		WRITE( X_STEP_PIN, HIGH );
-
-        HAL::delayMicroseconds( XYZ_STEPPER_LOW_DELAY );
-		WRITE( X_STEP_PIN, LOW );
-	}
-
-	HAL::allowInterrupts();
-	return nSteps;
-
-} // moveX
-
-
-int moveY( int nSteps )
-{
-	int		i;
-	int		nMaxLoops;
-	
-
-	// Warning: this function does not check any end stops
-
-	// choose the direction
-	if( nSteps >= 0 )
-	{
-		HAL::forbidInterrupts();
-		nMaxLoops = nSteps;
-
-		WRITE( Y_DIR_PIN, !INVERT_Y_DIR );
-		HAL::delayMicroseconds( XYZ_DIRECTION_CHANGE_DELAY );
-	}
-	else
-	{
-		HAL::forbidInterrupts();
-		nMaxLoops = -nSteps;
-
-		WRITE( Y_DIR_PIN, INVERT_Y_DIR );
-		HAL::delayMicroseconds( XYZ_DIRECTION_CHANGE_DELAY );
-	}
-	
-	// perform the steps
-	for( i=0; i<nMaxLoops; i++ )
-	{
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
-        HAL::delayMicroseconds( XYZ_STEPPER_HIGH_DELAY );
-		WRITE( Y_STEP_PIN, HIGH );
-
-        HAL::delayMicroseconds( XYZ_STEPPER_LOW_DELAY );
-		WRITE( Y_STEP_PIN, LOW );
-	}
-
-	HAL::allowInterrupts();
-	return nSteps;
-
-} // moveY
-
-
 int moveZ( int nSteps )
 {
 	int		i;
@@ -1611,14 +1517,14 @@ char prepareCompensationMatrix( void )
 		g_uHeatBedMaxX --;
 	}
 
-	if( g_HeatBedCompensation[g_uHeatBedMaxX-1][0] < short(X_MAX_LENGTH * XAXIS_STEPS_PER_MM) )
+	if( g_HeatBedCompensation[g_uHeatBedMaxX-1][0] < (short)X_MAX_LENGTH )
 	{
 		// we have to fill x[g_uHeatBedMaxX] with the values of x[g_uHeatBedMaxX-1]
 		if( Printer::debugInfo() )
 		{
 			Com::printFLN( PSTR( "prepareCompensationMatrix(): x[g_uHeatBedMaxX-1] < X_MAX_LENGTH" ) );
 		}
-		g_HeatBedCompensation[g_uHeatBedMaxX][0] = g_HeatBedCompensation[g_uHeatBedMaxX-1][0] + g_nScanXStepSizeSteps;
+		g_HeatBedCompensation[g_uHeatBedMaxX][0] = short(X_MAX_LENGTH);
 		for( y=1; y<g_uHeatBedMaxY; y++ )
 		{
 			g_HeatBedCompensation[g_uHeatBedMaxX][y] = g_HeatBedCompensation[g_uHeatBedMaxX-1][y];
@@ -1668,14 +1574,14 @@ char prepareCompensationMatrix( void )
 		g_uHeatBedMaxY --;
 	}
 
-	if( g_HeatBedCompensation[0][g_uHeatBedMaxY-1] < short(Y_MAX_LENGTH * YAXIS_STEPS_PER_MM) )
+	if( g_HeatBedCompensation[0][g_uHeatBedMaxY-1] < short(Y_MAX_LENGTH) )
 	{
 		// we have to fill y[g_uHeatBedMaxY] with the values of y[g_uHeatBedMaxY-1]
 		if( Printer::debugInfo() )
 		{
 			Com::printFLN( PSTR( "prepareCompensationMatrix(): y[g_uHeatBedMaxY-1] < Y_MAX_LENGTH" ) );
 		}
-		g_HeatBedCompensation[0][g_uHeatBedMaxY] = g_HeatBedCompensation[0][g_uHeatBedMaxY-1] + g_nScanYStepSizeSteps;
+		g_HeatBedCompensation[0][g_uHeatBedMaxY] = short(Y_MAX_LENGTH);
 		for( x=1; x<g_uHeatBedMaxX; x++ )
 		{
 			g_HeatBedCompensation[x][g_uHeatBedMaxY] = g_HeatBedCompensation[x][g_uHeatBedMaxY-1];
@@ -1752,6 +1658,10 @@ char saveCompensationMatrix( void )
 		HAL::delayMilliseconds( EEPROM_DELAY );
 		writeWord24C256( 0x50, EEPROM_OFFSET_DIMENSION_Y, g_uHeatBedMaxY );
 
+		// write the current micro steps
+		HAL::delayMilliseconds( EEPROM_DELAY );
+		writeWord24C256( 0x50, EEPROM_OFFSET_MICRO_STEPS, RF1000_MICRO_STEPS );
+
 		uOffset = EEPROM_OFFSET_Z_START;
 		for( x=0; x<g_uHeatBedMaxX; x++ )
 		{
@@ -1789,6 +1699,10 @@ char saveCompensationMatrix( void )
 		HAL::delayMilliseconds( EEPROM_DELAY );
 		writeWord24C256( 0x50, EEPROM_OFFSET_DIMENSION_Y, 0 );
 
+		// write the current micro steps
+		HAL::delayMilliseconds( EEPROM_DELAY );
+		writeWord24C256( 0x50, EEPROM_OFFSET_MICRO_STEPS, 0 );
+
 		uOffset = EEPROM_OFFSET_Z_START;
 		uTemp	= 0;
 		for( x=0; x<HEAT_BED_COMPENSATION_X; x++ )
@@ -1813,7 +1727,7 @@ char saveCompensationMatrix( void )
 	}
 
 	g_offsetHeatBedCompensation = uMax;
-	CalculateAllowedZStepsAfterEndStop();
+	calculateAllowedZStepsAfterEndStop();
 	return 0;
 
 } // saveCompensationMatrix
@@ -1824,11 +1738,13 @@ char restoreCompensationMatrix( void )
 	unsigned char	uVersion;
 	unsigned short	uDimensionX;
 	unsigned short	uDimensionY;
+	unsigned short	uMicroSteps;
 	unsigned int	uOffset;
-	short			uTemp;
+	short			nTemp;
 	short			uMax = -32000;
 	short			x;
 	short			y;
+	float			fMicroStepCorrection;
 
 
 	// check the stored version
@@ -1879,6 +1795,26 @@ char restoreCompensationMatrix( void )
 	g_uHeatBedMaxX = (unsigned char)uDimensionX;
 	g_uHeatBedMaxY = (unsigned char)uDimensionY;
 
+	// check the stored microsteps
+	HAL::delayMilliseconds( EEPROM_DELAY );
+	uMicroSteps = readWord24C256( 0x50, EEPROM_OFFSET_MICRO_STEPS );
+
+	if( uMicroSteps == RF1000_MICRO_STEPS )
+	{
+		// the current compensation matrix has been determined with the current micro step setting, there is nothing to recalculate
+		fMicroStepCorrection = 1.0;
+	}
+	else if( uMicroSteps > RF1000_MICRO_STEPS )
+	{
+		// the current compensation matrix has been determined with a higher than the current micro step setting, we must divide all z-correction values
+		fMicroStepCorrection = (float)RF1000_MICRO_STEPS / (float)uMicroSteps;
+	}
+	else
+	{
+		// the current compensation matrix has been determined with a smaller than the current micro step setting, we must multiply all z-correction values
+		fMicroStepCorrection = (float)RF1000_MICRO_STEPS / (float)uMicroSteps;
+	}
+
 	// read out the actual compensation values
 	uOffset = EEPROM_OFFSET_Z_START;
 	for( x=0; x<g_uHeatBedMaxX; x++ )
@@ -1890,20 +1826,30 @@ char restoreCompensationMatrix( void )
 #endif // FEATURE_WATCHDOG
 
 			HAL::delayMilliseconds( EEPROM_DELAY );
-			uTemp = readWord24C256( 0x50, uOffset );
-			g_HeatBedCompensation[x][y] = uTemp;
+			nTemp = readWord24C256( 0x50, uOffset );
+
+			if( x == 0 || y == 0 )
+			{
+				// we must not modify our header row/column
+				g_HeatBedCompensation[x][y] = nTemp;
+			}
+			else
+			{
+				// we may have to update all z-compensation values
+				g_HeatBedCompensation[x][y] = (short)((float)nTemp * fMicroStepCorrection);
+			}
 			uOffset += 2;
 
 			if( x>0 && y>0 )
 			{
 				// the first column and row is used for version and position information
-				if( uTemp > uMax )	uMax = uTemp;
+				if( nTemp > uMax )	uMax = nTemp;
 			}
 		}
 	}
 
 	g_offsetHeatBedCompensation = uMax;
-	CalculateAllowedZStepsAfterEndStop();
+	calculateAllowedZStepsAfterEndStop();
 	return 0;
 
 } // restoreCompensationMatrix
@@ -2242,6 +2188,15 @@ void loopRF1000( void )
 				Printer::disableYStepper();
 				Printer::disableZStepper();
 				Extruder::disableCurrentExtruderMotor();
+
+#if FEATURE_EXTENDED_BUTTONS
+				HAL::forbidInterrupts();
+				Printer::targetPositionStepsX = Printer::currentPositionStepsX = 0;
+				Printer::targetPositionStepsY = Printer::currentPositionStepsY = 0;
+				Printer::targetPositionStepsZ = Printer::currentPositionStepsZ = 0;
+				Printer::targetPositionStepsE = Printer::currentPositionStepsE = 0;
+				HAL::allowInterrupts();
+#endif // FEATURE_EXTENDED_BUTTONS
 			}
 		}
 	}
@@ -2561,7 +2516,7 @@ void pausePrint( void )
 			Temp += Printer::currentCompensationZ;
 #endif // FEATURE_Z_COMPENSATION
 
-			if( Temp > (Z_MAX_LENGTH * ZAXIS_STEPS_PER_MM - ZAXIS_STEPS_PER_MM) )
+			if( Temp > PAUSE_Z_MAX )
 			{
 				// do not allow to drive the heat bed into the bottom
 				if( Printer::debugErrors() )
@@ -2574,7 +2529,7 @@ void pausePrint( void )
 				Printer::targetPositionStepsZ += g_nPauseStepsZ;
 				g_nContinueStepsZ			  =  -g_nPauseStepsZ;
 
-				CalculateAllowedZStepsAfterEndStop();
+				calculateAllowedZStepsAfterEndStop();
 			}
 		}
 
@@ -2734,7 +2689,7 @@ void continuePrint( void )
 			if( g_nContinueStepsZ )			Printer::targetPositionStepsZ += g_nContinueStepsZ;
 			if( g_nContinueStepsExtruder )	Printer::targetPositionStepsE -= g_nContinueStepsExtruder;
 
-			CalculateAllowedZStepsAfterEndStop();
+			calculateAllowedZStepsAfterEndStop();
 
 			// wait until the continue position has been reached
 			if( Printer::debugInfo() )
@@ -2948,7 +2903,7 @@ void processCommand( GCode* pCommand )
 						Com::printF( PSTR( "M3004: new manual compensation steps: " ), g_manualCompensationSteps );
 						Com::printFLN( PSTR( " [steps]" ) );
 					}
-					CalculateAllowedZStepsAfterEndStop();
+					calculateAllowedZStepsAfterEndStop();
 				}
 				else
 				{
@@ -3013,13 +2968,14 @@ void processCommand( GCode* pCommand )
 					if( nTemp < 5 )						nTemp = 5;
 					if( nTemp > (X_MAX_LENGTH -5) )		nTemp = X_MAX_LENGTH -5;
 
-					g_nScanXStartSteps = nTemp * XAXIS_STEPS_PER_MM;
+					g_nScanXStartSteps = (long)((float)nTemp * XAXIS_STEPS_PER_MM);
 					if( Printer::debugInfo() )
 					{
 						Com::printF( PSTR( "M3020: new x start position: " ), nTemp );
 						Com::printF( PSTR( " [mm], " ), (int)g_nScanXStartSteps );
 						Com::printFLN( PSTR( " [steps]" ) );
-					}				}
+					}				
+				}
 				else
 				{
 					if( Printer::debugErrors() )
@@ -3038,7 +2994,7 @@ void processCommand( GCode* pCommand )
 					if( nTemp < 5 )						nTemp = 5;
 					if( nTemp > (Y_MAX_LENGTH -5 ) )	nTemp = Y_MAX_LENGTH -5;
 
-					g_nScanYStartSteps = nTemp * YAXIS_STEPS_PER_MM;
+					g_nScanYStartSteps = (long)((float)nTemp * YAXIS_STEPS_PER_MM);
 					if( Printer::debugInfo() )
 					{
 						Com::printF( PSTR( "M3021: new y start position: " ), nTemp );
@@ -3064,7 +3020,7 @@ void processCommand( GCode* pCommand )
 					if( nTemp < SCAN_X_STEP_SIZE_MM )	nTemp = SCAN_X_STEP_SIZE_MM;
 					if( nTemp > 100 )					nTemp = 100;
 
-					g_nScanXStepSizeSteps = nTemp * XAXIS_STEPS_PER_MM;
+					g_nScanXStepSizeSteps = (long)((float)nTemp * XAXIS_STEPS_PER_MM);
 					if( Printer::debugInfo() )
 					{
 						Com::printF( PSTR( "M3022: new x step size: " ), (int)nTemp );
@@ -3090,7 +3046,7 @@ void processCommand( GCode* pCommand )
 					if( nTemp < SCAN_Y_STEP_SIZE_MM )	nTemp = SCAN_Y_STEP_SIZE_MM;
 					if( nTemp > 100 )					nTemp = 100;
 
-					g_nScanYStepSizeSteps = nTemp * YAXIS_STEPS_PER_MM;
+					g_nScanYStepSizeSteps = (long)((float)nTemp * YAXIS_STEPS_PER_MM);
 					if( Printer::debugInfo() )
 					{
 						Com::printF( PSTR( "M3023: new y step size: " ), (int)nTemp );
@@ -3116,7 +3072,7 @@ void processCommand( GCode* pCommand )
 					if( nTemp < 5 )						nTemp = 5;
 					if( nTemp > (X_MAX_LENGTH -5) )		nTemp = X_MAX_LENGTH -5;
 
-					g_nScanXEndSteps = nTemp * XAXIS_STEPS_PER_MM;
+					g_nScanXEndSteps = (long)((float)nTemp * XAXIS_STEPS_PER_MM);
 					if( Printer::debugInfo() )
 					{
 						Com::printF( PSTR( "M3024: new x end position: " ), nTemp );
@@ -3149,7 +3105,7 @@ void processCommand( GCode* pCommand )
 					if( nTemp < 5 )						nTemp = 5;
 					if( nTemp > (Y_MAX_LENGTH -5 ) )	nTemp = Y_MAX_LENGTH -5;
 
-					g_nScanYEndSteps = nTemp * YAXIS_STEPS_PER_MM;
+					g_nScanYEndSteps = (long)((float)nTemp * YAXIS_STEPS_PER_MM);
 					if( Printer::debugInfo() )
 					{
 						Com::printF( PSTR( "M3025: new y end position: " ), nTemp );
@@ -3840,6 +3796,8 @@ void processCommand( GCode* pCommand )
 				// enable the case fan
 				Printer::prepareFanOff = 0;
 				WRITE( CASE_FAN_PIN, 1 );
+
+				Com::printFLN( PSTR( "M3120: fan on" ) );
 				break;
 			}
 
@@ -3857,12 +3815,17 @@ void processCommand( GCode* pCommand )
 				{
 					// we are going to disable the case fan after the delay
 					Printer::prepareFanOff = HAL::timeInMilliseconds();
+
+					Com::printF( PSTR( "M3121: fan off in " ), pCommand->S );
+					Com::printFLN( PSTR( " [s]" ) );
 				}
 				else
 				{
 					// we are going to disable the case fan now
 					Printer::prepareFanOff = 0;
 					WRITE(CASE_FAN_PIN, 0);
+
+					Com::printFLN( PSTR( "M3121: fan off" ) );
 				}
 				break;
 			}
@@ -3965,145 +3928,90 @@ extern void processButton( int nAction )
 #if FEATURE_EXTENDED_BUTTONS
 		case UI_ACTION_RF1000_HEAT_BED_UP:
 		{
-#if FEATURE_ENABLE_MANUAL_Z_SAFETY
-			if( (Printer::nonCompensatedPositionStepsZ + Printer::currentCompensationZ + Printer::currentPositionStepsZ - g_nManualZSteps) < ZAXIS_STEPS_PER_MM )
+			if( PrintLine::linesCount )
 			{
-				// do not allow to drive the heat bed into the extruder
-				if( Printer::debugErrors() )
+				// we are printing at the moment, the hardware buttons allow to configure an additional, manual offset
+#if FEATURE_ENABLE_MANUAL_Z_SAFETY
+				Temp = Printer::targetPositionStepsZ - g_nManualZSteps;
+
+#if FEATURE_Z_COMPENSATION
+				Temp += Printer::nonCompensatedPositionStepsZ;
+				Temp += Printer::currentCompensationZ;
+#endif // FEATURE_Z_COMPENSATION
+
+				if( Temp < -MANUAL_Z_OVERRIDE_MAX )
 				{
-					Com::printFLN( PSTR( "processButton(): heat bed up: moving aborted" ) );
+					// do not allow to drive the heat bed into the extruder
+					if( Printer::debugErrors() )
+					{
+						Com::printF( PSTR( "processButton(): heat bed up: moving aborted (targetPositionStepsZ = " ), Printer::targetPositionStepsZ );
+						Com::printF( PSTR( ", g_nManualZSteps = " ), g_nManualZSteps );
+
+#if FEATURE_Z_COMPENSATION
+						Com::printF( PSTR( ", nonCompensatedPositionStepsZ = " ), Printer::nonCompensatedPositionStepsZ );
+						Com::printF( PSTR( ", currentCompensationZ = " ), Printer::currentCompensationZ );
+#endif //FEATURE_Z_COMPENSATION
+
+						Com::printFLN( PSTR( "" ) );
+					}
+				}
+				else
+#endif // FEATURE_ENABLE_MANUAL_Z_SAFETY
+				{
+					Printer::enableZStepper();
+					Printer::unsetAllSteppersDisabled();
+
+					Printer::targetPositionStepsZ -= g_nManualZSteps;
+					if( Printer::targetPositionStepsZ < EXTENDED_BUTTONS_Z_MIN )
+					{
+						Printer::targetPositionStepsZ = EXTENDED_BUTTONS_Z_MIN;
+					}
+
+					if( Printer::debugInfo() )
+					{
+						Com::printF( PSTR( "processButton(): current manual Z steps: " ), Printer::targetPositionStepsZ );
+						Com::printFLN( PSTR( " [steps]" ) );
+					}
+
+					// in case the user moves the z-axis manually, we also must allow the endstop violation for the rest of the firmware
+					calculateAllowedZStepsAfterEndStop();
 				}
 			}
 			else
-#endif // FEATURE_ENABLE_MANUAL_Z_SAFETY
 			{
-				// in case the user moves the z-axis manually, we also must allow the endstop violation for the rest of the firmware
-				if( g_uLastHeadBedDownTime )
-				{
-					g_uLastHeadBedDownTime = 0;
-					g_nNextZSteps = g_nManualZSteps;
-				}
-
-				if( g_uLastHeatBedUpTime )
-				{
-					if( (HAL::timeInMilliseconds() - g_uLastHeatBedUpTime) < 500 )
-					{
-						// the user keeps the button pressed - we shall move faster and faster
-						g_nNextZSteps *= 2;
-						if( g_nNextZSteps > MAXIMAL_MANUAL_Z_STEPS )	g_nNextZSteps = MAXIMAL_MANUAL_Z_STEPS;
-					}
-					else
-					{
-						// this is the first movement after some time
-						g_nNextZSteps = g_nManualZSteps;
-					}
-				}
-				g_uLastHeatBedUpTime = HAL::timeInMilliseconds();
-
-				if( (long(Printer::targetPositionStepsZ) - long(g_nNextZSteps)) < -32767 )
-				{
-					if( Printer::targetPositionStepsZ == -32767 )
-					{
-						// we can not allow to move up forever
-						if( Printer::debugInfo() )
-						{
-							Com::printFLN( PSTR( "processButton(): heat bed up: aborted (the topmost manual position has been reached)" ) );
-						}
-						break;
-					}
-
-					// move the last path until the topmost manual position
-					g_nNextZSteps = 32767 + Printer::targetPositionStepsZ;
-				}
-
-				if( Printer::debugInfo() )
-				{
-					Com::printF( PSTR( "processButton(): heat bed up: " ), (int)g_nNextZSteps );
-					Com::printFLN( PSTR( " [steps]" ) );
-				}
-
-				Printer::enableZStepper();
-				Printer::targetPositionStepsZ -= g_nNextZSteps;
-
-				if( Printer::debugInfo() )
-				{
-					Com::printF( PSTR( "processButton(): current manual Z steps: " ), (int)Printer::targetPositionStepsZ );
-					Com::printFLN( PSTR( " [steps]" ) );
-				}
-
-				CalculateAllowedZStepsAfterEndStop();
+				// we are not printing at the moment, the hardware buttons behave like the standard position menu
+				nextPreviousZAction( -1 );
 			}
 			break;
 		}
 		case UI_ACTION_RF1000_HEAT_BED_DOWN:
 		{
-#if FEATURE_ENABLE_MANUAL_Z_SAFETY
-			if( (Printer::nonCompensatedPositionStepsZ + Printer::currentCompensationZ + Printer::targetPositionStepsZ + g_nManualZSteps) > (Z_MAX_LENGTH * ZAXIS_STEPS_PER_MM - ZAXIS_STEPS_PER_MM) )
+			if( PrintLine::linesCount )
 			{
-				// do not allow to drive the heat bed into the bottom
-				if( Printer::debugErrors() )
+				// we are printing at the moment, the hardware buttons allow to configure an additional, manual offset
+				Printer::enableZStepper();
+				Printer::unsetAllSteppersDisabled();
+
+				Printer::targetPositionStepsZ += g_nManualZSteps;
+
+				if( Printer::targetPositionStepsZ > EXTENDED_BUTTONS_Z_MAX )
 				{
-					Com::printFLN( PSTR( "processButton(): heat bed down: moving aborted" ) );
+					Printer::targetPositionStepsZ = EXTENDED_BUTTONS_Z_MAX;
 				}
+
+				if( Printer::debugInfo() )
+				{
+					Com::printF( PSTR( "processButton(): current manual Z steps: " ), Printer::targetPositionStepsZ );
+					Com::printFLN( PSTR( " [steps]" ) );
+				}
+
+				// in case the user moves the z-axis manually, we also must allow the endstop violation for the rest of the firmware
+				calculateAllowedZStepsAfterEndStop();
 			}
 			else
-#endif // FEATURE_ENABLE_MANUAL_Z_SAFETY
 			{
-				// in case the user moves the z-axis manually, we also must allow the endstop violation for the rest of the firmware
-				if( g_uLastHeatBedUpTime )
-				{
-					g_uLastHeatBedUpTime = 0;
-					g_nNextZSteps = g_nManualZSteps;
-				}
-
-				if( g_uLastHeadBedDownTime )
-				{
-					if( (HAL::timeInMilliseconds() - g_uLastHeadBedDownTime) < 500 )
-					{
-						// the user keeps the button pressed - we shall move faster and faster
-						g_nNextZSteps *= 2;
-						if( g_nNextZSteps > MAXIMAL_MANUAL_Z_STEPS )	g_nNextZSteps = MAXIMAL_MANUAL_Z_STEPS;
-					}
-					else
-					{
-						// this is the first movement after some time
-						g_nNextZSteps = g_nManualZSteps;
-					}
-				}
-				g_uLastHeadBedDownTime = HAL::timeInMilliseconds();
-
-				if( (long(Printer::targetPositionStepsZ) + long(g_nNextZSteps)) > 32767 )
-				{
-					if( Printer::targetPositionStepsZ == 32767 )
-					{
-						// we can not allow to move down forever
-						if( Printer::debugInfo() )
-						{
-							Com::printFLN( PSTR( "processButton(): heat bed down: moving aborted (the bottommost manual position has been reached)" ) );
-						}
-						break;
-					}
-
-					// move the last path until the bottommost manual position
-					g_nNextZSteps = 32767 - Printer::targetPositionStepsZ;
-				}
-
-				if( Printer::debugInfo() )
-				{
-					Com::printF( PSTR( "processButton(): heat bed down: " ), (int)g_nNextZSteps );
-					Com::printFLN( PSTR( " [steps]" ) );
-				}
-
-				Printer::enableZStepper();
-				Printer::targetPositionStepsZ += g_nNextZSteps;
-
-				if( Printer::debugInfo() )
-				{
-					Com::printF( PSTR( "processButton(): current manual Z steps: " ), (int)Printer::targetPositionStepsZ );
-					Com::printFLN( PSTR( " [steps]" ) );
-				}
-
-				CalculateAllowedZStepsAfterEndStop();
+				// we are not printing at the moment, the hardware buttons behave like the standard position menu
+				nextPreviousZAction( 1 );
 			}
 			break;
 		}
@@ -4217,9 +4125,43 @@ extern void processButton( int nAction )
 } // processButton
 
 
-void CalculateAllowedZStepsAfterEndStop( void )
+void nextPreviousZAction( int8_t next )
 {
-	short	nTemp = 0;
+    millis_t actTime = HAL::timeInMilliseconds();
+    millis_t dtReal;
+    millis_t dt = dtReal = actTime-uid.lastNextPrev;
+	int8_t increment = next;
+
+
+    uid.lastNextPrev = actTime;
+    if(dt<SPEED_MAX_MILLIS) dt = SPEED_MAX_MILLIS;
+    if(dt>SPEED_MIN_MILLIS)
+    {
+        dt = SPEED_MIN_MILLIS;
+        uid.lastNextAccumul = 1;
+    }
+    float f = (float)(SPEED_MIN_MILLIS-dt)/(float)(SPEED_MIN_MILLIS-SPEED_MAX_MILLIS);
+    uid.lastNextAccumul = 1.0f+(float)SPEED_MAGNIFICATION*f*f*f;
+
+#if UI_SPEEDDEPENDENT_POSITIONING
+    {
+        float d = 0.01*(float)increment*uid.lastNextAccumul;
+        if(fabs(d)*2000>Printer::maxFeedrate[Z_AXIS]*dtReal)
+            d *= Printer::maxFeedrate[Z_AXIS]*dtReal/(2000*fabs(d));
+        long steps = (long)(d*Printer::axisStepsPerMM[Z_AXIS]);
+        steps = ( increment<0 ? RMath::min(steps,(long)increment) : RMath::max(steps,(long)increment));
+        PrintLine::moveRelativeDistanceInStepsReal(0,0,steps,0,Printer::maxFeedrate[Z_AXIS],true);
+    }
+#else
+    PrintLine::moveRelativeDistanceInStepsReal(0,0,increment,0,Printer::homingFeedrate[Z_AXIS],true);
+#endif
+
+} // nextPreviousZAction
+
+
+void calculateAllowedZStepsAfterEndStop( void )
+{
+	long	nTemp = 0;
 
 
 	if( g_manualCompensationSteps < 0 )				nTemp -= g_manualCompensationSteps;
@@ -4231,7 +4173,7 @@ void CalculateAllowedZStepsAfterEndStop( void )
 
 	Printer::allowedZStepsAfterEndstop = nTemp;
 
-} // CalculateAllowedZStepsAfterEndStop
+} // calculateAllowedZStepsAfterEndStop
 
 
 #if STEPPER_CURRENT_CONTROL==CURRENT_CONTROL_LTC2600

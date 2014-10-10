@@ -436,9 +436,18 @@ void GCode::readFromSerial()
         return;
     while( sd.filesize > sd.sdpos && commandsReceivingWritePosition < MAX_CMD_SIZE)    // consume data until no data or buffer full
     {
-        timeOfLastDataPacket = HAL::timeInMilliseconds();
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		timeOfLastDataPacket = HAL::timeInMilliseconds();
         int n = sd.file.read();
-        if(n==-1)
+
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		if(n==-1)
         {
             Com::printFLN(Com::tSDReadError);
             UI_ERROR("SD Read Error");
@@ -446,7 +455,12 @@ void GCode::readFromSerial()
             // Second try in case of recoverable errors
             sd.file.seekSet(sd.sdpos);
             n = sd.file.read();
-            if(n==-1)
+
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+			if(n==-1)
             {
                 Com::printErrorFLN(PSTR("SD error did not recover!"));
                 sd.sdmode = false;

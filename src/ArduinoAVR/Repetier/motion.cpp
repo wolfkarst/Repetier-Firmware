@@ -2144,7 +2144,11 @@ long PrintLine::bresenhamStep() // version for cartesian printer
                 // the printing shall be paused and the printer head shall be moved away
                 if( linesCount )
                 {
-                    g_nContinueStepsX		 = 0;
+#if FEATURE_WATCHDOG
+					HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+					g_nContinueStepsX		 = 0;
                     g_nContinueStepsY		 = 0;
                     g_nContinueStepsZ		 = 0;
 					g_nContinueStepsExtruder = 0;
@@ -2185,7 +2189,7 @@ long PrintLine::bresenhamStep() // version for cartesian printer
                             Printer::targetPositionStepsZ += g_nPauseStepsZ;
                             g_nContinueStepsZ			  =  -g_nPauseStepsZ;
 
-                            CalculateAllowedZStepsAfterEndStop();
+                            calculateAllowedZStepsAfterEndStop();
                         }
                     }
                     if( g_nPauseStepsX )
@@ -2270,7 +2274,7 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 					Printer::currentPositionStepsZ	= 
 					Printer::currentPositionStepsE	= 0;
 
-					CalculateAllowedZStepsAfterEndStop();
+					calculateAllowedZStepsAfterEndStop();
 				}
 			
 				nextPlannerIndex(linesPos);
@@ -2364,11 +2368,17 @@ long PrintLine::bresenhamStep() // version for cartesian printer
         if(cur->isZMove())
         {
             Printer::enableZStepper();
+			Printer::unsetAllSteppersDisabled();
         }
         if(cur->isEMove()) Extruder::enable();
         cur->fixStartAndEndSpeed();
-        HAL::allowInterrupts();
-        cur_errupd = (cur->isFullstepping() ? cur->delta[cur->primaryAxis] : cur->delta[cur->primaryAxis]<<1);;
+
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		HAL::allowInterrupts();
+        cur_errupd = (cur->isFullstepping() ? cur->delta[cur->primaryAxis] : cur->delta[cur->primaryAxis]<<1);
         if(!cur->areParameterUpToDate())  // should never happen, but with bad timings???
         {
             cur->updateStepsParameter();
@@ -2427,6 +2437,10 @@ long PrintLine::bresenhamStep() // version for cartesian printer
     {
         for(uint8_t loop=0; loop<max_loops; loop++)
         {
+#if FEATURE_WATCHDOG
+			HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
             ANALYZER_ON(ANALYZER_CH1);
 
 #if STEPPER_HIGH_DELAY+DOUBLE_STEP_DELAY > 0

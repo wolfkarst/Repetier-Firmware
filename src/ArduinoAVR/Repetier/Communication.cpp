@@ -364,6 +364,7 @@ FSTRINGVALUE(Com::tSDErrorCode,"SD errorCode:")
 #endif // SDSUPPORT
 
 FSTRINGVALUE(Com::tOutputFilament,OUTPUT_FILAMENT_SCRIPT)
+FSTRINGVALUE(Com::tInputFilament,INPUT_FILAMENT_SCRIPT)
 
 void Com::printWarningF(FSTRINGPARAM(text)) {
     printF(tWarning);

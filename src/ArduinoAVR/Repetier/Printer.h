@@ -205,8 +205,8 @@ public:
 	static unsigned long	fanOffDelay;
 #endif // CASE_FAN_PIN >= 0
 
-	static short allowedZStepsAfterEndstop;
-    static short currentZStepsAfterEndstop;
+	static long allowedZStepsAfterEndstop;
+    static long currentZStepsAfterEndstop;
 
 
 	static inline void setMenuMode(uint8_t mode,bool on)

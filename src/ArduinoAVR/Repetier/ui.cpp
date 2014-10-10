@@ -2799,6 +2799,19 @@ void UIDisplay::executeAction(int action)
 
 			GCode::executeFString(Com::tOutputFilament);
 			break;
+		case UI_ACTION_INPUT_FILAMENT:
+			if( Extruder::current->tempControl.targetTemperatureC < UI_SET_MIN_EXTRUDER_TEMP )
+			{
+				// we do not allow to move the extruder in case it is not heated up enough
+				if( Printer::debugErrors() )
+				{
+					Com::printFLN( PSTR( "Input Filament: extruder input: aborted" ) );
+				}
+				break;
+			}
+
+			GCode::executeFString(Com::tInputFilament);
+			break;
         case UI_ACTION_RESET_EXTRUDER:
             Printer::currentPositionSteps[E_AXIS] = 0;
             break;

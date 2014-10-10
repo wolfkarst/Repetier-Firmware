@@ -221,10 +221,6 @@ void SDCard::abortPrint()
     g_nDirectionZ = 0;
     g_nDirectionE = 0;
 
-	Printer::targetPositionStepsX = Printer::currentPositionStepsX;
-    Printer::targetPositionStepsY = Printer::currentPositionStepsY;
-    Printer::targetPositionStepsZ = Printer::currentPositionStepsZ;
-    Printer::targetPositionStepsE = Printer::currentPositionStepsE;
 	HAL::allowInterrupts();
 
 	g_uStopTime = millis();

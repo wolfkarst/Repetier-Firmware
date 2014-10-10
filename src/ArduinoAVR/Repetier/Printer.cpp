@@ -197,8 +197,8 @@ unsigned long Printer::prepareFanOff;
 unsigned long Printer::fanOffDelay;
 #endif // CASE_FAN_PIN >= 0
 
-short Printer::allowedZStepsAfterEndstop;
-short Printer::currentZStepsAfterEndstop;
+long Printer::allowedZStepsAfterEndstop;
+long Printer::currentZStepsAfterEndstop;
 
 
 void Printer::constrainDestinationCoords()
@@ -631,14 +631,17 @@ void Printer::setup()
 #if X_ENABLE_PIN > -1
     SET_OUTPUT(X_ENABLE_PIN);
     if(!X_ENABLE_ON) WRITE(X_ENABLE_PIN,HIGH);
+    disableXStepper();
 #endif
 #if Y_ENABLE_PIN > -1
     SET_OUTPUT(Y_ENABLE_PIN);
     if(!Y_ENABLE_ON) WRITE(Y_ENABLE_PIN,HIGH);
+    disableYStepper();
 #endif
 #if Z_ENABLE_PIN > -1
     SET_OUTPUT(Z_ENABLE_PIN);
     if(!Z_ENABLE_ON) WRITE(Z_ENABLE_PIN,HIGH);
+    disableZStepper();
 #endif
 #if FEATURE_TWO_XSTEPPER
     SET_OUTPUT(X2_STEP_PIN);
@@ -878,7 +881,7 @@ void Printer::setup()
 #endif // CASE_FAN_PIN >= 0
 
 	currentZStepsAfterEndstop = 0;
-    CalculateAllowedZStepsAfterEndStop();
+    calculateAllowedZStepsAfterEndStop();
 
 #if defined(USE_ADVANCE)
     extruderStepsNeeded = 0;
@@ -1245,7 +1248,7 @@ void Printer::homeZAxis()
         currentPositionStepsZ = 0;
 #endif // FEATURE_EXTENDED_BUTTONS
 
-        CalculateAllowedZStepsAfterEndStop();
+        calculateAllowedZStepsAfterEndStop();
         currentZStepsAfterEndstop = 0;
 
 		// show that we are active

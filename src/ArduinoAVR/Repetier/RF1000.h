@@ -84,12 +84,13 @@
 #define	SCAN_STRAIN_GAUGE				ACTIVE_STRAIN_GAUGE
 #define	HEAT_BED_COMPENSATION_X			long((X_MAX_LENGTH - SCAN_X_START_MM - SCAN_X_END_MM) / SCAN_X_STEP_SIZE_MM + 4)
 #define	HEAT_BED_COMPENSATION_Y			long((Y_MAX_LENGTH - SCAN_Y_START_MM - SCAN_Y_END_MM) / SCAN_Y_STEP_SIZE_MM + 4)
-#define COMPENSATION_VERSION			2
+#define COMPENSATION_VERSION			4
 #define EEPROM_OFFSET_VERSION			0
 #define EEPROM_OFFSET_DIMENSION_X		2
 #define EEPROM_OFFSET_DIMENSION_Y		4
-#define EEPROM_OFFSET_Z_START			6
-#define EEPROM_DELAY					2																// [ms]
+#define	EEPROM_OFFSET_MICRO_STEPS		6
+#define EEPROM_OFFSET_Z_START			8
+#define EEPROM_DELAY					10																// [ms]
 #define XYZ_DIRECTION_CHANGE_DELAY		250																// [µs]
 #define XYZ_STEPPER_HIGH_DELAY			250																// [µs]
 #define XYZ_STEPPER_LOW_DELAY			250																// [µs]
@@ -116,10 +117,10 @@ extern	char			g_abortScan;
 extern	short			g_HeatBedCompensation[HEAT_BED_COMPENSATION_X][HEAT_BED_COMPENSATION_Y];
 #endif // FEATURE_Z_COMPENSATION
 
-extern	short			g_noZCompensationSteps;
-extern	short			g_maxZCompensationSteps;
-extern	short			g_diffZCompensationSteps;
-extern	short			g_manualCompensationSteps;
+extern	long			g_noZCompensationSteps;
+extern	long			g_maxZCompensationSteps;
+extern	long			g_diffZCompensationSteps;
+extern	long			g_manualCompensationSteps;
 extern	short			g_offsetHeatBedCompensation;
 extern	char			g_nHeatBedScanStatus;
 extern	unsigned char	g_uHeatBedMaxX;
@@ -131,24 +132,24 @@ extern	long			g_maxY;
 extern	long			g_recalculatedCompensation;
 extern	char			g_debugLevel;
 //extern	short			g_debugCounter[10];
-extern	short			g_nHeatBedScanZ;
+extern	long			g_nHeatBedScanZ;
 extern	unsigned long	g_uStopTime;
 
 // other configurable parameters
 #if FEATURE_EXTENDED_BUTTONS
-extern	unsigned short	g_nManualZSteps;
-extern	unsigned short	g_nManualExtruderSteps;
+extern	unsigned long	g_nManualZSteps;
+extern	unsigned long	g_nManualExtruderSteps;
 #endif // FEATURE_EXTENDED_BUTTONS
 
 #if FEATURE_PAUSE_PRINTING
-extern	short			g_nPauseStepsX;
-extern	short			g_nPauseStepsY;
-extern	short			g_nPauseStepsZ;
-extern	short			g_nPauseStepsExtruder;
-extern	short			g_nContinueStepsX;
-extern	short			g_nContinueStepsY;
-extern	short			g_nContinueStepsZ;
-extern	short			g_nContinueStepsExtruder;
+extern	long			g_nPauseStepsX;
+extern	long			g_nPauseStepsY;
+extern	long			g_nPauseStepsZ;
+extern	long			g_nPauseStepsExtruder;
+extern	long			g_nContinueStepsX;
+extern	long			g_nContinueStepsY;
+extern	long			g_nContinueStepsZ;
+extern	long			g_nContinueStepsExtruder;
 extern	char			g_pausePrint;
 extern	char			g_printingPaused;
 extern	unsigned long	g_uPauseTime;
@@ -197,12 +198,6 @@ extern short moveZUpSlow( short* pnContactPressure, char* pnRetry );
 
 // moveZDownFast()
 extern short moveZDownFast( void );
-
-// moveX()
-extern int moveX( int nSteps );
-
-// moveY()
-extern int moveY( int nSteps );
 
 // moveZ()
 extern int moveZ( int nSteps );
@@ -295,8 +290,11 @@ extern void queueTask( char task );
 // processButton()
 extern void processButton( int nAction );
 
-// CalculateAllowedZStepsAfterEndStop()
-extern void CalculateAllowedZStepsAfterEndStop( void );
+// nextPreviousZAction()
+extern void nextPreviousZAction( int8_t next );
+
+// calculateAllowedZStepsAfterEndStop()
+extern void calculateAllowedZStepsAfterEndStop( void );
 
 
 #if STEPPER_CURRENT_CONTROL==CURRENT_CONTROL_LTC2600

@@ -744,11 +744,11 @@ This timer is called 3906 timer per second. It is used to update pwm values for 
 ISR(PWM_TIMER_VECTOR)
 {
 #if FEATURE_Z_COMPENSATION
-	short			i;
-	short			nXLeft;
-	short			nXRight;
-	short			nYFront;
-	short			nYBack;
+	long			i;
+	long			nXLeft;
+	long			nXRight;
+	long			nYFront;
+	long			nYBack;
 	long			nTemp;
 	static char		nCounterZCompensation	= Z_COMPENSATION_COUNTER;
 #endif // FEATURE_Z_COMPENSATION
@@ -954,7 +954,9 @@ ISR(PWM_TIMER_VECTOR)
 						nXLeft = 1;
 						for( i=1; i<g_uHeatBedMaxX; i++ )
 						{
-							if( Printer::nonCompensatedPositionStepsX <= g_HeatBedCompensation[i][0] )
+							nTemp = g_HeatBedCompensation[i][0];
+							nTemp = (long)((float)nTemp * XAXIS_STEPS_PER_MM);
+							if( Printer::nonCompensatedPositionStepsX <= nTemp )
 							{
 								nXRight = i;
 								break;
@@ -965,7 +967,9 @@ ISR(PWM_TIMER_VECTOR)
 						nYFront = 1;
 						for( i=1; i<g_uHeatBedMaxY; i++ )
 						{
-							if( Printer::nonCompensatedPositionStepsY <= g_HeatBedCompensation[0][i] )
+							nTemp = g_HeatBedCompensation[0][i];
+							nTemp = (long)((float)nTemp * YAXIS_STEPS_PER_MM);
+							if( Printer::nonCompensatedPositionStepsY <= nTemp )
 							{
 								nYBack = i;
 								break;
@@ -974,10 +978,10 @@ ISR(PWM_TIMER_VECTOR)
 						}
 
 						// remember where we are
-						g_minX = g_HeatBedCompensation[nXLeft][0];
-						g_maxX = g_HeatBedCompensation[nXRight][0];
-						g_minY = g_HeatBedCompensation[0][nYFront];
-						g_maxY = g_HeatBedCompensation[0][nYBack];
+						g_minX = (long)((float)g_HeatBedCompensation[nXLeft][0] * XAXIS_STEPS_PER_MM);
+						g_maxX = (long)((float)g_HeatBedCompensation[nXRight][0] * XAXIS_STEPS_PER_MM);
+						g_minY = (long)((float)g_HeatBedCompensation[0][nYFront] * YAXIS_STEPS_PER_MM);
+						g_maxY = (long)((float)g_HeatBedCompensation[0][nYBack] * YAXIS_STEPS_PER_MM);
 					
 						if( Printer::nonCompensatedPositionStepsZ <= g_noZCompensationSteps )
 						{
@@ -1180,7 +1184,7 @@ ISR(PWM_TIMER_VECTOR)
 				HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
 
-				HAL::delayMicroseconds( 250 );
+				HAL::delayMicroseconds( EXTENDED_BUTTONS_STEPPER_DELAY );
 
 				if( g_nBlockZ )
 				{
@@ -1192,7 +1196,7 @@ ISR(PWM_TIMER_VECTOR)
 				if( nDirectionY )	WRITE( Y_STEP_PIN, HIGH );
 				if( nDirectionZ )	WRITE( Z_STEP_PIN, HIGH );
 
-				HAL::delayMicroseconds( 250 );
+				HAL::delayMicroseconds( EXTENDED_BUTTONS_STEPPER_DELAY );
 
 				if( nDirectionX )
 				{

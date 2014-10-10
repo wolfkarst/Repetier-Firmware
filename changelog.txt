@@ -1,3 +1,26 @@
+V 0.91.39 (2014-10-10)
+- Increasing of the access delay for the external EEPROM.
+  - At some printers the previous delay was too short and as a result the z-compensation values could not be read/written properly.
+- Adding of the "Input Filament" menu entry to the "Quick Settings" menu.
+  - This operation can be used in order to input new filament to the extruder.
+  - INPUT_FILAMENT_SCRIPT can be used in order to define the exact command sequence for the input of the filament.
+- Fine tunning of various settings within Configuration.h:
+  - new PID values for the extruder
+  - new motor currents
+  - correction of a DRV8711 register for better support of higher feedrates
+  - ...
+- Adding of RF1000_MICRO_STEPS which allows to switch the to-be-used micro steps between 4, 8, 16, 32 and 64.
+  - The default value remains at 8 which is equal to the so-far-used micro steps.
+  - Most position variables have been changed from short to long in order to support also the higher number of steps.
+- The format of the compensation matrix has been changed so that the same compensation matrix can be used for different micro step settings.
+  - There is no need anymore to perform a rescan after the to-be-used micro steps have been changed.
+- In case the z-stepper was enabled via the hardware buttons it might not have been disabled ever.
+- Redefinition of the hardware buttons for the z-direction:
+  - In case printing is in progress, these hardware buttons can be used in order to fine-tune the z-position. There is no automatic increasing of the z-speed in case of this mode.
+  - In case there is no printing in progress, these hardware buttons behave like the "Position Z" menu.
+  - FEATURE_ENABLE_MANUAL_Z_SAFETY has been enabled in order to avoid an accidental overrun of the z-min endstop.
+- There was a chance that not all steppers were disabled properly during the restart/reset of the firmware.
+
 V 0.91.37 (2014-08-25)
 - The case lights were not turned on/off when they were switched via the menu.
   - Removing of ENABLE_OUT1 (this pin is used for the case lights).

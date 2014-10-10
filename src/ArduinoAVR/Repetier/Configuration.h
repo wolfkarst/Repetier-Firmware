@@ -45,6 +45,10 @@ To override EEPROM settings with config settings, set EEPROM_MODE 0
 
 // BASIC SETTINGS: select your board type, thermistor type, axis scaling, and endstop configuration
 
+/** Define the to-be-use micro steps */
+#define	RF1000_MICRO_STEPS	8
+
+
 /** Number of extruders. Maximum 6 extruders. */
 #define NUM_EXTRUDER 1
 
@@ -150,13 +154,13 @@ If a motor turns in the wrong direction change INVERT_X_DIR or INVERT_Y_DIR.
 /** \brief Number of steps for a 1mm move in x direction.
 For xy gantry use 2*belt moved!
 Overridden if EEPROM activated. */
-#define XAXIS_STEPS_PER_MM 38.095
+#define XAXIS_STEPS_PER_MM	long(4.761875 * (float)RF1000_MICRO_STEPS)
 /** \brief Number of steps for a 1mm move in y direction.
 For xy gantry use 2*belt moved!
 Overridden if EEPROM activated.*/
-#define YAXIS_STEPS_PER_MM 38.095
+#define YAXIS_STEPS_PER_MM	long(4.761875 * (float)RF1000_MICRO_STEPS)
 /** \brief Number of steps for a 1mm move in z direction  Overridden if EEPROM activated.*/
-#define ZAXIS_STEPS_PER_MM 640
+#define ZAXIS_STEPS_PER_MM	long(80 * (float)RF1000_MICRO_STEPS)
 #endif
 
 // ##########################################################################################
@@ -169,7 +173,8 @@ Overridden if EEPROM activated.*/
 #define EXT0_X_OFFSET 0
 #define EXT0_Y_OFFSET 0
 // for skeinforge 40 and later, steps to pull the plasic 1 mm inside the extruder, not out.  Overridden if EEPROM activated.
-#define EXT0_STEPS_PER_MM 71
+#define EXT0_STEPS_PER_MM	(8.75 * RF1000_MICRO_STEPS)
+
 // What type of sensor is used?
 // 1 is 100k thermistor (Epcos B57560G0107F000 - RepRap-Fab.org and many other)
 // 2 is 200k thermistor
@@ -232,7 +237,7 @@ Values for starts:
 The precise values may differ for different nozzle/resistor combination.
  Overridden if EEPROM activated.
 */
-#define EXT0_PID_INTEGRAL_DRIVE_MAX 130
+#define EXT0_PID_INTEGRAL_DRIVE_MAX 180
 /** \brief lower value for integral part
 
 The I state should converge to the exact heater output needed for the target temperature.
@@ -240,14 +245,14 @@ To prevent a long deviation from the target zone, this value limits the lower va
 A good start is 30 lower then the optimal value. You need to leave room for cooling.
  Overridden if EEPROM activated.
 */
-#define EXT0_PID_INTEGRAL_DRIVE_MIN 60
+#define EXT0_PID_INTEGRAL_DRIVE_MIN 40
 /** P-gain.  Overridden if EEPROM activated. */
-#define EXT0_PID_P   37.52
+#define EXT0_PID_P   20
 /** I-gain. Overridden if EEPROM activated.
 */
-#define EXT0_PID_I   10
+#define EXT0_PID_I   5
 /** Dgain.  Overridden if EEPROM activated.*/
-#define EXT0_PID_D 35.18
+#define EXT0_PID_D 13
 // maximum time the heater is can be switched on. Max = 255.  Overridden if EEPROM activated.
 #define EXT0_PID_MAX 255
 /** \brief Faktor for the advance algorithm. 0 disables the algorithm.  Overridden if EEPROM activated.
@@ -534,7 +539,7 @@ Value is used for all generic tables created. */
 /** \brief Set true if you have a heated bed conected to your board, false if not */
 #define HAVE_HEATED_BED true
 
-#define HEATED_BED_MAX_TEMP 200
+#define HEATED_BED_MAX_TEMP 180
 /** Skip M190 wait, if heated bed is already within x degrees. Fixed numbers only, 0 = off. */
 #define SKIP_M190_IF_WITHIN 3
 
@@ -668,9 +673,9 @@ on this endstop.
 
 // For higher precision you can reduce the speed for the second test on the endstop
 // during homing operation. The homing speed is divided by the value. 1 = same speed, 2 = half speed
-#define ENDSTOP_X_RETEST_REDUCTION_FACTOR 10
-#define ENDSTOP_Y_RETEST_REDUCTION_FACTOR 10
-#define ENDSTOP_Z_RETEST_REDUCTION_FACTOR 10
+#define ENDSTOP_X_RETEST_REDUCTION_FACTOR 20
+#define ENDSTOP_Y_RETEST_REDUCTION_FACTOR 20
+#define ENDSTOP_Z_RETEST_REDUCTION_FACTOR 20
 
 // When you have several endstops in one circuit you need to disable it after homing by moving a
 // small amount back. This is also the case with H-belt systems.
@@ -710,7 +715,7 @@ on this endstop.
 #elif MOTHERBOARD==12
 #define MOTOR_CURRENT {53570,65535,53570,65535,53570} // Values 0-65535 (53570 = ~1.5A)
 #elif MOTHERBOARD==13
-#define MOTOR_CURRENT {160,160,140,160,126} // Values 0-255 (126 = ~2A), order: driver 1 (x), driver 2 (y), driver 3 (z), driver 4 (extruder 1), driver 5 (reserved)
+#define MOTOR_CURRENT {150,150,126,126,126} // Values 0-255 (126 = ~2A), order: driver 1 (x), driver 2 (y), driver 3 (z), driver 4 (extruder 1), driver 5 (reserved)
 #endif
 
 /** \brief Number of segments to generate for delta conversions per second of move
@@ -811,7 +816,7 @@ Mega. Used only for nonlinear systems like delta or tuga. */
     This helps cooling the Stepper motors between two print jobs.
     Overridden if EEPROM activated.
 */
-#define STEPPER_INACTIVE_TIME 360
+#define STEPPER_INACTIVE_TIME 600
 /** After x seconds of inactivity, the system will go down as far it can.
     It will at least disable all stepper motors and heaters. If the board has
     a power pin, it will be disabled, too.
@@ -828,9 +833,9 @@ Mega. Used only for nonlinear systems like delta or tuga. */
 #define MAX_FEEDRATE_Z  50
 
 /** Home position speed in mm/s. Overridden if EEPROM activated. */
-#define HOMING_FEEDRATE_X 200
-#define HOMING_FEEDRATE_Y 200
-#define HOMING_FEEDRATE_Z 20
+#define HOMING_FEEDRATE_X 165
+#define HOMING_FEEDRATE_Y 165
+#define HOMING_FEEDRATE_Z 15
 
 /** Set order of axis homing. Use HOME_ORDER_XYZ and replace XYZ with your order. */
 #define HOMING_ORDER HOME_ORDER_XYZ
@@ -1279,7 +1284,7 @@ Values must be in range 1..255
 
 // Extreme values
 #define UI_SET_MIN_HEATED_BED_TEMP  55
-#define UI_SET_MAX_HEATED_BED_TEMP 200
+#define UI_SET_MAX_HEATED_BED_TEMP 180
 #define UI_SET_MIN_EXTRUDER_TEMP   160
 #define UI_SET_MAX_EXTRUDER_TEMP   270
 #define UI_SET_EXTRUDER_FEEDRATE 2 // mm/sec
@@ -1293,11 +1298,18 @@ Values must be in range 1..255
 #define FEATURE_EXTENDED_BUTTONS			1													// 1 = on, 0 = off
 #define EXTENDED_BUTTONS_COUNTER_NORMAL		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
 #define EXTENDED_BUTTONS_COUNTER_FAST		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
-#define	EXTENDED_BUTTONS_BLOCK_INTERVAL		100													// [ms]
+#define	EXTENDED_BUTTONS_BLOCK_INTERVAL		2													// [ms]
+#define	EXTENDED_BUTTONS_STEPPER_DELAY		200													// [µs]
+
+#define	EXTENDED_BUTTONS_Z_MIN				-(ZAXIS_STEPS_PER_MM *2)							// [steps]
+#define	EXTENDED_BUTTONS_Z_MAX				long(ZAXIS_STEPS_PER_MM * (Z_MAX_LENGTH -2))		// [steps]
 
 /** \brief Allows to pause the processing of G-Codes
 */
 #define FEATURE_PAUSE_PRINTING				1													// 1 = on, 0 = off
+
+#define	PAUSE_Z_MAX							(ZAXIS_STEPS_PER_MM * (Z_MAX_LENGTH -2))			// [steps]
+
 
 /** \brief Allows to cause an emergency stop via a 3-times push of the pause button
 */
@@ -1305,7 +1317,8 @@ Values must be in range 1..255
 
 /** \brief Enables safety checks for the manual moving into z-direction via the additional hardware buttons
 */
-#define FEATURE_ENABLE_MANUAL_Z_SAFETY		0													// 1 = checks enabled, 0 = checks disabled
+#define FEATURE_ENABLE_MANUAL_Z_SAFETY		1													// 1 = checks enabled, 0 = checks disabled
+#define	MANUAL_Z_OVERRIDE_MAX				ZAXIS_STEPS_PER_MM
 
 /** \brief Enables automatic compensation in z direction
 
@@ -1408,9 +1421,11 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define	EMERGENCY_Z_STOP_CHECKS				3
 
-/** \brief Enables/diables the emergency pause in case of too high pressure
+/** \brief Enables/diables the emergency pause in case of too high pressure ... the emergency pause can be turned on only in case the general pause functionality is available
 */
+#if FEATURE_PAUSE_PRINTING
 #define FEATURE_EMERGENCY_PAUSE				1													// 1 = on, 0 = off
+#endif // FEATURE_PAUSE_PRINTING
 
 /** \brief Specifies the pressure at which the emergency pause shall be performed, in [digits]
 */
@@ -1454,10 +1469,24 @@ the Cura PC application may fall over the debug outputs of the firmware.
 /** \brief Configuration of the DRV8711
 */
 #define DRV8711_NUM_CHANNELS	5
-#define DRV8711_REGISTER_00		0x0E19	// 0000 1110 0001 1001: ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 0011, EXSTALL = 0, ISGAIN = 10, DTIME = 11
+
+#if RF1000_MICRO_STEPS == 4
+	#define DRV8711_REGISTER_00		0x0E11	// 0000 1110 0001 0001: ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 0010, EXSTALL = 0, ISGAIN = 10, DTIME = 11
+#elif RF1000_MICRO_STEPS == 8
+	#define DRV8711_REGISTER_00		0x0E19	// 0000 1110 0001 1001: ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 0011, EXSTALL = 0, ISGAIN = 10, DTIME = 11
+#elif RF1000_MICRO_STEPS == 16
+	#define DRV8711_REGISTER_00		0x0E21	// 0000 1110 0010 0001: ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 0100, EXSTALL = 0, ISGAIN = 10, DTIME = 11
+#elif RF1000_MICRO_STEPS == 32
+	#define DRV8711_REGISTER_00		0x0E29	// 0000 1110 0010 1001: ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 0101, EXSTALL = 0, ISGAIN = 10, DTIME = 11
+#elif RF1000_MICRO_STEPS == 64
+	#define DRV8711_REGISTER_00		0x0E31	// 0000 1110 0011 0001: ENBL = 1, RDIR = 0, RSTEP = 0, MODE = 0110, EXSTALL = 0, ISGAIN = 10, DTIME = 11
+#else
+	#error this number of RF1000 micro steps is not supported
+#endif // RF1000_MICRO_STEPS
+
 #define DRV8711_REGISTER_02		0x2097	// 0010 0000 1001 0111: TOFF = 10010111, PWMMODE = 0
 #define DRV8711_REGISTER_03		0x31D7  // 0011 0001 1101 0111: TBLANK = 11010111, ABT = 1
-#define DRV8711_REGISTER_04		0x4530	// 0100 0101 0011 0000: TDECAY = 00110000, DECMOD = 101
+#define DRV8711_REGISTER_04		0x4430	// 0100 0100 0011 0000: TDECAY = 00110000, DECMOD = 100
 #define DRV8711_REGISTER_05		0x583C	// 0101 1000 0011 1100: SDTHR = 00111100, SDCNT = 00, VDIV = 10
 #define DRV8711_REGISTER_06		0x60F0	// 0110 0000 1111 0000: OCPTH = 00, OCPDEG = 00, TDRIVEN = 11, TDRIVEP = 11, IDRIVEN = 00, IDRIVEP = 00
 #define DRV8711_REGISTER_07		0x7000	// 0111 0000 0000 0000: OTS = 0, AOCP = 0, BOCP = 0, UVLO = 0, APDF = 0, BPDF = 0, STD = 0, STDLAT = 0
@@ -1493,8 +1522,8 @@ the Cura PC application may fall over the debug outputs of the firmware.
 #define SCAN_CONTACT_PRESSURE_DELTA		10																// [digits]
 #define SCAN_RETRY_PRESSURE_DELTA		5																// [digits]
 #define SCAN_IDLE_PRESSURE_DELTA		0																// [digits]
-#define SCAN_IDLE_PRESSURE_MIN			-3000															// [digits]
-#define SCAN_IDLE_PRESSURE_MAX			3000															// [digits]
+#define SCAN_IDLE_PRESSURE_MIN			-5000															// [digits]
+#define SCAN_IDLE_PRESSURE_MAX			5000															// [digits]
 
 #define SCAN_RETRIES					3																// [-]
 #define	SCAN_PRESSURE_READS				15																// [-]
@@ -1505,7 +1534,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Configuration of the manual steps
 */
-#define DEFAULT_MANUAL_Z_STEPS			16
+#define DEFAULT_MANUAL_Z_STEPS			(RF1000_MICRO_STEPS *2)
 #define MAXIMAL_MANUAL_Z_STEPS			(ZAXIS_STEPS_PER_MM *10)
 #define DEFAULT_MANUAL_EXTRUDER_STEPS	(EXT0_STEPS_PER_MM /5)
 
@@ -1520,10 +1549,14 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define	OUTPUT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E50 F100\nG92 E0\nG1 E-90 F250\n"
 
+/** \brief Automatic filament change - ensure that G1 does not attempt to extrude more than EXTRUDE_MAXLENGTH
+*/
+#define	INPUT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E90 F100"
+
 /** \brief Printer name and firmware version
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".37"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".39"
 
 #endif
