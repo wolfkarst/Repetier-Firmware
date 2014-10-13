@@ -648,6 +648,10 @@ long stepperWait = 0;
 */
 ISR(TIMER1_COMPA_vect)
 {
+#if FEATURE_WATCHDOG
+	HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
     if(insideTimer1) return;
     uint8_t doExit;
     __asm__ __volatile__ (
@@ -759,7 +763,7 @@ ISR(PWM_TIMER_VECTOR)
 	char			nDirectionX;
 	char			nDirectionY;
 	char			nDirectionZ;
-	unsigned long	uStartTime;
+	unsigned long	uIterations;
 #endif // FEATURE_EXTENDED_BUTTONS
   
     static uint8_t pwm_count = 0;
@@ -768,7 +772,12 @@ ISR(PWM_TIMER_VECTOR)
     static uint8_t pwm_cooler_pos_set[NUM_EXTRUDER];
     PWM_OCR += 64;
 
-    if(pwm_count_heater == 0)
+
+#if FEATURE_WATCHDOG
+	HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+	if(pwm_count_heater == 0)
     {
 #if EXT0_HEATER_PIN>-1
         if((pwm_pos_set[0] = (pwm_pos[0] & HEATER_PWM_MASK))>0) WRITE(EXT0_HEATER_PIN,!HEATER_PINS_INVERTED);
@@ -878,7 +887,12 @@ ISR(PWM_TIMER_VECTOR)
 #endif
 
     HAL::allowInterrupts();
-    counterPeriodical++; // Appxoimate a 100ms timer
+
+#if FEATURE_WATCHDOG
+	HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+	counterPeriodical++; // Appxoimate a 100ms timer
     if(counterPeriodical>=(int)(F_CPU/40960))
     {
         counterPeriodical=0;
@@ -926,6 +940,10 @@ ISR(PWM_TIMER_VECTOR)
     pwm_count++;
     pwm_count_heater += HEATER_PWM_STEP;
 
+#if FEATURE_WATCHDOG
+	HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 #if FEATURE_Z_COMPENSATION
 	nCounterZCompensation --;
 
@@ -948,6 +966,10 @@ ISR(PWM_TIMER_VECTOR)
 						Printer::nonCompensatedPositionStepsY > g_maxY )
 					{
 						// we went outside the last used compensation rectangle - we have to find the new compensation value
+#if FEATURE_WATCHDOG
+						HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 						g_recalculatedCompensation ++;
 					
 						// find the rectangle first which covers the current position of the extruder
@@ -964,6 +986,10 @@ ISR(PWM_TIMER_VECTOR)
 							nXLeft = i;
 						}
 					
+#if FEATURE_WATCHDOG
+						HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 						nYFront = 1;
 						for( i=1; i<g_uHeatBedMaxY; i++ )
 						{
@@ -1012,6 +1038,10 @@ ISR(PWM_TIMER_VECTOR)
 			if( g_nDirectionZ == 0 && !g_nBlockZ )
 			{
 				// this interrupt shall move the z-axis only in case the "main" interrupt (bresenhamStep()) is not running at the moment
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 				HAL::forbidInterrupts();
 				if( Printer::currentCompensationZ < Printer::targetCompensationZ )
 				{
@@ -1047,7 +1077,7 @@ ISR(PWM_TIMER_VECTOR)
 	}
 #endif // FEATURE_Z_COMPENSATION
 
-#if FEATURE_EXTENDED_BUTTONS
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 	nCounterExtendedButtons --;
 	
 	if( !nCounterExtendedButtons )
@@ -1096,6 +1126,10 @@ ISR(PWM_TIMER_VECTOR)
 			bDone = true;
 		}
 		
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 		if( !bDone )
 		{
 			nDirectionX = 0;
@@ -1177,7 +1211,7 @@ ISR(PWM_TIMER_VECTOR)
 				}
 			}
 
-			uStartTime = HAL::timeInMilliseconds();
+			uIterations = EXTENDED_BUTTONS_COUNTER_NORMAL;
 			while( nDirectionX || nDirectionY || nDirectionZ )
 			{
 #if FEATURE_WATCHDOG
@@ -1229,7 +1263,8 @@ ISR(PWM_TIMER_VECTOR)
 					}
 				}
 
-				if( (HAL::timeInMilliseconds() - uStartTime) > EXTENDED_BUTTONS_BLOCK_INTERVAL )
+				uIterations --;
+				if( !uIterations )
 				{
 					// we shall not loop here too long - when we exit here, we will come back to here later and continue the remaining steps
 					break;
@@ -1237,6 +1272,10 @@ ISR(PWM_TIMER_VECTOR)
 			}
 		}
 		
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 		if( !bDone )
 		{
 			if( Printer::currentPositionStepsE > Printer::targetPositionStepsE )
@@ -1271,7 +1310,7 @@ ISR(PWM_TIMER_VECTOR)
 		}
 		HAL::allowInterrupts();
 	}
-#endif // FEATURE_EXTENDED_BUTTONS
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 
 }
 #if defined(USE_ADVANCE)

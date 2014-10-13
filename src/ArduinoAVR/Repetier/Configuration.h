@@ -692,9 +692,9 @@ on this endstop.
 // For delta robot Z_MAX_LENGTH is the maximum travel of the towers and should be set to the distance between the hotend
 // and the platform when the printer is at its home position.
 // If EEPROM is enabled these values will be overidden with the values in the EEPROM
-#define X_MAX_LENGTH 245
-#define Y_MAX_LENGTH 245
-#define Z_MAX_LENGTH 202
+#define X_MAX_LENGTH	(long)245
+#define Y_MAX_LENGTH	(long)245
+#define Z_MAX_LENGTH	(long)202
 
 // Coordinates for the minimum axis. Can also be negative if you want to have the bed start at 0 and the printer can go to the left side
 // of the bed. Maximum coordinate is given by adding the above X_MAX_LENGTH values.
@@ -1298,8 +1298,7 @@ Values must be in range 1..255
 #define FEATURE_EXTENDED_BUTTONS			1													// 1 = on, 0 = off
 #define EXTENDED_BUTTONS_COUNTER_NORMAL		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
 #define EXTENDED_BUTTONS_COUNTER_FAST		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
-#define	EXTENDED_BUTTONS_BLOCK_INTERVAL		2													// [ms]
-#define	EXTENDED_BUTTONS_STEPPER_DELAY		200													// [µs]
+#define	EXTENDED_BUTTONS_STEPPER_DELAY		1													// [µs]
 
 #define	EXTENDED_BUTTONS_Z_MIN				-(ZAXIS_STEPS_PER_MM *2)							// [steps]
 #define	EXTENDED_BUTTONS_Z_MAX				long(ZAXIS_STEPS_PER_MM * (Z_MAX_LENGTH -2))		// [steps]
@@ -1380,13 +1379,9 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define FEATURE_OUTPUT_PRINTED_OBJECT		1													// 1 = on, 0 = off
 
-/** \brief Specifies the output offset, in [mm]
+/** \brief The following script allows to configure the exact behavior of the automatic object output
 */
-#if FEATURE_OUTPUT_PRINTED_OBJECT
-#define OUTPUT_OFFSET_X						0
-#define	OUTPUT_OFFSET_Y						Y_MAX_LENGTH
-#define	OUTPUT_OFFSET_Z						Z_MAX_LENGTH
-#endif // FEATURE_OUTPUT_PRINTED_OBJECT
+#define	OUTPUT_OBJECT_SCRIPT				"G21\nG91\nG1 Z210 F5000\nG1 X0 Y250 F7500\n"
 
 /** \brief Enables/disables the park feature
 */
@@ -1457,8 +1452,17 @@ the Cura PC application may fall over the debug outputs of the firmware.
 #define FEATURE_ABORT_PRINT_AFTER_TEMPERATURE_ERROR		1										// 1 = abort, 0 = do not abort
 
 /** \brief Configuration of the external watchdog
+
+The TPS3820 of the RF1000 resets about 25 ms after the last time when it was triggered, the value of WATCHDOG_TIMEOUT should be less than half of this time.
 */
 #define WATCHDOG_TIMEOUT					10	// [ms]
+
+/** \brief Specifies whether the x, y and z-positions can be changed manually (e.g. via the "Position X/Y/Z" menus or via the hardware buttons) in case the according axis is unknown.
+
+The position of an axis is unknown until the axis has been homed. The position of an axis becomes unknown in case its stepper is disabled.
+Enabling of the following feature can be dangerous because it allows to manually drive the printer above its max x/y/z position.
+*/
+#define	FEATURE_ALLOW_UNKNOWN_POSITIONS		0													// 1 = allow, 0 = do not allow
 
 /** \brief Specifies whether the firmware shall wait a short time after turning on of the stepper motors - this shall avoid that the first steps are sent to the stepper before it is ready
 */
@@ -1545,18 +1549,18 @@ the Cura PC application may fall over the debug outputs of the firmware.
 #define DEFAULT_PAUSE_STEPS_Z			(ZAXIS_STEPS_PER_MM *2)
 #define	DEFAULT_PAUSE_STEPS_EXTRUDER	(EXT0_STEPS_PER_MM *10)
 
-/** \brief Automatic filament change - ensure that G1 does not attempt to extrude more than EXTRUDE_MAXLENGTH
+/** \brief Automatic filament change, unmounting of the filament - ensure that G1 does not attempt to extrude more than EXTRUDE_MAXLENGTH
 */
-#define	OUTPUT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E50 F100\nG92 E0\nG1 E-90 F250\n"
+#define	UNMOUNT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E50 F100\nG92 E0\nG1 E-90 F500\n"
 
-/** \brief Automatic filament change - ensure that G1 does not attempt to extrude more than EXTRUDE_MAXLENGTH
+/** \brief Automatic filament change, mounting of the filament - ensure that G1 does not attempt to extrude more than EXTRUDE_MAXLENGTH
 */
-#define	INPUT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E90 F100"
+#define	MOUNT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E90 F100"
 
 /** \brief Printer name and firmware version
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".39"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".41"
 
 #endif

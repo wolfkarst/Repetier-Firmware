@@ -1,3 +1,18 @@
+V 0.91.41 (2014-10-13)
+- The automatic object output now can be configured via the OUTPUT_OBJECT_SCRIPT script.
+  - M3104 has been removed because all of its functionality is replaced through the OUTPUT_OBJECT_SCRIPT script now.
+- Adding of FEATURE_ALLOW_UNKNOWN_POSITIONS.
+  - In case this #define is not 1, the "Position X/Y/Z" menu allows to move into the x/y/z direction only when the homing position is known.
+- In case the "Position X/Y/Z" menu is used in order to change the position manually, the displayed position does not change anymore when the printer has reached its minimal/maximal position.
+- Additional triggers to the watchdog have been added in order to avoid rare restarts of the Firmware in combination with higher numbers of microsteps.
+- There was a chance that the temperature management was disabled while the firmware waited for the continue/pause position. As a result, the real temperatures could go above or drop below the desired temperatures.
+- There was a chance that the x/y/z steppers were moved while the "Output Filament" or "Input Filament" operations were in progress.
+- "Output Filament" has been renamed to "Unmount Filament".
+  - OUTPUT_FILAMENT_SCRIPT has been changed to UNMOUNT_FILAMENT_SCRIPT.
+- "Input Filament" has been renamed to "Mount Filament".
+  - INPUT_FILAMENT_SCRIPT has been changed to MOUNT_FILAMENT_SCRIPT.
+- The speed for the unmount of the filament after "Unmount Filament" has been increased.
+
 V 0.91.39 (2014-10-10)
 - Increasing of the access delay for the external EEPROM.
   - At some printers the previous delay was too short and as a result the z-compensation values could not be read/written properly.

@@ -2285,50 +2285,152 @@ void UIDisplay::nextPreviousAction(int8_t next)
         Commands::setFanSpeed(Printer::getFanSpeed()+increment*3,false);
         break;
     case UI_ACTION_XPOSITION:
+	{
+		long	steps;
+
 #if UI_SPEEDDEPENDENT_POSITIONING
-    {
         float d = 0.01*(float)increment*lastNextAccumul;
         if(fabs(d)*2000>Printer::maxFeedrate[X_AXIS]*dtReal)
             d *= Printer::maxFeedrate[X_AXIS]*dtReal/(2000*fabs(d));
-        long steps = (long)(d*Printer::axisStepsPerMM[X_AXIS]);
+        steps = (long)(d*Printer::axisStepsPerMM[X_AXIS]);
         steps = ( increment<0 ? RMath::min(steps,(long)increment) : RMath::max(steps,(long)increment));
-        PrintLine::moveRelativeDistanceInStepsReal(steps,0,0,0,Printer::maxFeedrate[X_AXIS],true);
-    }
 #else
-    PrintLine::moveRelativeDistanceInStepsReal(increment,0,0,0,Printer::homingFeedrate[X_AXIS],true);
+		steps = increment;
 #endif
-    Commands::printCurrentPosition();
-    break;
+
+#if	!FEATURE_ALLOW_UNKNOWN_POSITIONS
+		if(!Printer::isHomed())
+		{
+			// we do not allow unknown positions and the printer is not homed, thus we do not move
+			if( Printer::debugErrors() )
+			{
+				Com::printFLN( PSTR( "UI_ACTION_XPOSITION: moving x aborted (not homed)" ) );
+			}
+			return;
+		}
+#endif // !FEATURE_ALLOW_UNKNOWN_POSITIONS
+
+		if(steps<0 && Printer::isXMinEndstopHit())
+		{
+			// we shall move to the left but the x-min-endstop is hit already, so we do nothing
+			if( Printer::debugErrors() )
+			{
+				Com::printFLN( PSTR( "UI_ACTION_XPOSITION: moving x aborted (min reached)" ) );
+			}
+			return;
+		}
+		if(steps>0 && Printer::lastCmdPos[X_AXIS] >= X_MAX_LENGTH)
+		{
+			// we shall move to the right but the end of the x-axis has been reached already, so we do nothing
+			if( Printer::debugErrors() )
+			{
+				Com::printFLN( PSTR( "UI_ACTION_XPOSITION: moving x aborted (max reached)" ) );
+			}
+			return;
+		}
+
+		PrintLine::moveRelativeDistanceInStepsReal(steps,0,0,0,Printer::maxFeedrate[X_AXIS],true);
+		Commands::printCurrentPosition();
+	    break;
+	}
     case UI_ACTION_YPOSITION:
+	{
+		long	steps;
+
 #if UI_SPEEDDEPENDENT_POSITIONING
-    {
         float d = 0.01*(float)increment*lastNextAccumul;
         if(fabs(d)*2000>Printer::maxFeedrate[Y_AXIS]*dtReal)
             d *= Printer::maxFeedrate[Y_AXIS]*dtReal/(2000*fabs(d));
-        long steps = (long)(d*Printer::axisStepsPerMM[Y_AXIS]);
+        steps = (long)(d*Printer::axisStepsPerMM[Y_AXIS]);
         steps = ( increment<0 ? RMath::min(steps,(long)increment) : RMath::max(steps,(long)increment));
-        PrintLine::moveRelativeDistanceInStepsReal(0,steps,0,0,Printer::maxFeedrate[Y_AXIS],true);
-    }
 #else
-    PrintLine::moveRelativeDistanceInStepsReal(0,increment,0,0,Printer::homingFeedrate[Y_AXIS],true);
+		steps = increment;
 #endif
-    Commands::printCurrentPosition();
-    break;
+
+#if	!FEATURE_ALLOW_UNKNOWN_POSITIONS
+		if(!Printer::isHomed())
+		{
+			// we do not allow unknown positions and the printer is not homed, thus we do not move
+			if( Printer::debugErrors() )
+			{
+				Com::printFLN( PSTR( "UI_ACTION_YPOSITION: moving y aborted (not homed)" ) );
+			}
+			return;
+		}
+#endif // !FEATURE_ALLOW_UNKNOWN_POSITIONS
+
+		if(steps<0 && Printer::isYMinEndstopHit())
+		{
+			// we shall move to the back but the y-min-endstop is hit already, so we do nothing
+			if( Printer::debugErrors() )
+			{
+				Com::printFLN( PSTR( "UI_ACTION_YPOSITION: moving y aborted (min reached)" ) );
+			}
+			return;
+		}
+		if(steps>0 && Printer::lastCmdPos[Y_AXIS] >= Y_MAX_LENGTH)
+		{
+			// we shall move to the front but the end of the y-axis has been reached already, so we do nothing
+			if( Printer::debugErrors() )
+			{
+				Com::printFLN( PSTR( "UI_ACTION_YPOSITION: moving y aborted (max reached)" ) );
+			}
+			return;
+		}
+
+		PrintLine::moveRelativeDistanceInStepsReal(0,steps,0,0,Printer::maxFeedrate[Y_AXIS],true);
+		Commands::printCurrentPosition();
+		break;
+	}
     case UI_ACTION_ZPOSITION:
+	{
+		long	steps;
+
 #if UI_SPEEDDEPENDENT_POSITIONING
-    {
         float d = 0.01*(float)increment*lastNextAccumul;
         if(fabs(d)*2000>Printer::maxFeedrate[Z_AXIS]*dtReal)
             d *= Printer::maxFeedrate[Z_AXIS]*dtReal/(2000*fabs(d));
-        long steps = (long)(d*Printer::axisStepsPerMM[Z_AXIS]);
+        steps = (long)(d*Printer::axisStepsPerMM[Z_AXIS]);
         steps = ( increment<0 ? RMath::min(steps,(long)increment) : RMath::max(steps,(long)increment));
-        PrintLine::moveRelativeDistanceInStepsReal(0,0,steps,0,Printer::maxFeedrate[Z_AXIS],true);
-    }
 #else
-    PrintLine::moveRelativeDistanceInStepsReal(0,0,increment,0,Printer::homingFeedrate[Z_AXIS],true);
+		steps = increment;
 #endif
-    Commands::printCurrentPosition();
-    break;
+
+#if	!FEATURE_ALLOW_UNKNOWN_POSITIONS
+		if(!Printer::isHomed())
+		{
+			// we do not allow unknown positions and the printer is not homed, thus we do not move
+			if( Printer::debugErrors() )
+			{
+				Com::printFLN( PSTR( "UI_ACTION_ZPOSITION: moving z aborted (not homed)" ) );
+			}
+			return;
+		}
+#endif // !FEATURE_ALLOW_UNKNOWN_POSITIONS
+
+		if(steps<0 && Printer::isZMinEndstopHit())
+		{
+			// we shall move upwards but the z-min-endstop is hit already, so we do nothing
+			if( Printer::debugErrors() )
+			{
+				Com::printFLN( PSTR( "UI_ACTION_ZPOSITION: moving z aborted (min reached)" ) );
+			}
+			return;
+		}
+		if(steps>0 && Printer::lastCmdPos[Z_AXIS] >= Z_MAX_LENGTH)
+		{
+			// we shall move downwards but the end of the z-axis has been reached already, so we do nothing
+			if( Printer::debugErrors() )
+			{
+				Com::printFLN( PSTR( "UI_ACTION_ZPOSITION: moving z aborted (max reached)" ) );
+			}
+			return;
+		}
+
+		PrintLine::moveRelativeDistanceInStepsReal(0,0,steps,0,Printer::maxFeedrate[Z_AXIS],true);
+		Commands::printCurrentPosition();
+		break;
+	}
     case UI_ACTION_XPOSITION_FAST:
         PrintLine::moveRelativeDistanceInStepsReal(Printer::axisStepsPerMM[X_AXIS]*increment,0,0,0,Printer::homingFeedrate[X_AXIS],true);
         Commands::printCurrentPosition();
@@ -2786,7 +2888,7 @@ void UIDisplay::executeAction(int action)
         case UI_ACTION_DISABLE_STEPPER:
             Printer::kill(true);
             break;
-		case UI_ACTION_OUTPUT_FILAMENT:
+		case UI_ACTION_UNMOUNT_FILAMENT:
 			if( Extruder::current->tempControl.targetTemperatureC < UI_SET_MIN_EXTRUDER_TEMP )
 			{
 				// we do not allow to move the extruder in case it is not heated up enough
@@ -2797,20 +2899,20 @@ void UIDisplay::executeAction(int action)
 				break;
 			}
 
-			GCode::executeFString(Com::tOutputFilament);
+			GCode::executeFString(Com::tUnmountFilament);
 			break;
-		case UI_ACTION_INPUT_FILAMENT:
+		case UI_ACTION_MOUNT_FILAMENT:
 			if( Extruder::current->tempControl.targetTemperatureC < UI_SET_MIN_EXTRUDER_TEMP )
 			{
 				// we do not allow to move the extruder in case it is not heated up enough
 				if( Printer::debugErrors() )
 				{
-					Com::printFLN( PSTR( "Input Filament: extruder input: aborted" ) );
+					Com::printFLN( PSTR( "Mount Filament: aborted" ) );
 				}
 				break;
 			}
 
-			GCode::executeFString(Com::tInputFilament);
+			GCode::executeFString(Com::tMountFilament);
 			break;
         case UI_ACTION_RESET_EXTRUDER:
             Printer::currentPositionSteps[E_AXIS] = 0;

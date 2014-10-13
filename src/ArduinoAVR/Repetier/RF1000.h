@@ -71,7 +71,6 @@
 - M3101 - configure the number of manual extruder steps after the "Extruder output" or "Extruder retract" button has been pressed
 - M3102 - configure the offset in x, y and z direction as well as the extruder retract which shall be applied in case the "Pause Printing" button has been pressed
 - M3103 - configure the x, y and z position which shall set when the printer is parked
-- M3104 - configure the x, y and z position which shall set when the printed object is output
 
 - M3110 - lock the current status text
 
@@ -317,3 +316,16 @@ void setMotorCurrent( unsigned char driver, unsigned short level );
 void motorCurrentControlInit( void );
 
 #endif // CURRENT_CONTROL_DRV8711
+
+
+// cleanupXPositions
+void cleanupXPositions( void );
+
+// cleanupYPositions
+void cleanupYPositions( void );
+
+// cleanupZPositions
+void cleanupZPositions( void );
+
+// cleanupEPositions
+void cleanupEPositions( void );

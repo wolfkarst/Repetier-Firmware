@@ -490,6 +490,8 @@ void Extruder::disableCurrentExtruderMotor()
 #if STEPPER_ON_DELAY
 	Extruder::current->enabled = 0;
 #endif // STEPPER_ON_DELAY
+
+	cleanupEPositions();
 }
 #define NUMTEMPS_1 28
 // Epcos B57560G0107F000

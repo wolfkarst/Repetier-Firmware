@@ -175,7 +175,7 @@ public:
     static char	doZCompensation;
 #endif // FEATURE_Z_COMPENSATION
 
-#if FEATURE_EXTENDED_BUTTONS
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
     static long targetPositionStepsX;
     static long targetPositionStepsY;
     static long targetPositionStepsZ;
@@ -184,7 +184,7 @@ public:
     static long currentPositionStepsY;
     static long currentPositionStepsZ;
     static long currentPositionStepsE;
-#endif // FEATURE_EXTENDED_BUTTONS
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 
 #if STEPPER_ON_DELAY
 	static char	enabledX;
@@ -260,6 +260,7 @@ public:
 
 		// when the stepper is disabled we loose our home position because somebody else can move our mechanical parts
 		setHomed(false);
+		cleanupXPositions();
 	}
     /** \brief Disable stepper motor for y direction. */
     static inline void disableYStepper()
@@ -277,6 +278,7 @@ public:
 
 		// when the stepper is disabled we loose our home position because somebody else can move our mechanical parts
 		setHomed(false);
+		cleanupYPositions();
 	}
     /** \brief Disable stepper motor for z direction. */
     static inline void disableZStepper()
@@ -294,6 +296,7 @@ public:
 
 		// when the stepper is disabled we loose our home position because somebody else can move our mechanical parts
 		setHomed(false);
+		cleanupZPositions();
 	}
     /** \brief Enable stepper motor for x direction. */
     static inline void  enableXStepper()

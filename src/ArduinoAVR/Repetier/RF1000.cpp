@@ -105,12 +105,6 @@ long			g_nParkPositionY			= PARK_POSITION_Y;
 long			g_nParkPositionZ			= PARK_POSITION_Z;
 #endif // FEATURE_PARK
 
-#if FEATURE_OUTPUT_PRINTED_OBJECT
-long			g_nOutputOffsetX			= OUTPUT_OFFSET_X;
-long			g_nOutputOffsetY			= OUTPUT_OFFSET_Y;
-long			g_nOutputOffsetZ			= OUTPUT_OFFSET_Z;
-#endif // FEATURE_OUTPUT_PRINTED_OBJECT
-
 #if FEATURE_EMERGENCY_PAUSE
 unsigned long	g_uLastPressureTime			= 0;
 long			g_nPressureSum				= 0;
@@ -2175,28 +2169,19 @@ void loopRF1000( void )
 #if FEATURE_OUTPUT_PRINTED_OBJECT
 				// output the object
 				outputObject();
-#endif // FEATURE_OUTPUT_PRINTED_OBJECT
-
-#if FAN_PIN>-1
-				// disable the fan
-				Commands::setFanSpeed(0,false);
-#endif // FAN_PIN>-1
-
+#else
 				// disable all steppers
 				Printer::setAllSteppersDisabled();
 				Printer::disableXStepper();
 				Printer::disableYStepper();
 				Printer::disableZStepper();
 				Extruder::disableCurrentExtruderMotor();
+#endif // FEATURE_OUTPUT_PRINTED_OBJECT
 
-#if FEATURE_EXTENDED_BUTTONS
-				HAL::forbidInterrupts();
-				Printer::targetPositionStepsX = Printer::currentPositionStepsX = 0;
-				Printer::targetPositionStepsY = Printer::currentPositionStepsY = 0;
-				Printer::targetPositionStepsZ = Printer::currentPositionStepsZ = 0;
-				Printer::targetPositionStepsE = Printer::currentPositionStepsE = 0;
-				HAL::allowInterrupts();
-#endif // FEATURE_EXTENDED_BUTTONS
+#if FAN_PIN>-1
+				// disable the fan
+				Commands::setFanSpeed(0,false);
+#endif // FAN_PIN>-1
 			}
 		}
 	}
@@ -2382,25 +2367,8 @@ void outputObject( void )
     HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
 
-	PrintLine::moveRelativeDistanceInSteps( 0,
-											0,
-											g_nOutputOffsetZ * ZAXIS_STEPS_PER_MM,
-											0,
-											Printer::homingFeedrate[Z_AXIS],
-											true,
-											ALWAYS_CHECK_ENDSTOPS);
-
-#if FEATURE_WATCHDOG
-    HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
-	PrintLine::moveRelativeDistanceInSteps( g_nOutputOffsetX * XAXIS_STEPS_PER_MM,
-											g_nOutputOffsetY * YAXIS_STEPS_PER_MM,
-											0,
-											0,
-											Printer::homingFeedrate[X_AXIS],
-											true,
-											ALWAYS_CHECK_ENDSTOPS);
+	GCode::executeFString(Com::tOutputObject);
+	Commands::waitUntilEndOfAllMoves();
 
 	// disable all steppers
 	Printer::setAllSteppersDisabled();
@@ -2636,6 +2604,9 @@ void pausePrint( void )
 
 		if( Printer::debugInfo() )
 		{
+			Com::printF( PSTR( "g_nPauseStepsX = " ), g_nPauseStepsX );
+			Com::printF( PSTR( ", g_nPauseStepsY = " ), g_nPauseStepsX );
+			Com::printFLN( PSTR( ", g_nPauseStepsZ = " ), g_nPauseStepsX );
 			Com::printFLN( PSTR( "pausePrint(): the pause position has been reached" ) );
 		}
 		return;
@@ -3708,65 +3679,6 @@ void processCommand( GCode* pCommand )
 			}
 #endif // FEATURE_PARK
 
-#if FEATURE_OUTPUT_PRINTED_OBJECT
-			case 3104: // M3104 - configure the x, y and z position which shall set when the printed object is output
-			{
-				if( pCommand->hasNoXYZ() )
-				{
-					if( Printer::debugErrors() )
-					{
-						Com::printFLN( PSTR( "M3104: invalid syntax" ) );
-					}
-				}
-				else
-				{
-					if( pCommand->hasX() )
-					{
-						// test and take over the specified value
-						nTemp = pCommand->X;
-						if( nTemp < 0 )				nTemp = 0;
-						if( nTemp > X_MAX_LENGTH )	nTemp = X_MAX_LENGTH;
-
-						g_nOutputOffsetX = nTemp;
-						if( Printer::debugInfo() )
-						{
-							Com::printF( PSTR( "M3104: new x output offset: " ), (int)g_nOutputOffsetX );
-							Com::printFLN( PSTR( " [mm]" ) );
-						}
-					}
-					if( pCommand->hasY() )
-					{
-						// test and take over the specified value
-						nTemp = pCommand->Y;
-						if( nTemp < 0 )				nTemp = 0;
-						if( nTemp > Y_MAX_LENGTH )	nTemp = Y_MAX_LENGTH;
-
-						g_nOutputOffsetY = nTemp;
-						if( Printer::debugInfo() )
-						{
-							Com::printF( PSTR( "M3104: new y output offset: " ), (int)g_nOutputOffsetY );
-							Com::printFLN( PSTR( " [mm]" ) );
-						}
-					}
-					if( pCommand->hasZ() )
-					{
-						// test and take over the specified value
-						nTemp = pCommand->Z;
-						if( nTemp < 0 )				nTemp = 0;
-						if( nTemp > Z_MAX_LENGTH )	nTemp = Z_MAX_LENGTH;
-
-						g_nOutputOffsetZ = nTemp;
-						if( Printer::debugInfo() )
-						{
-							Com::printF( PSTR( "M3104: new z output offset: " ), (int)g_nOutputOffsetZ );
-							Com::printFLN( PSTR( " [mm]" ) );
-						}
-					}
-				}
-				break;
-			}
-#endif // FEATURE_OUTPUT_PRINTED_OBJECT
-
 #if FEATURE_CONTROLLER == 4 || FEATURE_CONTROLLER == 33
 			case 3110:	// M3110 - force a status text
 			{
@@ -4127,10 +4039,11 @@ extern void processButton( int nAction )
 
 void nextPreviousZAction( int8_t next )
 {
-    millis_t actTime = HAL::timeInMilliseconds();
-    millis_t dtReal;
-    millis_t dt = dtReal = actTime-uid.lastNextPrev;
-	int8_t increment = next;
+    millis_t	actTime = HAL::timeInMilliseconds();
+    millis_t	dtReal;
+    millis_t	dt = dtReal = actTime-uid.lastNextPrev;
+	int8_t		increment = next;
+	long		steps;
 
 
     uid.lastNextPrev = actTime;
@@ -4148,13 +4061,45 @@ void nextPreviousZAction( int8_t next )
         float d = 0.01*(float)increment*uid.lastNextAccumul;
         if(fabs(d)*2000>Printer::maxFeedrate[Z_AXIS]*dtReal)
             d *= Printer::maxFeedrate[Z_AXIS]*dtReal/(2000*fabs(d));
-        long steps = (long)(d*Printer::axisStepsPerMM[Z_AXIS]);
+        steps = (long)(d*Printer::axisStepsPerMM[Z_AXIS]);
         steps = ( increment<0 ? RMath::min(steps,(long)increment) : RMath::max(steps,(long)increment));
-        PrintLine::moveRelativeDistanceInStepsReal(0,0,steps,0,Printer::maxFeedrate[Z_AXIS],true);
     }
 #else
-    PrintLine::moveRelativeDistanceInStepsReal(0,0,increment,0,Printer::homingFeedrate[Z_AXIS],true);
+	steps = increment;
 #endif
+
+#if	!FEATURE_ALLOW_UNKNOWN_POSITIONS
+	if(!Printer::isHomed())
+	{
+		// we do not allow unknown positions and the printer is not homed, thus we do not move
+		if( Printer::debugErrors() )
+		{
+			Com::printFLN( PSTR( "nextPreviousZAction(): moving z aborted (not homed)" ) );
+		}
+		return;
+	}
+#endif // !FEATURE_ALLOW_UNKNOWN_POSITIONS
+
+	if(steps<0 && Printer::isZMinEndstopHit())
+	{
+		// we shall move upwards but the z-min-endstop is hit already, so we do nothing
+		if( Printer::debugErrors() )
+		{
+			Com::printFLN( PSTR( "nextPreviousZAction(): moving z aborted (min reached)" ) );
+		}
+		return;
+	}
+	if(steps>0 && Printer::lastCmdPos[Z_AXIS] >= Z_MAX_LENGTH)
+	{
+		// we shall move downwards but the end of the z-axis has been reached already, so we do nothing
+		if( Printer::debugErrors() )
+		{
+			Com::printFLN( PSTR( "nextPreviousZAction(): moving z aborted (max reached)" ) );
+		}
+		return;
+	}
+
+	PrintLine::moveRelativeDistanceInStepsReal(0,0,steps,0,Printer::maxFeedrate[Z_AXIS],true);
 
 } // nextPreviousZAction
 
@@ -4485,5 +4430,105 @@ void motorCurrentControlInit( void )
 } // motorCurrentControlInit
 
 #endif // CURRENT_CONTROL_DRV8711
+
+
+void cleanupXPositions( void )
+{
+	HAL::forbidInterrupts();
+
+#if FEATURE_Z_COMPENSATION
+    Printer::nonCompensatedPositionStepsX = 0;
+#endif // FEATURE_Z_COMPENSATION
+
+#if FEATURE_EXTENDED_BUTTONS
+	Printer::targetPositionStepsX = Printer::currentPositionStepsX = 0;
+#endif // FEATURE_EXTENDED_BUTTONS
+	
+#if FEATURE_PAUSE_PRINTING
+	g_nContinueStepsX = 0;
+	g_pausePrint	  = 0;
+	g_printingPaused  = 0;
+	g_uPauseTime	  = 0;
+	g_pauseBeepDone	  = 0;
+#endif // FEATURE_PAUSE_PRINTING
+
+	HAL::allowInterrupts();
+
+} // cleanupXPositions
+
+
+void cleanupYPositions( void )
+{
+	HAL::forbidInterrupts();
+
+#if FEATURE_Z_COMPENSATION
+    Printer::nonCompensatedPositionStepsY = 0;
+#endif // FEATURE_Z_COMPENSATION
+
+#if FEATURE_EXTENDED_BUTTONS
+	Printer::targetPositionStepsY = Printer::currentPositionStepsY = 0;
+#endif // FEATURE_EXTENDED_BUTTONS
+	
+#if FEATURE_PAUSE_PRINTING
+	g_nContinueStepsY = 0;
+	g_pausePrint	  = 0;
+	g_printingPaused  = 0;
+	g_uPauseTime	  = 0;
+	g_pauseBeepDone	  = 0;
+#endif // FEATURE_PAUSE_PRINTING
+
+	HAL::allowInterrupts();
+
+} // cleanupYPositions
+
+
+void cleanupZPositions( void )
+{
+	HAL::forbidInterrupts();
+
+#if FEATURE_Z_COMPENSATION
+    Printer::nonCompensatedPositionStepsZ = 0;
+    Printer::targetCompensationZ  = 0;
+    Printer::currentCompensationZ = 0;
+    Printer::doZCompensation	  = 0;
+#endif // FEATURE_Z_COMPENSATION
+
+#if FEATURE_EXTENDED_BUTTONS
+	Printer::targetPositionStepsZ = Printer::currentPositionStepsZ = 0;
+#endif // FEATURE_EXTENDED_BUTTONS
+	
+#if FEATURE_PAUSE_PRINTING
+	g_nContinueStepsZ = 0;
+	g_pausePrint	  = 0;
+	g_printingPaused  = 0;
+	g_uPauseTime	  = 0;
+	g_pauseBeepDone	  = 0;
+#endif // FEATURE_PAUSE_PRINTING
+
+	calculateAllowedZStepsAfterEndStop();
+	HAL::allowInterrupts();
+
+} // cleanupZPositions
+
+
+void cleanupEPositions( void )
+{
+	HAL::forbidInterrupts();
+
+#if FEATURE_EXTENDED_BUTTONS
+	Printer::targetPositionStepsE = Printer::currentPositionStepsE = 0;
+#endif // FEATURE_EXTENDED_BUTTONS
+	
+#if FEATURE_PAUSE_PRINTING
+	g_nContinueStepsExtruder = 0;
+	g_pausePrint			 = 0;
+	g_printingPaused		 = 0;
+	g_uPauseTime			 = 0;
+	g_pauseBeepDone			 = 0;
+#endif // FEATURE_PAUSE_PRINTING
+
+	HAL::allowInterrupts();
+
+} // cleanupEPositions
 
 

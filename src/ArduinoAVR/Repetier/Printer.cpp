@@ -176,7 +176,7 @@ long Printer::currentPositionStepsX;
 long Printer::currentPositionStepsY;
 long Printer::currentPositionStepsZ;
 long Printer::currentPositionStepsE;
-#endif // FEATURE_EXTENDED_BUTTONS
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 
 #if STEPPER_ON_DELAY
 char Printer::enabledX;
@@ -527,9 +527,32 @@ uint8_t Printer::setDestinationStepsFromGCode(GCode *com)
     long xSteps = static_cast<long>(floor(x * axisStepsPerMM[X_AXIS] + 0.5));
     long ySteps = static_cast<long>(floor(y * axisStepsPerMM[Y_AXIS] + 0.5));
     long zSteps = static_cast<long>(floor(z * axisStepsPerMM[Z_AXIS] + 0.5));
-    destinationSteps[X_AXIS] = xSteps;
-    destinationSteps[Y_AXIS] = ySteps;
-    destinationSteps[Z_AXIS] = zSteps;
+    
+	if(com->hasX())
+	{
+		destinationSteps[X_AXIS] = xSteps;
+	}
+	else
+	{
+		destinationSteps[X_AXIS] = currentPositionSteps[X_AXIS];
+	}
+    if(com->hasY())
+	{
+		destinationSteps[Y_AXIS] = ySteps;
+	}
+	else
+	{
+		destinationSteps[Y_AXIS] = currentPositionSteps[Y_AXIS];
+	}
+    if(com->hasZ())
+	{
+		destinationSteps[Z_AXIS] = zSteps;
+	}
+	else
+	{
+		destinationSteps[Z_AXIS] = currentPositionSteps[Z_AXIS];
+	}
+
 	if(com->hasE() && !Printer::debugDryrun())
     {
         p = convertToMM(com->E * axisStepsPerMM[E_AXIS]);
@@ -554,7 +577,11 @@ uint8_t Printer::setDestinationStepsFromGCode(GCode *com)
             destinationSteps[E_AXIS] = p;
         }
     }
-    else Printer::destinationSteps[E_AXIS] = Printer::currentPositionSteps[E_AXIS];
+    else
+	{
+		destinationSteps[E_AXIS] = currentPositionSteps[E_AXIS];
+	}
+
     if(com->hasF())
     {
         if(unitIsInches)
@@ -851,7 +878,7 @@ void Printer::setup()
     doZCompensation				 = 0;
 #endif // FEATURE_Z_COMPENSATION
 
-#if FEATURE_EXTENDED_BUTTONS
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
     currentPositionStepsX =
     currentPositionStepsY =
     currentPositionStepsZ =
@@ -860,7 +887,7 @@ void Printer::setup()
     targetPositionStepsY  =
     targetPositionStepsZ  =
     targetPositionStepsE  = 0;
-#endif // FEATURE_EXTENDED_BUTTONS
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 
 #if STEPPER_ON_DELAY
 	enabledX = 0;
@@ -1139,7 +1166,12 @@ void Printer::homeXAxis()
         // Reposition extruder that way, that all extruders can be selected at home pos.
 #endif
         UI_STATUS_UPD(UI_TEXT_HOME_X);
-        steps = (Printer::xMaxSteps-Printer::xMinSteps) * X_HOME_DIR;
+
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		steps = (Printer::xMaxSteps-Printer::xMinSteps) * X_HOME_DIR;
         currentPositionSteps[X_AXIS] = -steps;
         PrintLine::moveRelativeDistanceInSteps(2*steps,0,0,0,homingFeedrate[X_AXIS],true,true);
         currentPositionSteps[X_AXIS] = (X_HOME_DIR == -1) ? xMinSteps-offX : xMaxSteps + offX;
@@ -1155,10 +1187,10 @@ void Printer::homeXAxis()
         nonCompensatedPositionStepsX = currentPositionSteps[X_AXIS];
 #endif // FEATURE_Z_COMPENSATION
 
-#if FEATURE_EXTENDED_BUTTONS
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
         targetPositionStepsX  = 0;
         currentPositionStepsX = 0;
-#endif // FEATURE_EXTENDED_BUTTONS
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 
 #if NUM_EXTRUDER>1
         PrintLine::moveRelativeDistanceInSteps((Extruder::current->xOffset-offX) * X_HOME_DIR,0,0,0,homingFeedrate[X_AXIS],true,false);
@@ -1184,7 +1216,12 @@ void Printer::homeYAxis()
         // Reposition extruder that way, that all extruders can be selected at home pos.
 #endif
         UI_STATUS_UPD(UI_TEXT_HOME_Y);
-        steps = (yMaxSteps-Printer::yMinSteps) * Y_HOME_DIR;
+
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		steps = (yMaxSteps-Printer::yMinSteps) * Y_HOME_DIR;
         currentPositionSteps[Y_AXIS] = -steps;
         PrintLine::moveRelativeDistanceInSteps(0,2*steps,0,0,homingFeedrate[1],true,true);
         currentPositionSteps[Y_AXIS] = (Y_HOME_DIR == -1) ? yMinSteps-offY : yMaxSteps+offY;
@@ -1200,10 +1237,10 @@ void Printer::homeYAxis()
         nonCompensatedPositionStepsY = currentPositionSteps[Y_AXIS];
 #endif // FEATURE_Z_COMPENSATION
 
-#if FEATURE_EXTENDED_BUTTONS
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
         targetPositionStepsY  = 0;
         currentPositionStepsY = 0;
-#endif // FEATURE_EXTENDED_BUTTONS
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 
 #if NUM_EXTRUDER>1
         PrintLine::moveRelativeDistanceInSteps(0,(Extruder::current->yOffset-offY) * Y_HOME_DIR,0,0,homingFeedrate[Y_AXIS],true,false);
@@ -1221,7 +1258,12 @@ void Printer::homeZAxis()
     if ((MIN_HARDWARE_ENDSTOP_Z && Z_MIN_PIN > -1 && Z_HOME_DIR==-1) || (MAX_HARDWARE_ENDSTOP_Z && Z_MAX_PIN > -1 && Z_HOME_DIR==1))
     {
         UI_STATUS_UPD(UI_TEXT_HOME_Z);
-        steps = (zMaxSteps - zMinSteps) * Z_HOME_DIR;
+
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		steps = (zMaxSteps - zMinSteps) * Z_HOME_DIR;
         currentPositionSteps[Z_AXIS] = -steps;
         PrintLine::moveRelativeDistanceInSteps(0,0,2*steps,0,homingFeedrate[2],true,true);
         currentPositionSteps[Z_AXIS] = (Z_HOME_DIR == -1) ? zMinSteps : zMaxSteps;
@@ -1243,10 +1285,10 @@ void Printer::homeZAxis()
         PrintLine::queueTask( TASK_INIT_Z_COMPENSATION );
 #endif // FEATURE_Z_COMPENSATION
 
-#if FEATURE_EXTENDED_BUTTONS
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
         targetPositionStepsZ  = 0;
         currentPositionStepsZ = 0;
-#endif // FEATURE_EXTENDED_BUTTONS
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 
         calculateAllowedZStepsAfterEndStop();
         currentZStepsAfterEndstop = 0;

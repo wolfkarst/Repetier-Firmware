@@ -363,8 +363,9 @@ FSTRINGVALUE(Com::tCreationFailed,"Creation failed")
 FSTRINGVALUE(Com::tSDErrorCode,"SD errorCode:")
 #endif // SDSUPPORT
 
-FSTRINGVALUE(Com::tOutputFilament,OUTPUT_FILAMENT_SCRIPT)
-FSTRINGVALUE(Com::tInputFilament,INPUT_FILAMENT_SCRIPT)
+FSTRINGVALUE(Com::tOutputObject,OUTPUT_OBJECT_SCRIPT)
+FSTRINGVALUE(Com::tUnmountFilament,UNMOUNT_FILAMENT_SCRIPT)
+FSTRINGVALUE(Com::tMountFilament,MOUNT_FILAMENT_SCRIPT)
 
 void Com::printWarningF(FSTRINGPARAM(text)) {
     printF(tWarning);

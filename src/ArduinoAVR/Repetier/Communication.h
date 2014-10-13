@@ -350,8 +350,9 @@ FSTRINGVAR(tCreationFailed)
 FSTRINGVAR(tSDErrorCode)
 #endif // SDSUPPORT
 
-FSTRINGVAR(tOutputFilament)
-FSTRINGVAR(tInputFilament)
+FSTRINGVAR(tOutputObject)
+FSTRINGVAR(tUnmountFilament)
+FSTRINGVAR(tMountFilament)
 
 static void printNumber(uint32_t n);
 static void printWarningF(FSTRINGPARAM(text));

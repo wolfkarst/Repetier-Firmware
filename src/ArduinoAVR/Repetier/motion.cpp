@@ -2265,6 +2265,7 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 					Printer::currentCompensationZ = 0;
 					g_recalculatedCompensation	  = 0;
 				
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 					Printer::targetPositionStepsX	= 
 					Printer::targetPositionStepsY	= 
 					Printer::targetPositionStepsZ	= 
@@ -2273,6 +2274,7 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 					Printer::currentPositionStepsY	= 
 					Printer::currentPositionStepsZ	= 
 					Printer::currentPositionStepsE	= 0;
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 
 					calculateAllowedZStepsAfterEndStop();
 				}
