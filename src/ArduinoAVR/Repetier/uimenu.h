@@ -690,7 +690,7 @@ UI_MENU_SUBMENU(ui_menu_main4, UI_TEXT_DEBUGGING,	   ui_menu_debugging);
 UI_MENU_SUBMENU(ui_menu_main5, UI_TEXT_CONFIGURATION,  ui_menu_configuration);
 
 #define UI_MENU_MAIN {UI_MENU_ADDCONDBACK  &ui_menu_main1,&ui_menu_sd_printfile,&ui_menu_main2,&ui_menu_main3,UI_MENU_FAN_COND UI_MENU_SD_COND DEBUGGING_MENU_ENTRY &ui_menu_main5}
-UI_MENU(ui_menu_main,UI_MENU_MAIN,6+UI_MENU_BACKCNT+UI_MENU_SD_CNT+UI_MENU_FAN_CNT+DEBUGGING_MENU_COUNT);
+UI_MENU(ui_menu_main,UI_MENU_MAIN,5+UI_MENU_BACKCNT+UI_MENU_SD_CNT+UI_MENU_FAN_CNT+DEBUGGING_MENU_COUNT);
 
 /* Define menus accessible by action commands
 

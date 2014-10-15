@@ -230,9 +230,8 @@ void scanHeatBed( void )
 		g_nHeatBedScanZ		 = 0;
 		g_nLastHeatBedScanZ	 = 0;
 
-		// start at the home position (move the z-axis first for safety reasons)
-		Printer::homeAxis( false, false, true );
-		Printer::homeAxis( true, true, false );
+		// start at the home position
+		Printer::homeAxis( true, true, true );
 
 		// turn off the engines (for cases where the heating needs some longer amount of time)
 		Printer::disableXStepper();

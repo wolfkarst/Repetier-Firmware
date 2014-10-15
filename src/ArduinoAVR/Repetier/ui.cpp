@@ -2894,7 +2894,7 @@ void UIDisplay::executeAction(int action)
 				// we do not allow to move the extruder in case it is not heated up enough
 				if( Printer::debugErrors() )
 				{
-					Com::printFLN( PSTR( "Output Filament: extruder output: aborted" ) );
+					Com::printFLN( PSTR( "Unload Filament: extruder output: aborted" ) );
 				}
 				break;
 			}
@@ -2907,7 +2907,7 @@ void UIDisplay::executeAction(int action)
 				// we do not allow to move the extruder in case it is not heated up enough
 				if( Printer::debugErrors() )
 				{
-					Com::printFLN( PSTR( "Mount Filament: aborted" ) );
+					Com::printFLN( PSTR( "Load Filament: aborted" ) );
 				}
 				break;
 			}

@@ -1,3 +1,9 @@
+V 0.91.43 (2014-10-15)
+- "Unmount Filament" has been renamed to "Unload Filament".
+- "Mount Filament" has been renamed to "Load Filament".
+- The homing-order at the beginning of the heat bed scan has been changed to the standard homing order.
+- A wrong menu entry could appear at the end of the main menu (below "Configuration").
+
 V 0.91.41 (2014-10-13)
 - The automatic object output now can be configured via the OUTPUT_OBJECT_SCRIPT script.
   - M3104 has been removed because all of its functionality is replaced through the OUTPUT_OBJECT_SCRIPT script now.
