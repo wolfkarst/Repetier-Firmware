@@ -371,7 +371,7 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
     for(uint8_t i=0; i<NUM_EXTRUDER; i++)
     {
 #if FEATURE_WATCHDOG
-    HAL::pingWatchdog();
+		HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
 
         int o=i*EEPROM_EXTRUDER_LENGTH+EEPROM_EXTRUDER_OFFSET;
@@ -535,7 +535,7 @@ void EEPROM::readDataFromEEPROM()
     for(uint8_t i=0; i<NUM_EXTRUDER; i++)
     {
 #if FEATURE_WATCHDOG
-    HAL::pingWatchdog();
+		HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
 
         int o=i*EEPROM_EXTRUDER_LENGTH+EEPROM_EXTRUDER_OFFSET;
@@ -800,7 +800,11 @@ void EEPROM::writeSettings()
     // now the extruder
     for(uint8_t i=0; i<NUM_EXTRUDER; i++)
     {
-        int o=i*EEPROM_EXTRUDER_LENGTH+EEPROM_EXTRUDER_OFFSET;
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		int o=i*EEPROM_EXTRUDER_LENGTH+EEPROM_EXTRUDER_OFFSET;
         Extruder *e = &extruder[i];
         writeFloat(o+EPR_EXTRUDER_STEPS_PER_MM,Com::tEPRStepsPerMM);
         writeFloat(o+EPR_EXTRUDER_MAX_FEEDRATE,Com::tEPRMaxFeedrate);
@@ -844,7 +848,11 @@ uint8_t EEPROM::computeChecksum()
     uint8_t checksum=0;
     for(i=0; i<2048; i++)
     {
-        if(i==EEPROM_OFFSET+EPR_INTEGRITY_BYTE) continue;
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		if(i==EEPROM_OFFSET+EPR_INTEGRITY_BYTE) continue;
         checksum += HAL::eprGetByte(i);
     }
     return checksum;

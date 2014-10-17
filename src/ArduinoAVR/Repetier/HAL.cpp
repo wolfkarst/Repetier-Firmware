@@ -579,7 +579,7 @@ SIGNAL (TIMER3_COMPA_vect)
         servoIndex = 0;
 }
 #else
-#error No servo support for your board, please diable FEATURE_SERVO
+#error No servo support for your board, please disable FEATURE_SERVO
 #endif
 #endif
 
@@ -748,12 +748,6 @@ This timer is called 3906 timer per second. It is used to update pwm values for 
 ISR(PWM_TIMER_VECTOR)
 {
 #if FEATURE_Z_COMPENSATION
-	long			i;
-	long			nXLeft;
-	long			nXRight;
-	long			nYFront;
-	long			nYBack;
-	long			nTemp;
 	static char		nCounterZCompensation	= Z_COMPENSATION_COUNTER;
 #endif // FEATURE_Z_COMPENSATION
 
@@ -892,7 +886,7 @@ ISR(PWM_TIMER_VECTOR)
 	HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
 
-	counterPeriodical++; // Appxoimate a 100ms timer
+	counterPeriodical++; // Approximate a 100ms timer
     if(counterPeriodical>=(int)(F_CPU/40960))
     {
         counterPeriodical=0;
@@ -940,10 +934,6 @@ ISR(PWM_TIMER_VECTOR)
     pwm_count++;
     pwm_count_heater += HEATER_PWM_STEP;
 
-#if FEATURE_WATCHDOG
-	HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 #if FEATURE_Z_COMPENSATION
 	nCounterZCompensation --;
 
@@ -953,95 +943,9 @@ ISR(PWM_TIMER_VECTOR)
 
 		if( Printer::doZCompensation && !g_printingPaused )
 		{
-			// the z-compensation must be on and the printing must not be paused
-			if( Printer::nonCompensatedPositionStepsZ )								// we do not perform a compensation in case z is 0
-			{
-				// check whether we have to perform a compensation in z-direction
-				if( Printer::nonCompensatedPositionStepsZ < g_maxZCompensationSteps )
-				{
-					// we are doing the first rows at the moment - check which compensation is necessary
-					if( Printer::nonCompensatedPositionStepsX < g_minX ||
-						Printer::nonCompensatedPositionStepsX > g_maxX ||
-						Printer::nonCompensatedPositionStepsY < g_minY ||
-						Printer::nonCompensatedPositionStepsY > g_maxY )
-					{
-						// we went outside the last used compensation rectangle - we have to find the new compensation value
-#if FEATURE_WATCHDOG
-						HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
-						g_recalculatedCompensation ++;
-					
-						// find the rectangle first which covers the current position of the extruder
-						nXLeft = 1;
-						for( i=1; i<g_uHeatBedMaxX; i++ )
-						{
-							nTemp = g_HeatBedCompensation[i][0];
-							nTemp = (long)((float)nTemp * XAXIS_STEPS_PER_MM);
-							if( Printer::nonCompensatedPositionStepsX <= nTemp )
-							{
-								nXRight = i;
-								break;
-							}
-							nXLeft = i;
-						}
-					
-#if FEATURE_WATCHDOG
-						HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
-						nYFront = 1;
-						for( i=1; i<g_uHeatBedMaxY; i++ )
-						{
-							nTemp = g_HeatBedCompensation[0][i];
-							nTemp = (long)((float)nTemp * YAXIS_STEPS_PER_MM);
-							if( Printer::nonCompensatedPositionStepsY <= nTemp )
-							{
-								nYBack = i;
-								break;
-							}
-							nYFront = i;
-						}
-
-						// remember where we are
-						g_minX = (long)((float)g_HeatBedCompensation[nXLeft][0] * XAXIS_STEPS_PER_MM);
-						g_maxX = (long)((float)g_HeatBedCompensation[nXRight][0] * XAXIS_STEPS_PER_MM);
-						g_minY = (long)((float)g_HeatBedCompensation[0][nYFront] * YAXIS_STEPS_PER_MM);
-						g_maxY = (long)((float)g_HeatBedCompensation[0][nYBack] * YAXIS_STEPS_PER_MM);
-					
-						if( Printer::nonCompensatedPositionStepsZ <= g_noZCompensationSteps )
-						{
-							// the printer is very close to the surface - we shall print a layer of exactly the desired thickness
-							Printer::targetCompensationZ = g_HeatBedCompensation[nXLeft][nYFront] + g_manualCompensationSteps;
-						}
-						else
-						{
-							// the printer is already a bit away from the surface - do the actual compensation
-							// determine the current, non-compensated z position without the no-compensation range
-							nTemp  = Printer::nonCompensatedPositionStepsZ - g_noZCompensationSteps;
-							nTemp  = 128 - (128 * nTemp / g_diffZCompensationSteps);
-							nTemp *= (g_HeatBedCompensation[nXLeft][nYFront] - g_offsetHeatBedCompensation);
-							nTemp >>= 8;
-							nTemp += g_offsetHeatBedCompensation;
-						
-							Printer::targetCompensationZ = nTemp + g_manualCompensationSteps;
-						}
-					}
-				}
-				else
-				{	
-					// after the first layers, only the static offset to the surface must be compensated
-					Printer::targetCompensationZ = g_offsetHeatBedCompensation + g_manualCompensationSteps;
-				}
-			}
-
 			if( g_nDirectionZ == 0 && !g_nBlockZ )
 			{
 				// this interrupt shall move the z-axis only in case the "main" interrupt (bresenhamStep()) is not running at the moment
-#if FEATURE_WATCHDOG
-				HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 				HAL::forbidInterrupts();
 				if( Printer::currentCompensationZ < Printer::targetCompensationZ )
 				{
@@ -1126,10 +1030,6 @@ ISR(PWM_TIMER_VECTOR)
 			bDone = true;
 		}
 		
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 		if( !bDone )
 		{
 			nDirectionX = 0;
@@ -1272,10 +1172,6 @@ ISR(PWM_TIMER_VECTOR)
 			}
 		}
 		
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 		if( !bDone )
 		{
 			if( Printer::currentPositionStepsE > Printer::targetPositionStepsE )

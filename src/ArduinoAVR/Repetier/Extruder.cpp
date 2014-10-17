@@ -66,12 +66,13 @@ Is called every 100ms.
 static uint8_t extruderTempErrors = 0;
 void Extruder::manageTemperatures()
 {
-#if FEATURE_WATCHDOG
-    HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
     uint8_t errorDetected = 0;
     for(uint8_t controller=0; controller<NUM_TEMPERATURE_LOOPS; controller++)
     {
+#if FEATURE_WATCHDOG
+	    HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         if(controller == autotuneIndex) continue;
         TemperatureController *act = tempController[controller];
         // Get Temperature
@@ -222,6 +223,7 @@ void createGenericTable(short table[GENERIC_THERM_NUM_ENTRIES][2],short minTemp,
 #if FEATURE_WATCHDOG
         HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
+
         float t = maxTemp-i*delta;
         float r = exp(beta/(t+272.65))*k;
         float v = 4092*r*vs/((rs+r)*GENERIC_THERM_VREF);
@@ -808,6 +810,10 @@ void TemperatureController::setTargetTemperature(float target)
         short newraw,newtemp;
         while(i<num)
         {
+#if FEATURE_WATCHDOG
+		    HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
             newraw = pgm_read_word(&temptable[i++]);
             newtemp = pgm_read_word(&temptable[i++]);
             if (newtemp < temp)
@@ -835,6 +841,10 @@ void TemperatureController::setTargetTemperature(float target)
         short newraw,newtemp;
         while(i<num)
         {
+#if FEATURE_WATCHDOG
+		    HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
             newraw = pgm_read_word(&temptable[i++]);
             newtemp = pgm_read_word(&temptable[i++]);
             if (newtemp > temp)

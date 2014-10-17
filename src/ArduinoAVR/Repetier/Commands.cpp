@@ -92,7 +92,11 @@ void Commands::waitUntilEndOfAllMoves()
 
 	while(PrintLine::hasLines())
     {
-        GCode::readFromSerial();
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		GCode::readFromSerial();
         Commands::checkForPeriodicalActions();
         UI_MEDIUM;
     }
@@ -107,7 +111,11 @@ void Commands::waitUntilEndOfAllBuffers()
 
 	while(PrintLine::hasLines() || (code = GCode::peekCurrentCommand()) != NULL)
     {
-        GCode::readFromSerial();
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		GCode::readFromSerial();
         UI_MEDIUM; // do check encoder
         if(code)
         {
@@ -130,7 +138,8 @@ void Commands::waitUntilEndOfAllBuffers()
 #endif
                 Commands::executeGCode(code);
             code->popCurrentCommand();
-        }        Commands::checkForPeriodicalActions();
+        }
+		Commands::checkForPeriodicalActions();
         UI_MEDIUM;
     }
 }
@@ -139,10 +148,6 @@ void Commands::printCurrentPosition()
     float x,y,z;
     
 	
-#if FEATURE_WATCHDOG
-	HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 	Printer::realPosition(x,y,z);
     x += Printer::coordinateOffset[X_AXIS];
     y += Printer::coordinateOffset[Y_AXIS];
@@ -153,10 +158,6 @@ void Commands::printCurrentPosition()
     Com::printFLN(Com::tSpaceEColon,Printer::currentPositionSteps[3]*Printer::invAxisStepsPerMM[3]*(Printer::unitIsInches?0.03937:1),2);
     //Com::printF(PSTR("OffX:"),Printer::offsetX); // to debug offset handling
     //Com::printFLN(PSTR(" OffY:"),Printer::offsetY);
-
-#if FEATURE_WATCHDOG
-	HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
 
 }
 void Commands::printTemperatures(bool showRaw)
@@ -541,6 +542,10 @@ void Commands::executeGCode(GCode *com)
             codenum += HAL::timeInMilliseconds();  // keep track of when we started waiting
             while((uint32_t)(codenum-HAL::timeInMilliseconds())  < 2000000000 )
             {
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
                 GCode::readFromSerial();
                 Commands::checkForPeriodicalActions();
             }
@@ -928,7 +933,11 @@ void Commands::executeGCode(GCode *com)
             millis_t currentTime;
             do
             {
-                currentTime = HAL::timeInMilliseconds();
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+				currentTime = HAL::timeInMilliseconds();
                 if( (currentTime - printedTime) > 1000 )   //Print Temp Reading every 1 second while heating up.
                 {
                     printTemperatures();
@@ -978,7 +987,11 @@ void Commands::executeGCode(GCode *com)
             codenum = HAL::timeInMilliseconds();
             while(heatedBedController.currentTemperatureC+0.5<heatedBedController.targetTemperatureC)
             {
-                if( (HAL::timeInMilliseconds()-codenum) > 1000 )   //Print Temp Reading every 1 second while heating up.
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+				if( (HAL::timeInMilliseconds()-codenum) > 1000 )   //Print Temp Reading every 1 second while heating up.
                 {
                     printTemperatures();
                     codenum = HAL::timeInMilliseconds();
@@ -995,8 +1008,13 @@ void Commands::executeGCode(GCode *com)
             {
                 bool allReached = false;
                 codenum = HAL::timeInMilliseconds();
-                while(!allReached) {
-                    allReached = true;
+                while(!allReached)
+				{
+#if FEATURE_WATCHDOG
+					HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+					allReached = true;
                     if( (HAL::timeInMilliseconds()-codenum) > 1000 )   //Print Temp Reading every 1 second while heating up.
                     {
                         printTemperatures();
@@ -1117,8 +1135,13 @@ void Commands::executeGCode(GCode *com)
 #ifdef DEBUG_PRINT
                     debugWaitLoop = 2;
 #endif
-                while(wait-HAL::timeInMilliseconds() < 100000) {
-                    Printer::defaultLoopActions();
+                while(wait-HAL::timeInMilliseconds() < 100000)
+				{
+#if FEATURE_WATCHDOG
+					HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+					Printer::defaultLoopActions();
                 }
                 if(com->hasX())
                     Printer::enableXStepper();
@@ -1493,7 +1516,6 @@ void Commands::emergencyStop()
     HAL::resetHardware();
 #else
     BEGIN_INTERRUPT_PROTECTED
-    //HAL::forbidInterrupts(); // Don't allow interrupts to do their work
     Printer::kill(false);
     Extruder::manageTemperatures();
     for(uint8_t i=0; i<NUM_EXTRUDER+3; i++)

@@ -361,6 +361,10 @@ void GCode::readFromSerial()
     }
     while(HAL::serialByteAvailable() && commandsReceivingWritePosition < MAX_CMD_SIZE)    // consume data until no data or buffer full
     {
+#if FEATURE_WATCHDOG
+	    HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         timeOfLastDataPacket = time; //HAL::timeInMilliseconds();
         commandReceiving[commandsReceivingWritePosition++] = HAL::serialReadByte();
         // first lets detect, if we got an old type ascii command
@@ -457,7 +461,7 @@ void GCode::readFromSerial()
             n = sd.file.read();
 
 #if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
+			HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
 
 			if(n==-1)

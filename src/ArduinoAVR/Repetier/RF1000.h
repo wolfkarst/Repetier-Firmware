@@ -97,6 +97,7 @@
 #define EXTRUDER_STEPPER_HIGH_DELAY		40000															// [µs]
 #define EXTRUDER_STEPPER_LOW_DELAY		250																// [µs]
 #define	LOOP_INTERVAL					1000															// [ms]
+#define	SCAN_DELAY						1000															// [ms]
 
 #define	TASK_ENABLE_Z_COMPENSATION		1
 #define	TASK_DISABLE_Z_COMPENSATION		2
@@ -329,3 +330,11 @@ void cleanupZPositions( void );
 
 // cleanupEPositions
 void cleanupEPositions( void );
+
+
+#if FEATURE_Z_COMPENSATION
+
+// doZCompensation()
+void doZCompensation( void );
+
+#endif // FEATURE_Z_COMPENSATION

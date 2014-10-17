@@ -915,10 +915,14 @@ void Printer::setup()
 #endif
     EEPROM::initBaudrate();
     HAL::serialSetBaudrate(baudrate);
+
+    Com::printFLN(Com::tStart);
+
 #if FEATURE_WATCHDOG
+    Com::printFLN(Com::tStartWatchdog);
     HAL::startWatchdog();
 #endif // FEATURE_WATCHDOG
-    Com::printFLN(Com::tStart);
+
     UI_INITIALIZE;
     HAL::showStartReason();
     Extruder::initExtruder();
@@ -1167,10 +1171,6 @@ void Printer::homeXAxis()
 #endif
         UI_STATUS_UPD(UI_TEXT_HOME_X);
 
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 		steps = (Printer::xMaxSteps-Printer::xMinSteps) * X_HOME_DIR;
         currentPositionSteps[X_AXIS] = -steps;
         PrintLine::moveRelativeDistanceInSteps(2*steps,0,0,0,homingFeedrate[X_AXIS],true,true);
@@ -1217,10 +1217,6 @@ void Printer::homeYAxis()
 #endif
         UI_STATUS_UPD(UI_TEXT_HOME_Y);
 
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 		steps = (yMaxSteps-Printer::yMinSteps) * Y_HOME_DIR;
         currentPositionSteps[Y_AXIS] = -steps;
         PrintLine::moveRelativeDistanceInSteps(0,2*steps,0,0,homingFeedrate[1],true,true);
@@ -1258,10 +1254,6 @@ void Printer::homeZAxis()
     if ((MIN_HARDWARE_ENDSTOP_Z && Z_MIN_PIN > -1 && Z_HOME_DIR==-1) || (MAX_HARDWARE_ENDSTOP_Z && Z_MAX_PIN > -1 && Z_HOME_DIR==1))
     {
         UI_STATUS_UPD(UI_TEXT_HOME_Z);
-
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
 
 		steps = (zMaxSteps - zMinSteps) * Z_HOME_DIR;
         currentPositionSteps[Z_AXIS] = -steps;

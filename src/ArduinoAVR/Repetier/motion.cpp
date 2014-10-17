@@ -143,10 +143,6 @@ void PrintLine::moveRelativeDistanceInStepsReal(long x,long y,long z,long e,floa
 */
 void PrintLine::queueCartesianMove(uint8_t check_endstops,uint8_t pathOptimize)
 {
-#if FEATURE_WATCHDOG
-    HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 	Printer::unsetAllSteppersDisabled();
     waitForXFreeLines(1);
     uint8_t newPath=insertWaitMovesIfNeeded(pathOptimize, 0);
@@ -471,6 +467,10 @@ void PrintLine::updateTrapezoids()
     millis_t minTime = 4500L * RMath::min(MOVE_CACHE_SIZE,10);
     while(timeleft < minTime && maxfirst != linesWritePos)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         timeleft += lines[maxfirst].timeInTicks;
         nextPlannerIndex(maxfirst);
     }
@@ -1561,6 +1561,10 @@ void PrintLine::arc(float *position, float *target, float *offset, float radius,
 
     for (i = 1; i<segments; i++)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         // Increment (segments-1)
 
         if((count & 4) == 0)
@@ -1647,7 +1651,6 @@ long PrintLine::bresenhamStep() // Version for delta printer
 #ifdef INCLUDE_DEBUG_NO_MOVE
         if(Printer::debugNoMoves())   // simulate a move, but do nothing in reality
         {
-            //HAL::forbidInterrupts();
             //deltaSegmentCount -= cur->numDeltaSegments; // should always be zero
             removeCurrentLineForbidInterrupt();
             if(linesCount == 0) UI_STATUS(UI_TEXT_IDLE);
@@ -2015,7 +2018,6 @@ long PrintLine::bresenhamStep() // Version for delta printer
             Com::printFLN(PSTR("HS:"), (int) cur->halfStep);
         }
 #endif
-        //HAL::forbidInterrupts();
         //deltaSegmentCount -= cur->numDeltaSegments; // should always be zero
         removeCurrentLineForbidInterrupt();
         Printer::disableAllowedStepper();
@@ -2144,10 +2146,6 @@ long PrintLine::bresenhamStep() // version for cartesian printer
                 // the printing shall be paused and the printer head shall be moved away
                 if( linesCount )
                 {
-#if FEATURE_WATCHDOG
-					HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 					g_nContinueStepsX		 = 0;
                     g_nContinueStepsY		 = 0;
                     g_nContinueStepsZ		 = 0;
@@ -2374,10 +2372,6 @@ long PrintLine::bresenhamStep() // version for cartesian printer
         }
         if(cur->isEMove()) Extruder::enable();
         cur->fixStartAndEndSpeed();
-
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
 
 		HAL::allowInterrupts();
         cur_errupd = (cur->isFullstepping() ? cur->delta[cur->primaryAxis] : cur->delta[cur->primaryAxis]<<1);

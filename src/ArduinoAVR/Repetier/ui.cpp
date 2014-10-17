@@ -59,6 +59,10 @@ void beep(uint8_t duration,uint8_t count)
 #endif
     for(uint8_t i=0; i<count; i++)
     {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 #if BEEPER_TYPE==1 && defined(BEEPER_PIN) && BEEPER_PIN>=0
 #if defined(BEEPER_TYPE_INVERTING) && BEEPER_TYPE_INVERTING
         WRITE(BEEPER_PIN,LOW);
@@ -740,8 +744,12 @@ void slideIn(uint8_t row,FSTRINGPARAM(text))
     for(i=UI_COLS-1; i>=0; i--)
     {
         uid.printRow(row,empty,printCols,i);
-        HAL::pingWatchdog();
-        HAL::delayMilliseconds(10);
+
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		HAL::delayMilliseconds(10);
     }
 }
 #endif // UI_ANIMATION
@@ -993,7 +1001,11 @@ void UIDisplay::parse(char *txt,bool ram)
     float fvalue=0;
     while(col<MAX_COLS)
     {
-        char c=(ram ? *(txt++) : pgm_read_byte(txt++));
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		char c=(ram ? *(txt++) : pgm_read_byte(txt++));
         if(c==0) break; // finished
         if(c!='%')
         {
@@ -1435,7 +1447,11 @@ void UIDisplay::updateSDFileCount()
     nFilesOnCard = 0;
     while ((p = root->getLongFilename(p, NULL, 0, NULL)))
     {
-        if (! (DIR_IS_FILE(p) || DIR_IS_SUBDIR(p)))
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		if (! (DIR_IS_FILE(p) || DIR_IS_SUBDIR(p)))
             continue;
         if (folderLevel>=SD_MAX_FOLDER_DEPTH && DIR_IS_SUBDIR(p) && !(p->name[0]=='.' && p->name[1]=='.'))
             continue;
@@ -1454,7 +1470,10 @@ void getSDFilenameAt(byte filePos,char *filename)
     root->rewind();
     while ((p = root->getLongFilename(p, tempLongFilename, 0, NULL)))
     {
-        HAL::pingWatchdog();
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
         if (!DIR_IS_FILE(p) && !DIR_IS_SUBDIR(p)) continue;
         if(uid.folderLevel>=SD_MAX_FOLDER_DEPTH && DIR_IS_SUBDIR(p) && !(p->name[0]=='.' && p->name[1]=='.')) continue;
         if (filePos--)
@@ -1512,8 +1531,11 @@ void sdrefresh(uint8_t &r,char cache[UI_ROWS][MAX_COLS+1])
 
     while (r+offset<nFilesOnCard+1 && r<UI_ROWS && (p = root->getLongFilename(p, tempLongFilename, 0, NULL)))
     {
-        HAL::pingWatchdog();
-        // done if past last used entry
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+		// done if past last used entry
         // skip deleted entry and entries for . and  ..
         // only list subdirectories and files
         if ((DIR_IS_FILE(p) || DIR_IS_SUBDIR(p)))
@@ -1969,7 +1991,10 @@ void UIDisplay::refreshPage()
 #if DISPLAY_TYPE != 5
                 HAL::delayMilliseconds(transition<3 ? 200 : 70);
 #endif
-                HAL::pingWatchdog();
+
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
             }
 #endif
 #if UI_DISPLAY_TYPE == 5

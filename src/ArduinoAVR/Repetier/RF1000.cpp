@@ -233,7 +233,7 @@ void scanHeatBed( void )
 		// start at the home position
 		Printer::homeAxis( true, true, true );
 
-		// turn off the engines (for cases where the heating needs some longer amount of time)
+		// turn off the engines
 		Printer::disableXStepper();
 		Printer::disableYStepper();
 		Printer::disableZStepper();
@@ -293,21 +293,20 @@ void scanHeatBed( void )
 			}
 			case 10:
 			{
-				// start at the home position (move the z-axis first for safety reasons)
-				Printer::homeAxis( false, false, true );
-				Printer::homeAxis( true, true, false );
+				// start at the home position
+				Printer::homeAxis( true, true, true );
 
-				// turn off the engines (for cases where the heating needs some longer amount of time)
+/*				// turn off the engines (for cases where the heating needs some longer amount of time)
 				Printer::disableXStepper();
 				Printer::disableYStepper();
 				Printer::disableZStepper();
-				g_nHeatBedScanStatus = 15;
+*/				g_nHeatBedScanStatus = 15;
 				g_lastScanTime		 = HAL::timeInMilliseconds();
 				break;
 			}
 			case 15:
 			{
-				if( (HAL::timeInMilliseconds() - g_lastScanTime) < 1000 )
+				if( (HAL::timeInMilliseconds() - g_lastScanTime) < SCAN_DELAY )
 				{
 					// do not check too often
 					break;
@@ -325,7 +324,7 @@ void scanHeatBed( void )
 			}
 			case 20:
 			{
-				if( (HAL::timeInMilliseconds() - g_lastScanTime) < 1000 )
+				if( (HAL::timeInMilliseconds() - g_lastScanTime) < SCAN_DELAY )
 				{
 					// do not check too often
 					break;
@@ -356,7 +355,7 @@ void scanHeatBed( void )
 			}
 			case 30:
 			{
-				if( (HAL::timeInMilliseconds() - g_lastScanTime) < 1000 )
+				if( (HAL::timeInMilliseconds() - g_lastScanTime) < SCAN_DELAY )
 				{
 					// do not check too early
 					break;
@@ -598,9 +597,8 @@ void scanHeatBed( void )
 			}
 			case 60:
 			{
-				// move back to the home position (move the z-axis first for safety reasons)
-				Printer::homeAxis( false, false, true );
-				Printer::homeAxis( true, true, false );
+				// move back to the home position
+				Printer::homeAxis( true, true, true);
 
 				// turn off the engines
 				Printer::disableXStepper();
@@ -678,7 +676,7 @@ void scanHeatBed( void )
 			}
 			case 80:
 			{
-				if( (HAL::timeInMilliseconds() - g_lastScanTime) < 1000 )
+				if( (HAL::timeInMilliseconds() - g_lastScanTime) < SCAN_DELAY )
 				{
 					// do not check too early
 					break;
@@ -1277,28 +1275,24 @@ int moveExtruder( int nSteps )
 	int		nMaxLoops;
 	
 	
+	HAL::forbidInterrupts();
+	Extruder::enable();
+    HAL::delayMicroseconds(EXTRUDER_DIRECTION_CHANGE_DELAY);
+
 	// choose the direction
 	if( nSteps >= 0 )
 	{
-		HAL::forbidInterrupts();
-		Extruder::enable();
-        HAL::delayMicroseconds(EXTRUDER_DIRECTION_CHANGE_DELAY);
-
 		nMaxLoops = nSteps;
 		Extruder::setDirection(true);
-        HAL::delayMicroseconds(EXTRUDER_DIRECTION_CHANGE_DELAY);
 	}
 	else
 	{
-		HAL::forbidInterrupts();
-		Extruder::enable();
-        HAL::delayMicroseconds(EXTRUDER_DIRECTION_CHANGE_DELAY);
-
 		nMaxLoops = -nSteps;
 		Extruder::setDirection(false);
-        HAL::delayMicroseconds(EXTRUDER_DIRECTION_CHANGE_DELAY);
 	}
-	
+
+	HAL::delayMicroseconds(EXTRUDER_DIRECTION_CHANGE_DELAY);
+
 	// perform the steps
 	for( i=0; i<nMaxLoops; i++ )
 	{
@@ -1910,6 +1904,10 @@ char clearExternalEEPROM( void )
 
 	for( i=0; i<uMax; i++ )
 	{
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 		HAL::delayMilliseconds( EEPROM_DELAY );
 		writeByte24C256( 0x50, i, 0 );
 
@@ -2022,6 +2020,8 @@ void loopRF1000( void )
 	}
 
 #if FEATURE_Z_COMPENSATION
+	doZCompensation();
+
 	if( g_nHeatBedScanStatus )
 	{
 		scanHeatBed();
@@ -2362,10 +2362,6 @@ void outputObject( void )
     Commands::setFanSpeed(0,false);
 #endif // FAN_PIN>-1
 
-#if FEATURE_WATCHDOG
-    HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 	GCode::executeFString(Com::tOutputObject);
 	Commands::waitUntilEndOfAllMoves();
 
@@ -2399,10 +2395,6 @@ void parkPrinter( void )
 
 	Printer::homeAxis( true, true, true );
 
-#if FEATURE_WATCHDOG
-    HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 	Printer::moveToReal( g_nParkPositionX, g_nParkPositionY, g_nParkPositionZ, IGNORE_COORDINATE, Printer::homingFeedrate[0]);
 
 } // parkPrinter
@@ -2424,6 +2416,10 @@ void pausePrint( void )
 			// wait until the current move is completed
 			while( !g_printingPaused )
 			{
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 				HAL::delayMilliseconds( 1 );
 				Commands::checkForPeriodicalActions();
 			}
@@ -2470,10 +2466,6 @@ void pausePrint( void )
 			Com::printFLN( PSTR( "pausePrint(): moving to the pause position" ) );
 		}
 
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 		if( g_nPauseStepsZ )
 		{
 			Temp = g_nPauseStepsZ + Printer::targetPositionStepsZ;
@@ -2499,10 +2491,6 @@ void pausePrint( void )
 				calculateAllowedZStepsAfterEndStop();
 			}
 		}
-
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
 
 		if( g_nPauseStepsX )
 		{
@@ -2537,10 +2525,6 @@ void pausePrint( void )
 			}
 		}
 
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 		if( g_nPauseStepsY )
 		{
 			Temp = g_nPauseStepsY;
@@ -2574,10 +2558,6 @@ void pausePrint( void )
 			}
 		}
 
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
 		// wait until the pause position has been reached
 		if( Printer::debugInfo() )
 		{
@@ -2589,6 +2569,10 @@ void pausePrint( void )
 			   (Printer::targetPositionStepsZ != Printer::currentPositionStepsZ) ||
 			   (Printer::targetPositionStepsE != Printer::currentPositionStepsE) )
 		{
+#if FEATURE_WATCHDOG
+			HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 			HAL::delayMilliseconds( 1 );
 			loopRF1000();
 			Commands::checkForPeriodicalActions();
@@ -2596,10 +2580,6 @@ void pausePrint( void )
 			// NOTE: do not run runStandardTasks() within this loop
 			//runStandardTasks();
 		}
-
-#if FEATURE_WATCHDOG
-		HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
 
 		if( Printer::debugInfo() )
 		{
@@ -2672,6 +2652,10 @@ void continuePrint( void )
 				   (Printer::targetPositionStepsZ != Printer::currentPositionStepsZ) ||
 				   (Printer::targetPositionStepsE != Printer::currentPositionStepsE) )
 			{
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 				HAL::delayMilliseconds( 1 );
 				loopRF1000();
 				Commands::checkForPeriodicalActions();
@@ -2694,6 +2678,10 @@ void continuePrint( void )
 
 			while( Printer::targetPositionStepsE != Printer::currentPositionStepsE )
 			{
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 				HAL::delayMilliseconds( 1 );
 				loopRF1000();
 				Commands::checkForPeriodicalActions();
@@ -2711,6 +2699,10 @@ void continuePrint( void )
 		}
 		while( g_printingPaused )
 		{
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 			if( !PrintLine::linesCount )
 			{
 				// the printing won't continue in case there is nothing else to do
@@ -4185,246 +4177,248 @@ void motorCurrentControlInit( void )
 
 void drv8711Transmit( unsigned short command )
 {
-  char	i;
+	char	i;
 
-  // transfer the command (= direction, address and data)
-  HAL::forbidInterrupts();
-  for( i=15; i>=0; i-- )	{
-    WRITE( DRV_SDATI, command & (0x01 << i));
-    HAL::delayMicroseconds( 1 );
-    WRITE( DRV_SCLK, 1 );
-    HAL::delayMicroseconds( 5 );
-    WRITE( DRV_SCLK, 0 );
-  }
-  HAL::allowInterrupts();
+	// transfer the command (= direction, address and data)
+	HAL::forbidInterrupts();
+	for( i=15; i>=0; i-- )
+	{
+		WRITE( DRV_SDATI, command & (0x01 << i));
+		HAL::delayMicroseconds( 1 );
+		WRITE( DRV_SCLK, 1 );
+		HAL::delayMicroseconds( 5 );
+		WRITE( DRV_SCLK, 0 );
+	}
+	HAL::allowInterrupts();
 
 } // drv8711Transmit
 
 
 unsigned short drv8711Receive( unsigned char address )
 {
-  unsigned short	acknowledge = 0;
-  unsigned short	temp;
-  char				i;
+	unsigned short	acknowledge = 0;
+	unsigned short	temp;
+	char				i;
 
 
-  if( address > 7 )	return 0;
+	if( address > 7 )	return 0;
 
-  acknowledge =  address;
-  acknowledge =  acknowledge << 12;
-  acknowledge |= 0x8000;
+	acknowledge =  address;
+	acknowledge =  acknowledge << 12;
+	acknowledge |= 0x8000;
 
-  // transfer the read request plus the register address (4 bits)
-  HAL::forbidInterrupts();
-  for( i=15; i>=12; i-- )	{
-    WRITE( DRV_SDATI, acknowledge & (0x01 << i));
-    HAL::delayMicroseconds( 1 );
-    WRITE( DRV_SCLK, 1 );
-    HAL::delayMicroseconds( 5 );
-    WRITE( DRV_SCLK, 0 );
-  }
+	// transfer the read request plus the register address (4 bits)
+	HAL::forbidInterrupts();
+	for( i=15; i>=12; i-- )
+	{
+		WRITE( DRV_SDATI, acknowledge & (0x01 << i));
+		HAL::delayMicroseconds( 1 );
+		WRITE( DRV_SCLK, 1 );
+		HAL::delayMicroseconds( 5 );
+		WRITE( DRV_SCLK, 0 );
+	}
 
-  HAL::delayMicroseconds( 20 );
+	HAL::delayMicroseconds( 20 );
   
-  // read the acknowledge (12 bits)
-  for( i=11; i>=0; i-- )
-  {
-    temp = READ( DRV_SDATO );
-    acknowledge = acknowledge | (temp << i);
-    WRITE( DRV_SCLK, 1 );
-    HAL::delayMicroseconds( 25 );
-    WRITE( DRV_SCLK, 0 );
-    HAL::delayMicroseconds( 25 );
-  }
-  HAL::allowInterrupts();
+	// read the acknowledge (12 bits)
+	for( i=11; i>=0; i-- )
+	{
+		temp = READ( DRV_SDATO );
+		acknowledge = acknowledge | (temp << i);
+		WRITE( DRV_SCLK, 1 );
+		HAL::delayMicroseconds( 25 );
+		WRITE( DRV_SCLK, 0 );
+		HAL::delayMicroseconds( 25 );
+	}
+	HAL::allowInterrupts();
 
-  return acknowledge;
+	return acknowledge;
 
 } // drv8711Receive
 
 
 void drv8711EnableAll( void )
 {
-  // enable the chip select of all present DRV8711
-  switch( DRV8711_NUM_CHANNELS )
-  {
-    case 5:	 {  WRITE( O1_SCS_PIN, LOW ); SET_OUTPUT( O1_SCS_PIN ); WRITE( O1_SCS_PIN, HIGH ); }  // fall through
-	case 4:  {  WRITE( O0_SCS_PIN, LOW ); SET_OUTPUT( O0_SCS_PIN ); WRITE( O0_SCS_PIN, HIGH ); }  // fall through
-	case 3:  {  WRITE( Z_SCS_PIN, LOW );  SET_OUTPUT( Z_SCS_PIN );  WRITE( Z_SCS_PIN, HIGH );  }  // fall through
-	case 2:  {  WRITE( Y_SCS_PIN, LOW );  SET_OUTPUT( Y_SCS_PIN );  WRITE( Y_SCS_PIN, HIGH );  }  // fall through
-	case 1:  {  WRITE( X_SCS_PIN, LOW );  SET_OUTPUT( X_SCS_PIN );  WRITE( X_SCS_PIN, HIGH );  }
-  }
+	// enable the chip select of all present DRV8711
+	switch( DRV8711_NUM_CHANNELS )
+	{
+		case 5:	 {  WRITE( O1_SCS_PIN, LOW ); SET_OUTPUT( O1_SCS_PIN ); WRITE( O1_SCS_PIN, HIGH ); }  // fall through
+		case 4:  {  WRITE( O0_SCS_PIN, LOW ); SET_OUTPUT( O0_SCS_PIN ); WRITE( O0_SCS_PIN, HIGH ); }  // fall through
+		case 3:  {  WRITE( Z_SCS_PIN, LOW );  SET_OUTPUT( Z_SCS_PIN );  WRITE( Z_SCS_PIN, HIGH );  }  // fall through
+		case 2:  {  WRITE( Y_SCS_PIN, LOW );  SET_OUTPUT( Y_SCS_PIN );  WRITE( Y_SCS_PIN, HIGH );  }  // fall through
+		case 1:  {  WRITE( X_SCS_PIN, LOW );  SET_OUTPUT( X_SCS_PIN );  WRITE( X_SCS_PIN, HIGH );  }
+	}
 
 } // drv8711EnableAll
 
 
 void drv8711DisableAll( void )
 {
-  // disable the chip select of all present DRV8711
-  switch( DRV8711_NUM_CHANNELS )
-  {
-	case 5:  {  WRITE( O1_SCS_PIN, LOW ); }  // fall through
-	case 4:  {  WRITE( O0_SCS_PIN, LOW ); }  // fall through
-	case 3:  {  WRITE( Z_SCS_PIN, LOW );  }  // fall through
-	case 2:  {  WRITE( Y_SCS_PIN, LOW );  }  // fall through
-	case 1:  {  WRITE( X_SCS_PIN, LOW );  }
-  }
+	// disable the chip select of all present DRV8711
+	switch( DRV8711_NUM_CHANNELS )
+	{
+		case 5:  {  WRITE( O1_SCS_PIN, LOW ); }  // fall through
+		case 4:  {  WRITE( O0_SCS_PIN, LOW ); }  // fall through
+		case 3:  {  WRITE( Z_SCS_PIN, LOW );  }  // fall through
+		case 2:  {  WRITE( Y_SCS_PIN, LOW );  }  // fall through
+		case 1:  {  WRITE( X_SCS_PIN, LOW );  }
+	}
 
 } // drv8711DisableAll
 
 
 void drv8711Enable( unsigned char driver )
 {
-  // enable the chip select of the DRV8711
-  switch( driver )
-  {
-	case 5:  {  WRITE( O1_SCS_PIN, LOW ); SET_OUTPUT( O1_SCS_PIN ); WRITE( O1_SCS_PIN, HIGH ); break;  }
-	case 4:  {  WRITE( O0_SCS_PIN, LOW ); SET_OUTPUT( O0_SCS_PIN ); WRITE( O0_SCS_PIN, HIGH ); break;  }
-	case 3:  {  WRITE( Z_SCS_PIN, LOW );  SET_OUTPUT( Z_SCS_PIN );  WRITE( Z_SCS_PIN, HIGH );  break;  }
-	case 2:  {  WRITE( Y_SCS_PIN, LOW );  SET_OUTPUT( Y_SCS_PIN );  WRITE( Y_SCS_PIN, HIGH );  break;  }
-	case 1:  {  WRITE( X_SCS_PIN, LOW );  SET_OUTPUT( X_SCS_PIN );  WRITE( X_SCS_PIN, HIGH );  break;  }
-  }
+	// enable the chip select of the DRV8711
+	switch( driver )
+	{
+		case 5:  {  WRITE( O1_SCS_PIN, LOW ); SET_OUTPUT( O1_SCS_PIN ); WRITE( O1_SCS_PIN, HIGH ); break;  }
+		case 4:  {  WRITE( O0_SCS_PIN, LOW ); SET_OUTPUT( O0_SCS_PIN ); WRITE( O0_SCS_PIN, HIGH ); break;  }
+		case 3:  {  WRITE( Z_SCS_PIN, LOW );  SET_OUTPUT( Z_SCS_PIN );  WRITE( Z_SCS_PIN, HIGH );  break;  }
+		case 2:  {  WRITE( Y_SCS_PIN, LOW );  SET_OUTPUT( Y_SCS_PIN );  WRITE( Y_SCS_PIN, HIGH );  break;  }
+		case 1:  {  WRITE( X_SCS_PIN, LOW );  SET_OUTPUT( X_SCS_PIN );  WRITE( X_SCS_PIN, HIGH );  break;  }
+	}
 
 } // drv8711Enable
 
 
 void drv8711Disable( unsigned char driver )
 {
-  // disable the chip select of the DRV8711
-  switch( driver )
-  {
-	case 5:  {  WRITE( O1_SCS_PIN, LOW ); break;  }
-	case 4:  {  WRITE( O0_SCS_PIN, LOW ); break;  }
-	case 3:  {  WRITE( Z_SCS_PIN, LOW );  break;  }
-	case 2:  {  WRITE( Y_SCS_PIN, LOW );  break;  }
-	case 1:  {  WRITE( X_SCS_PIN, LOW );  break;  }
-  }
+	// disable the chip select of the DRV8711
+	switch( driver )
+	{
+		case 5:  {  WRITE( O1_SCS_PIN, LOW ); break;  }
+		case 4:  {  WRITE( O0_SCS_PIN, LOW ); break;  }
+		case 3:  {  WRITE( Z_SCS_PIN, LOW );  break;  }
+		case 2:  {  WRITE( Y_SCS_PIN, LOW );  break;  }
+		case 1:  {  WRITE( X_SCS_PIN, LOW );  break;  }
+	}
 
 } // drv8711Disable
 
 
 void drv8711Init( void )
 {
-  char	i;
+	char	i;
   
 
-  // configure the pins
-  WRITE( DRV_RESET1, LOW );
-  SET_OUTPUT( DRV_RESET1 );
+	// configure the pins
+	WRITE( DRV_RESET1, LOW );
+	SET_OUTPUT( DRV_RESET1 );
 
 #if DRV_RESET2
-  WRITE( DRV_RESET2, LOW );
-  SET_OUTPUT( DRV_RESET2 );
+	WRITE( DRV_RESET2, LOW );
+	SET_OUTPUT( DRV_RESET2 );
 #endif // DRV_RESET2
 
-  WRITE( DRV_SCLK, LOW );
-  SET_OUTPUT( DRV_SCLK );
-  WRITE( DRV_SDATI, LOW );
-  SET_OUTPUT( DRV_SDATI );
+	WRITE( DRV_SCLK, LOW );
+	SET_OUTPUT( DRV_SCLK );
+	WRITE( DRV_SDATI, LOW );
+	SET_OUTPUT( DRV_SDATI );
 
-  // configure the following inputs as pullup
-  WRITE( DRV_SDATO, HIGH );
-  WRITE( DRV_FAULT, HIGH );
-  WRITE( X_STALL_PIN, HIGH );
-  WRITE( Y_STALL_PIN, HIGH );
-  WRITE( Z_STALL_PIN, HIGH );
-  WRITE( O0_STALL_PIN, HIGH );
-  WRITE( O1_STALL_PIN, HIGH );
+	// configure the following inputs as pullup
+	WRITE( DRV_SDATO, HIGH );
+	WRITE( DRV_FAULT, HIGH );
+	WRITE( X_STALL_PIN, HIGH );
+	WRITE( Y_STALL_PIN, HIGH );
+	WRITE( Z_STALL_PIN, HIGH );
+	WRITE( O0_STALL_PIN, HIGH );
+	WRITE( O1_STALL_PIN, HIGH );
 
-  // reset all DRV8711 (active high)
-  WRITE( DRV_RESET1, HIGH );
+	// reset all DRV8711 (active high)
+	WRITE( DRV_RESET1, HIGH );
 
 #if DRV_RESET2
-  WRITE( DRV_RESET2, HIGH );
+	WRITE( DRV_RESET2, HIGH );
 #endif // DRV_RESET2
 
-  HAL::delayMicroseconds( 5000 );
-  WRITE( DRV_RESET1, LOW );
+	HAL::delayMicroseconds( 5000 );
+	WRITE( DRV_RESET1, LOW );
 
 #if DRV_RESET2
-  WRITE( DRV_RESET2, LOW );
+	WRITE( DRV_RESET2, LOW );
 #endif // DRV_RESET2
 
-  HAL::delayMicroseconds( 5000 );
+	HAL::delayMicroseconds( 5000 );
   
-  // configure all registers except the motor current (= register 01)
-  drv8711EnableAll();
-  drv8711Transmit( DRV8711_REGISTER_00 );
-  drv8711DisableAll();
-  HAL::delayMicroseconds( 1 );
+	// configure all registers except the motor current (= register 01)
+	drv8711EnableAll();
+	drv8711Transmit( DRV8711_REGISTER_00 );
+	drv8711DisableAll();
+	HAL::delayMicroseconds( 1 );
 
-  drv8711EnableAll();
-  drv8711Transmit( DRV8711_REGISTER_02 );
-  drv8711DisableAll();
-  HAL::delayMicroseconds( 1 );
+	drv8711EnableAll();
+	drv8711Transmit( DRV8711_REGISTER_02 );
+	drv8711DisableAll();
+	HAL::delayMicroseconds( 1 );
 
-  drv8711EnableAll();
-  drv8711Transmit( DRV8711_REGISTER_03 );
-  drv8711DisableAll();
-  HAL::delayMicroseconds( 1 );
+	drv8711EnableAll();
+	drv8711Transmit( DRV8711_REGISTER_03 );
+	drv8711DisableAll();
+	HAL::delayMicroseconds( 1 );
 
-  drv8711EnableAll();
-  drv8711Transmit( DRV8711_REGISTER_04 );
-  drv8711DisableAll();
-  HAL::delayMicroseconds( 1 );
+	drv8711EnableAll();
+	drv8711Transmit( DRV8711_REGISTER_04 );
+	drv8711DisableAll();
+	HAL::delayMicroseconds( 1 );
 
-  drv8711EnableAll();
-  drv8711Transmit( DRV8711_REGISTER_05 );
-  drv8711DisableAll();
-  HAL::delayMicroseconds( 1 );
+	drv8711EnableAll();
+	drv8711Transmit( DRV8711_REGISTER_05 );
+	drv8711DisableAll();
+	HAL::delayMicroseconds( 1 );
 
-  drv8711EnableAll();
-  drv8711Transmit( DRV8711_REGISTER_06 );
-  drv8711DisableAll();
-  HAL::delayMicroseconds( 1 );
+	drv8711EnableAll();
+	drv8711Transmit( DRV8711_REGISTER_06 );
+	drv8711DisableAll();
+	HAL::delayMicroseconds( 1 );
 
-  drv8711EnableAll();
-  drv8711Transmit( DRV8711_REGISTER_07 );
-  drv8711DisableAll();
+	drv8711EnableAll();
+	drv8711Transmit( DRV8711_REGISTER_07 );
+	drv8711DisableAll();
 
 } // drv8711Init
 
 
 void setMotorCurrent( unsigned char driver, unsigned short level )
 {
-  unsigned short	command;
-  char				i;
+	unsigned short	command;
+	char			i;
 	
 	
-  // NOTE: Do not increase the current endlessly. In case the engine reaches its current saturation, the engine and the driver can heat up and loss power.
-  // When the saturation is reached, more current causes more heating and more power loss.
-  // In case of engines with lower quality, the saturation current may be reached before the nominal current.
+	// NOTE: Do not increase the current endlessly. In case the engine reaches its current saturation, the engine and the driver can heat up and loss power.
+	// When the saturation is reached, more current causes more heating and more power loss.
+	// In case of engines with lower quality, the saturation current may be reached before the nominal current.
 
-  // configure the pins
-  WRITE( DRV_SCLK, LOW );
-  SET_OUTPUT( DRV_SCLK );
-  WRITE( DRV_SDATI, LOW );
-  SET_OUTPUT( DRV_SDATI );
+	// configure the pins
+	WRITE( DRV_SCLK, LOW );
+	SET_OUTPUT( DRV_SCLK );
+	WRITE( DRV_SDATI, LOW );
+	SET_OUTPUT( DRV_SDATI );
 		
-  drv8711Enable( driver);
+	drv8711Enable( driver);
 
-  // we have to write to register 01
-  command = 0x1100 + level;
-  drv8711Transmit( command );
+	// we have to write to register 01
+	command = 0x1100 + level;
+	drv8711Transmit( command );
 
-  drv8711Disable( driver );
+	drv8711Disable( driver );
 
 } // setMotorCurrent
 
 
 void motorCurrentControlInit( void )
 {
-  const unsigned short	drv_current[] =  MOTOR_CURRENT;
-  unsigned char			i;
+	const unsigned short	drv_current[] =  MOTOR_CURRENT;
+	unsigned char			i;
 
-  // configure all DRV8711
-  drv8711Init();
+	// configure all DRV8711
+	drv8711Init();
 
-  // set all motor currents
-  for(i=0;i<DRV8711_NUM_CHANNELS;i++)
-  {
-    setMotorCurrent( i+1, drv_current[i] );
-  }
+	// set all motor currents
+	for(i=0;i<DRV8711_NUM_CHANNELS;i++)
+	{
+		setMotorCurrent( i+1, drv_current[i] );
+	}
 
 } // motorCurrentControlInit
 
@@ -4531,3 +4525,103 @@ void cleanupEPositions( void )
 } // cleanupEPositions
 
 
+#if FEATURE_Z_COMPENSATION
+void doZCompensation( void )
+{
+	long	nXLeft;
+	long	nXRight;
+	long	nYFront;
+	long	nYBack;
+	long	nTemp;
+	long	i;
+
+
+	if( !Printer::doZCompensation || g_printingPaused )
+	{
+		// there is nothing to do at the moment
+		return;
+	}
+
+	HAL::forbidInterrupts();
+	if( Printer::nonCompensatedPositionStepsZ )								// we do not perform a compensation in case z is 0
+	{
+		// check whether we have to perform a compensation in z-direction
+		if( Printer::nonCompensatedPositionStepsZ < g_maxZCompensationSteps )
+		{
+			// we are doing the first rows at the moment - check which compensation is necessary
+			if( Printer::nonCompensatedPositionStepsX < g_minX ||
+				Printer::nonCompensatedPositionStepsX > g_maxX ||
+				Printer::nonCompensatedPositionStepsY < g_minY ||
+				Printer::nonCompensatedPositionStepsY > g_maxY )
+			{
+				// we went outside the last used compensation rectangle - we have to find the new compensation value
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+				g_recalculatedCompensation ++;
+					
+				// find the rectangle first which covers the current position of the extruder
+				nXLeft = 1;
+				for( i=1; i<g_uHeatBedMaxX; i++ )
+				{
+					nTemp = g_HeatBedCompensation[i][0];
+					nTemp = (long)((float)nTemp * XAXIS_STEPS_PER_MM);
+					if( Printer::nonCompensatedPositionStepsX <= nTemp )
+					{
+						nXRight = i;
+						break;
+					}
+					nXLeft = i;
+				}
+					
+				nYFront = 1;
+				for( i=1; i<g_uHeatBedMaxY; i++ )
+				{
+					nTemp = g_HeatBedCompensation[0][i];
+					nTemp = (long)((float)nTemp * YAXIS_STEPS_PER_MM);
+					if( Printer::nonCompensatedPositionStepsY <= nTemp )
+					{
+						nYBack = i;
+						break;
+					}
+					nYFront = i;
+				}
+
+				// remember where we are
+				g_minX = (long)((float)g_HeatBedCompensation[nXLeft][0] * XAXIS_STEPS_PER_MM);
+				g_maxX = (long)((float)g_HeatBedCompensation[nXRight][0] * XAXIS_STEPS_PER_MM);
+				g_minY = (long)((float)g_HeatBedCompensation[0][nYFront] * YAXIS_STEPS_PER_MM);
+				g_maxY = (long)((float)g_HeatBedCompensation[0][nYBack] * YAXIS_STEPS_PER_MM);
+					
+				if( Printer::nonCompensatedPositionStepsZ <= g_noZCompensationSteps )
+				{
+					// the printer is very close to the surface - we shall print a layer of exactly the desired thickness
+					Printer::targetCompensationZ = g_HeatBedCompensation[nXLeft][nYFront] + g_manualCompensationSteps;
+				}
+				else
+				{
+					// the printer is already a bit away from the surface - do the actual compensation
+					// determine the current, non-compensated z position without the no-compensation range
+					nTemp  = Printer::nonCompensatedPositionStepsZ - g_noZCompensationSteps;
+					nTemp  = 128 - (128 * nTemp / g_diffZCompensationSteps);
+					nTemp *= (g_HeatBedCompensation[nXLeft][nYFront] - g_offsetHeatBedCompensation);
+					nTemp >>= 8;
+					nTemp += g_offsetHeatBedCompensation;
+						
+					Printer::targetCompensationZ = nTemp + g_manualCompensationSteps;
+				}
+			}
+		}
+		else
+		{	
+			// after the first layers, only the static offset to the surface must be compensated
+			Printer::targetCompensationZ = g_offsetHeatBedCompensation + g_manualCompensationSteps;
+		}
+	}
+	HAL::allowInterrupts();
+
+	return;
+
+} // doZCompensation
+#endif // FEATURE_Z_COMPENSATION

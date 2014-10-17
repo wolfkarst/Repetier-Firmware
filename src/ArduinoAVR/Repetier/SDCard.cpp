@@ -169,6 +169,10 @@ void SDCard::abortPrint()
 		return;
 	}
 
+#if FEATURE_WATCHDOG
+	HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 	HAL::forbidInterrupts();
 
 	sdmode	 = false;
@@ -211,6 +215,10 @@ void SDCard::abortPrint()
 	// wait until all moves are done
 	while( PrintLine::linesCount )
 	{
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
 		HAL::delayMilliseconds( 1 );
 		Commands::checkForPeriodicalActions();
 	}
