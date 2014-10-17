@@ -1,3 +1,7 @@
+V 0.91.45 (2014-10-17)
+- The calculation of the z-compensation has been moved from the previously used interrupt routine to the main loop.
+  - This was needed in order to avoid sporadic restarts of the firmware which occurred after the new micro step possibilities from V 0.91.39.
+
 V 0.91.43 (2014-10-15)
 - "Unmount Filament" has been renamed to "Unload Filament".
 - "Mount Filament" has been renamed to "Load Filament".
