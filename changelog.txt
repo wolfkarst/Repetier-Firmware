@@ -1,3 +1,15 @@
+V 0.91.47 (2014-10-29)
+- Adding of M3105, which allows to specify the movement after pause in [mm].
+  - M3102 remains available and allows to specify the movement after pause in [steps].
+- OUTPUT_OBJECT_SCRIPT has been extended so that the extruder retracts the filament after the stop of the print.
+- After the heat bed scan the heating bed is moved down a little bit in order to avoid accidental collisions with the extruder during the next homing.
+- In case the hardware button "Pause" was pressed during the homing of the printer, the firmware could end up in a hang.
+- All heaters are turned off after the heat bed scan automatically.
+- FEATURE_ALLOW_UNKNOWN_POSITIONS has been set from 0 to 1 in order to allow to move all axes also when their home position is not known.
+- In case the current movement after pause is bigger than the remaining distance in x/y/z direction, the printer moves until the min/max position.
+  - Before this version, no movement into the according direction was performed in such a case.
+- Cleanup of the delays for the external EEPROM.
+
 V 0.91.45 (2014-10-17)
 - The calculation of the z-compensation has been moved from the previously used interrupt routine to the main loop.
   - This was needed in order to avoid sporadic restarts of the firmware which occurred after the new micro step possibilities from V 0.91.39.

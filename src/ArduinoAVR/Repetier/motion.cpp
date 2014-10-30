@@ -2048,9 +2048,6 @@ int lastblk=-1;
 long cur_errupd;
 long PrintLine::bresenhamStep() // version for cartesian printer
 {
-	long	Temp;
-
-
 #if CPU_ARCH==ARCH_ARM
     if(!PrintLine::nlFlag)
 #else
@@ -2118,11 +2115,8 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 
 					g_pausePrint = 1;
 
-#if EXTRUDER_CURRENT_PAUSE_DELAY
-					// remember the pause time only in case we shall lower the extruder current
 					g_uPauseTime	= HAL::timeInMilliseconds();
 					g_pauseBeepDone	= 0;
-#endif // EXTRUDER_CURRENT_PAUSE_DELAY
 				}
                 
                 nextPlannerIndex(linesPos);
@@ -2163,81 +2157,10 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 
                     g_pausePrint = 2;
 
-#if EXTRUDER_CURRENT_PAUSE_DELAY
-					// remember the pause time only in case we shall lower the extruder current
 					g_uPauseTime	= HAL::timeInMilliseconds();
 					g_pauseBeepDone	= 0;
-#endif // EXTRUDER_CURRENT_PAUSE_DELAY
 
-					if( g_nPauseStepsZ )
-                    {
-						Temp = g_nPauseStepsZ;
-
-#if FEATURE_Z_COMPENSATION
-						Temp += Printer::nonCompensatedPositionStepsZ;
-						Temp += Printer::currentCompensationZ;
-#endif // FEATURE_Z_COMPENSATION
-
-#if FEATURE_EXTENDED_BUTTONS
-						Temp += Printer::targetPositionStepsZ;
-#endif // FEATURE_EXTENDED_BUTTONS
-
-                        if( Temp <= (Z_MAX_LENGTH * ZAXIS_STEPS_PER_MM - ZAXIS_STEPS_PER_MM) )
-                        {
-                            Printer::targetPositionStepsZ += g_nPauseStepsZ;
-                            g_nContinueStepsZ			  =  -g_nPauseStepsZ;
-
-                            calculateAllowedZStepsAfterEndStop();
-                        }
-                    }
-                    if( g_nPauseStepsX )
-                    {
-						Temp = g_nPauseStepsX;
-
-#if FEATURE_Z_COMPENSATION
-						Temp += Printer::nonCompensatedPositionStepsX;
-#endif // FEATURE_Z_COMPENSATION
-
-                        if( g_nPauseStepsX < 0 &&
-                            (Temp < (XAXIS_STEPS_PER_MM *5)) )
-                        {
-                            // do not allow to drive the heat bed into the left border
-                        }
-                        else if( g_nPauseStepsX > 0 &&
-                                (Temp > (X_MAX_LENGTH * XAXIS_STEPS_PER_MM - XAXIS_STEPS_PER_MM *5)) )
-                        {
-                            // do not allow to drive the heat bed into the right border
-                        }
-                        else
-                        {
-                            Printer::targetPositionStepsX += g_nPauseStepsX;
-                            g_nContinueStepsX			  =  -g_nPauseStepsX;
-                        }
-                    }
-                    if( g_nPauseStepsY )
-                    {
-						Temp = g_nPauseStepsY;
-
-#if FEATURE_Z_COMPENSATION
-						Temp += Printer::nonCompensatedPositionStepsY;
-#endif // FEATURE_Z_COMPENSATION
-
-                        if( g_nPauseStepsY < 0 &&
-                            (Temp < (YAXIS_STEPS_PER_MM *5)) )
-                        {
-                            // do not allow to drive the heat bed into the front border
-                        }
-                        else if( g_nPauseStepsY > 0 &&
-                                 (Temp > (Y_MAX_LENGTH * YAXIS_STEPS_PER_MM - YAXIS_STEPS_PER_MM *5)) )
-                        {
-                            // do not allow to drive the heat bed into the back border
-                        }
-                        else
-                        {
-                            Printer::targetPositionStepsY += g_nPauseStepsY;
-                            g_nContinueStepsY			  =  -g_nPauseStepsY;
-                        }
-                    }
+					determinePausePosition();
                 }
                 
                 nextPlannerIndex(linesPos);

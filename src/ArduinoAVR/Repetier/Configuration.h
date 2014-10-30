@@ -1303,17 +1303,6 @@ Values must be in range 1..255
 #define	EXTENDED_BUTTONS_Z_MIN				-(ZAXIS_STEPS_PER_MM *2)							// [steps]
 #define	EXTENDED_BUTTONS_Z_MAX				long(ZAXIS_STEPS_PER_MM * (Z_MAX_LENGTH -2))		// [steps]
 
-/** \brief Allows to pause the processing of G-Codes
-*/
-#define FEATURE_PAUSE_PRINTING				1													// 1 = on, 0 = off
-
-#define	PAUSE_Z_MAX							(ZAXIS_STEPS_PER_MM * (Z_MAX_LENGTH -2))			// [steps]
-
-
-/** \brief Allows to cause an emergency stop via a 3-times push of the pause button
-*/
-#define FEATURE_EMERGENCY_STOP_VIA_PAUSE	0													// 1 = on, 0 = off
-
 /** \brief Enables safety checks for the manual moving into z-direction via the additional hardware buttons
 */
 #define FEATURE_ENABLE_MANUAL_Z_SAFETY		1													// 1 = checks enabled, 0 = checks disabled
@@ -1332,9 +1321,17 @@ in z direction during the printing of the first layers.
 */
 #define DEBUG_Z_COMPENSATION				0													// 1 = on, 0 = off
 
-/** \brief Enables debug outputs from the heat bed scan
+/** \brief Allows to pause the processing of G-Codes
 */
-#define DEBUG_HEAT_BED_SCAN					0													// 1 = on, 0 = off
+#define FEATURE_PAUSE_PRINTING				1													// 1 = on, 0 = off
+
+#if FEATURE_PAUSE_PRINTING && !FEATURE_Z_COMPENSATION
+	#error FEATURE_PAUSE_PRINTING can not be used without FEATURE_Z_COMPENSATION
+#endif // FEATURE_PAUSE_PRINTING && !FEATURE_Z_COMPENSATION
+
+/** \brief Allows to cause an emergency stop via a 3-times push of the pause button
+*/
+#define FEATURE_EMERGENCY_STOP_VIA_PAUSE	0													// 1 = on, 0 = off
 
 /** \brief Specifies until which height the z compensation must complete
 
@@ -1351,6 +1348,10 @@ Above this value the z compensation will distribute the roughness of the surface
 #define	Z_COMPENSATION_NO_MM				float(0.35)												// [mm]
 #define Z_COMPENSATION_NO_STEPS				long(Z_COMPENSATION_NO_MM * ZAXIS_STEPS_PER_MM)			// [steps]
 
+/** \brief Enables debug outputs from the heat bed scan
+*/
+#define DEBUG_HEAT_BED_SCAN					0													// 1 = on, 0 = off
+
 /** \brief Defines the I2C address for the strain gauge
 */
 #define	I2C_ADDRESS_STRAIN_GAUGE			0x49
@@ -1360,12 +1361,16 @@ Above this value the z compensation will distribute the roughness of the surface
 #define	ACTIVE_STRAIN_GAUGE					0x49
 #define UI_TEXT_STRAIN_GAUGE				"F:  %s1 digit"
 
+/** \brief Defines the I2C address for the external EEPROM
+*/
+#define	I2C_ADDRESS_EXTERNAL_EEPROM			0x50
+
 /** \brief Allows to use this firmware together with the Cura PC application
 
 Without this special handling, the firmware may complain about checksum errors from the Cura PC application and
 the Cura PC application may fall over the debug outputs of the firmware.
 */
-#define	SUPPORT_CURA						1
+#define	SUPPORT_CURA						0
 
 /** \brief Enables/disables the set to origin feature
 */
@@ -1381,7 +1386,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief The following script allows to configure the exact behavior of the automatic object output
 */
-#define	OUTPUT_OBJECT_SCRIPT				"G21\nG91\nG1 Z210 F5000\nG1 X0 Y250 F7500\n"
+#define	OUTPUT_OBJECT_SCRIPT				"G21\nG91\nG1 E-10\nG1 Z210 F5000\nG1 X0 Y250 F7500\n"
 
 /** \brief Enables/disables the park feature
 */
@@ -1462,7 +1467,7 @@ The TPS3820 of the RF1000 resets about 25 ms after the last time when it was tri
 The position of an axis is unknown until the axis has been homed. The position of an axis becomes unknown in case its stepper is disabled.
 Enabling of the following feature can be dangerous because it allows to manually drive the printer above its max x/y/z position.
 */
-#define	FEATURE_ALLOW_UNKNOWN_POSITIONS		0													// 1 = allow, 0 = do not allow
+#define	FEATURE_ALLOW_UNKNOWN_POSITIONS		1													// 1 = allow, 0 = do not allow
 
 /** \brief Specifies whether the firmware shall wait a short time after turning on of the stepper motors - this shall avoid that the first steps are sent to the stepper before it is ready
 */
@@ -1549,6 +1554,13 @@ Enabling of the following feature can be dangerous because it allows to manually
 #define DEFAULT_PAUSE_STEPS_Z			(ZAXIS_STEPS_PER_MM *2)
 #define	DEFAULT_PAUSE_STEPS_EXTRUDER	(EXT0_STEPS_PER_MM *10)
 
+#define	PAUSE_X_MIN						(XAXIS_STEPS_PER_MM *5)
+#define	PAUSE_Y_MIN						(YAXIS_STEPS_PER_MM *5)
+#define	PAUSE_Z_MIN						(ZAXIS_STEPS_PER_MM *2)
+#define	PAUSE_X_MAX						((X_MAX_LENGTH -5) * XAXIS_STEPS_PER_MM)
+#define	PAUSE_Y_MAX						((Y_MAX_LENGTH -5) * YAXIS_STEPS_PER_MM)
+#define	PAUSE_Z_MAX						((Z_MAX_LENGTH -2) * ZAXIS_STEPS_PER_MM)
+
 /** \brief Automatic filament change, unmounting of the filament - ensure that G1 does not attempt to extrude more than EXTRUDE_MAXLENGTH
 */
 #define	UNMOUNT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E50 F100\nG92 E0\nG1 E-90 F500\n"
@@ -1561,6 +1573,6 @@ Enabling of the following feature can be dangerous because it allows to manually
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".45"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".47"
 
 #endif

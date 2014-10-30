@@ -1294,7 +1294,7 @@ void Printer::homeAxis(bool xaxis,bool yaxis,bool zaxis) // home non-delta print
 {
     float startX,startY,startZ;
     realPosition(startX,startY,startZ);
-    setHomed(true);
+
 #if !defined(HOMING_ORDER)
 #define HOMING_ORDER HOME_ORDER_XYZ
 #endif
@@ -1340,7 +1340,9 @@ void Printer::homeAxis(bool xaxis,bool yaxis,bool zaxis) // home non-delta print
     }
     updateCurrentPosition(true);
     moveToReal(startX,startY,startZ,IGNORE_COORDINATE,homingFeedrate[0]);
-    UI_CLEAR_STATUS
+
+    setHomed(true);
+	UI_CLEAR_STATUS
     Commands::printCurrentPosition();
 }
 #endif  // Not delta printer
