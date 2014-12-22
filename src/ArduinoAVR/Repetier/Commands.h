@@ -41,7 +41,7 @@ public:
     static void emergencyStop();
     static void checkFreeMemory();
     static void writeLowestFreeRAM();
-private:
+//private:
     static int lowestRAMValue;
     static int lowestRAMValueSend;
 };

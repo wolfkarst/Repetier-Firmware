@@ -261,6 +261,7 @@ usage or for seraching for memory induced errors. Switch it off for production, 
 #define MENU_MODE_SD_PAUSED		 4
 #define MENU_MODE_FAN_RUNNING	 8
 #define MENU_MODE_PRINTING		16
+#define MENU_MODE_PRINTER		32	// we have to show either the printer or the miller menu
 
 #include "HAL.h"
 #include "gcode.h"

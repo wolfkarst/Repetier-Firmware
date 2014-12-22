@@ -1,3 +1,29 @@
+V 0.91.49 (2014-12-22)
+- Adding of FEATURE_CNC_MODE.
+  - When this #define is set to 2, the RF1000 can be switched between the "print" and the "mill" mode via its menu.
+  - In this configuration, the additional z-max endstop can be used. This z-max endstop is connected in a circuit with the z-min endstop.
+  - The default operating mode can be configured via the DEFAULT_OPERATING_MODE #define.
+  - For now, it is not possible to move away from the pause position in mode "mill".
+- Adding of FEATURE_FIND_Z_ORIGIN.
+  - In operating mode "mill", the "Find Z=0" menu item can be used in order move the work bed upwards automatically until the current work part hits the current tool.
+  - This position is used in order to set the origin in z-direction (Z=0).
+  - FIND_Z_ORIGIN_SCRIPT can be used in order to configure a series of G-codes which is executed after the z-origin has been found.
+ - Adding of M3006, which allows to specify the manual z-offset in [µm].
+  - M3004 has been discarded (it allowed to specify the manual z-offset in [steps] previously).
+- Adding of M3130, which allows to start/stop the search of the z-origin.
+  - Calling of M3130 is identical to call of "Find Z=0" from the menu of the RF1000.
+- EXT0_HOTEND_TYPE can be used now in order to configure which type of hotend is installed.
+  - Depending to the chosen type, the default PID parameters are configured.
+- Fixing of a compiler error in case CASE_FAN_PIN was set to -1.
+- The minimal allowed step size for the heat bed/work part scan has been changed from 20 to 10 mm.
+  - In case the minimal allowed step size is applied the startup of the firmware can be delayed by a few seconds because the reading of the z-compensation matrix needs more time.
+- The additional moving operations (e.g. for the z-compensation and for the hardware buttons) have been moved from ISR(PWM_TIMER_VECTOR) to ISR(TIMER1_COMPA_vect).
+  - The actual calculation of the z-compensation is done with less blocking of interrupts.
+  - This modification should eliminate seldom communication errors (and as a result, short stops of the printing process) which could have occurred with previous versions.
+- Fine tunning of settings within Configuration.h:
+  - the default number of microsteps has been changed from 8 to 32
+  - OUTPUT_OBJECT_SCRIPT uses a slower z-axis speed now
+
 V 0.91.47 (2014-10-29)
 - Adding of M3105, which allows to specify the movement after pause in [mm].
   - M3102 remains available and allows to specify the movement after pause in [steps].

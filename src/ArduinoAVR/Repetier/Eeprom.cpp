@@ -66,10 +66,27 @@ void EEPROM::restoreEEPROMSettingsFromConfiguration()
     Printer::maxFeedrate[X_AXIS] = MAX_FEEDRATE_X;
     Printer::maxFeedrate[Y_AXIS] = MAX_FEEDRATE_Y;
     Printer::maxFeedrate[Z_AXIS] = MAX_FEEDRATE_Z;
-    Printer::homingFeedrate[X_AXIS] = HOMING_FEEDRATE_X;
-    Printer::homingFeedrate[Y_AXIS] = HOMING_FEEDRATE_Y;
-    Printer::homingFeedrate[Z_AXIS] = HOMING_FEEDRATE_Z;
-    Printer::maxJerk = MAX_JERK;
+
+#if FEATURE_CNC_MODE > 0
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+		Printer::homingFeedrate[X_AXIS] = HOMING_FEEDRATE_X_PRINT;
+		Printer::homingFeedrate[Y_AXIS] = HOMING_FEEDRATE_Y_PRINT;
+		Printer::homingFeedrate[Z_AXIS] = HOMING_FEEDRATE_Z_PRINT;
+	}
+	else
+	{
+		Printer::homingFeedrate[X_AXIS] = HOMING_FEEDRATE_X_CNC;
+		Printer::homingFeedrate[Y_AXIS] = HOMING_FEEDRATE_Y_CNC;
+		Printer::homingFeedrate[Z_AXIS] = HOMING_FEEDRATE_Z_CNC;
+	}
+#else
+    Printer::homingFeedrate[X_AXIS] = HOMING_FEEDRATE_X_PRINT;
+    Printer::homingFeedrate[Y_AXIS] = HOMING_FEEDRATE_Y_PRINT;
+    Printer::homingFeedrate[Z_AXIS] = HOMING_FEEDRATE_Z_PRINT;
+#endif // FEATURE_CNC_MODE > 0
+
+	Printer::maxJerk = MAX_JERK;
 #if DRIVE_SYSTEM!=3
     Printer::maxZJerk = MAX_ZJERK;
 #endif
@@ -299,9 +316,23 @@ void EEPROM::restoreEEPROMSettingsFromConfiguration()
 
 }
 
+void EEPROM::clearEEPROM()
+{
+    unsigned int i;
+    for(i=0; i<2048; i++)
+    {
+#if FEATURE_WATCHDOG
+		HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+        HAL::eprSetByte(i,0);
+    }
+}
+
 void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
 {
 #if EEPROM_MODE!=0
+	HAL::eprSetByte(EPR_MAGIC_BYTE,EEPROM_MODE);
     HAL::eprSetInt32(EPR_BAUDRATE,baudrate);
     HAL::eprSetInt32(EPR_MAX_INACTIVE_TIME,maxInactiveTime);
     HAL::eprSetInt32(EPR_STEPPER_INACTIVE_TIME,stepperInactiveTime);
@@ -312,10 +343,27 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
     HAL::eprSetFloat(EPR_X_MAX_FEEDRATE,Printer::maxFeedrate[0]);
     HAL::eprSetFloat(EPR_Y_MAX_FEEDRATE,Printer::maxFeedrate[1]);
     HAL::eprSetFloat(EPR_Z_MAX_FEEDRATE,Printer::maxFeedrate[2]);
-    HAL::eprSetFloat(EPR_X_HOMING_FEEDRATE,Printer::homingFeedrate[0]);
-    HAL::eprSetFloat(EPR_Y_HOMING_FEEDRATE,Printer::homingFeedrate[1]);
-    HAL::eprSetFloat(EPR_Z_HOMING_FEEDRATE,Printer::homingFeedrate[2]);
-    HAL::eprSetFloat(EPR_MAX_JERK,Printer::maxJerk);
+
+#if FEATURE_CNC_MODE > 0
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+	    HAL::eprSetFloat(EPR_X_HOMING_FEEDRATE_PRINT,Printer::homingFeedrate[0]);
+		HAL::eprSetFloat(EPR_Y_HOMING_FEEDRATE_PRINT,Printer::homingFeedrate[1]);
+		HAL::eprSetFloat(EPR_Z_HOMING_FEEDRATE_PRINT,Printer::homingFeedrate[2]);
+	}
+	else
+	{
+	    HAL::eprSetFloat(EPR_X_HOMING_FEEDRATE_CNC,Printer::homingFeedrate[0]);
+		HAL::eprSetFloat(EPR_Y_HOMING_FEEDRATE_CNC,Printer::homingFeedrate[1]);
+		HAL::eprSetFloat(EPR_Z_HOMING_FEEDRATE_CNC,Printer::homingFeedrate[2]);
+	}
+#else
+    HAL::eprSetFloat(EPR_X_HOMING_FEEDRATE_PRINT,Printer::homingFeedrate[0]);
+    HAL::eprSetFloat(EPR_Y_HOMING_FEEDRATE_PRINT,Printer::homingFeedrate[1]);
+    HAL::eprSetFloat(EPR_Z_HOMING_FEEDRATE_PRINT,Printer::homingFeedrate[2]);
+#endif // FEATURE_CNC_MODE > 0
+
+	HAL::eprSetFloat(EPR_MAX_JERK,Printer::maxJerk);
 #if DRIVE_SYSTEM!=3
     HAL::eprSetFloat(EPR_MAX_ZJERK,Printer::maxZJerk);
 #endif
@@ -427,11 +475,36 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
 	HAL::eprSetByte( EPR_RF1000_LIGHTS_MODE, Printer::enableLights );
 #endif // CASE_LIGHTS_PIN >= 0
 
+#if FEATURE_CNC_MODE > 0
+	HAL::eprSetByte( EPR_RF1000_OPERATING_MODE, Printer::operatingMode );
+#endif // FEATURE CNC_MODE > 0
+
 	// Save version and build checksum
     HAL::eprSetByte(EPR_VERSION,EEPROM_PROTOCOL_VERSION);
     HAL::eprSetByte(EPR_INTEGRITY_BYTE,computeChecksum());
 #endif
 }
+
+void EEPROM::initializeAllOperatingModes()
+{
+#if FEATURE_CNC_MODE > 0
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+		// initialize the EEPROM values of the operating mode which is not active at the moment
+	    HAL::eprSetFloat(EPR_X_HOMING_FEEDRATE_CNC,HOMING_FEEDRATE_X_CNC);
+		HAL::eprSetFloat(EPR_Y_HOMING_FEEDRATE_CNC,HOMING_FEEDRATE_Y_CNC);
+		HAL::eprSetFloat(EPR_Z_HOMING_FEEDRATE_CNC,HOMING_FEEDRATE_Z_CNC);
+	}
+	else
+	{
+		// initialize the EEPROM values of the operating mode which is not active at the moment
+	    HAL::eprSetFloat(EPR_X_HOMING_FEEDRATE_PRINT,HOMING_FEEDRATE_X_PRINT);
+		HAL::eprSetFloat(EPR_Y_HOMING_FEEDRATE_PRINT,HOMING_FEEDRATE_Y_PRINT);
+		HAL::eprSetFloat(EPR_Z_HOMING_FEEDRATE_PRINT,HOMING_FEEDRATE_Z_PRINT);
+	}
+#endif // FEATURE_CNC_MODE > 0
+}
+
 void EEPROM::initalizeUncached()
 {
     HAL::eprSetFloat(EPR_Z_PROBE_HEIGHT,Z_PROBE_HEIGHT);
@@ -446,6 +519,7 @@ void EEPROM::initalizeUncached()
     HAL::eprSetFloat(EPR_Z_PROBE_X3,Z_PROBE_X3);
     HAL::eprSetFloat(EPR_Z_PROBE_Y3,Z_PROBE_Y3);
     HAL::eprSetFloat(EPR_Z_PROBE_BED_DISTANCE,Z_PROBE_BED_DISTANCE);
+
 #if DRIVE_SYSTEM==3
     HAL::eprSetFloat(EPR_DELTA_DIAGONAL_ROD_LENGTH,DELTA_DIAGONAL_ROD);
     HAL::eprSetFloat(EPR_DELTA_HORIZONTAL_RADIUS,DELTA_RADIUS);
@@ -481,9 +555,7 @@ void EEPROM::readDataFromEEPROM()
     Printer::maxFeedrate[0] = HAL::eprGetFloat(EPR_X_MAX_FEEDRATE);
     Printer::maxFeedrate[1] = HAL::eprGetFloat(EPR_Y_MAX_FEEDRATE);
     Printer::maxFeedrate[2] = HAL::eprGetFloat(EPR_Z_MAX_FEEDRATE);
-    Printer::homingFeedrate[0] = HAL::eprGetFloat(EPR_X_HOMING_FEEDRATE);
-    Printer::homingFeedrate[1] = HAL::eprGetFloat(EPR_Y_HOMING_FEEDRATE);
-    Printer::homingFeedrate[2] = HAL::eprGetFloat(EPR_Z_HOMING_FEEDRATE);
+
     Printer::maxJerk = HAL::eprGetFloat(EPR_MAX_JERK);
 #if DRIVE_SYSTEM!=3
     Printer::maxZJerk = HAL::eprGetFloat(EPR_MAX_ZJERK);
@@ -578,6 +650,26 @@ void EEPROM::readDataFromEEPROM()
 	Printer::enableLights = HAL::eprGetByte( EPR_RF1000_LIGHTS_MODE );
 #endif // CASE_LIGHTS_PIN >= 0
 
+#if FEATURE_CNC_MODE > 0
+	Printer::operatingMode = HAL::eprGetByte( EPR_RF1000_OPERATING_MODE ) == OPERATING_MODE_CNC ? OPERATING_MODE_CNC : OPERATING_MODE_PRINT;
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+		Printer::homingFeedrate[0] = HAL::eprGetFloat(EPR_X_HOMING_FEEDRATE_PRINT);
+		Printer::homingFeedrate[1] = HAL::eprGetFloat(EPR_Y_HOMING_FEEDRATE_PRINT);
+		Printer::homingFeedrate[2] = HAL::eprGetFloat(EPR_Z_HOMING_FEEDRATE_PRINT);
+	}
+	else
+	{
+		Printer::homingFeedrate[0] = HAL::eprGetFloat(EPR_X_HOMING_FEEDRATE_CNC);
+		Printer::homingFeedrate[1] = HAL::eprGetFloat(EPR_Y_HOMING_FEEDRATE_CNC);
+		Printer::homingFeedrate[2] = HAL::eprGetFloat(EPR_Z_HOMING_FEEDRATE_CNC);
+	}
+#else
+    Printer::homingFeedrate[0] = HAL::eprGetFloat(EPR_X_HOMING_FEEDRATE_PRINT);
+    Printer::homingFeedrate[1] = HAL::eprGetFloat(EPR_Y_HOMING_FEEDRATE_PRINT);
+    Printer::homingFeedrate[2] = HAL::eprGetFloat(EPR_Z_HOMING_FEEDRATE_PRINT);
+#endif // FEATURE_CNC_MODE > 0
+
 	if(version!=EEPROM_PROTOCOL_VERSION)
     {
         Com::printInfoFLN(Com::tEPRProtocolChanged);
@@ -657,9 +749,17 @@ void EEPROM::init()
     }
     else
     {
-        HAL::eprSetByte(EPR_MAGIC_BYTE,EEPROM_MODE); // Make datachange permanent
-        initalizeUncached();
+//		HAL::eprSetByte(EPR_MAGIC_BYTE,EEPROM_MODE); // Make datachange permanent
+
+#if FULL_EEPROM_RESET
+		clearEEPROM();
+		restoreEEPROMSettingsFromConfiguration();
+#else
+		initalizeUncached();
+#endif // FULL_EEPROM_RESET
+
         storeDataIntoEEPROM(storedcheck!=check);
+		initializeAllOperatingModes();
     }
 #endif
 }
@@ -712,12 +812,39 @@ void EEPROM::writeSettings()
     writeFloat(EPR_Y_MAX_FEEDRATE,Com::tEPRYMaxFeedrate);
 #endif
     writeFloat(EPR_Z_MAX_FEEDRATE,Com::tEPRZMaxFeedrate);
+
 #if DRIVE_SYSTEM!=3
-    writeFloat(EPR_X_HOMING_FEEDRATE,Com::tEPRXHomingFeedrate);
-    writeFloat(EPR_Y_HOMING_FEEDRATE,Com::tEPRYHomingFeedrate);
+#if FEATURE_CNC_MODE > 0
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+	    writeFloat(EPR_X_HOMING_FEEDRATE_PRINT,Com::tEPRXHomingFeedrate);
+		writeFloat(EPR_Y_HOMING_FEEDRATE_PRINT,Com::tEPRYHomingFeedrate);
+	}
+	else
+	{
+		writeFloat(EPR_X_HOMING_FEEDRATE_CNC,Com::tEPRXHomingFeedrate);
+		writeFloat(EPR_Y_HOMING_FEEDRATE_CNC,Com::tEPRYHomingFeedrate);
+	}
+#else
+    writeFloat(EPR_X_HOMING_FEEDRATE_PRINT,Com::tEPRXHomingFeedrate);
+    writeFloat(EPR_Y_HOMING_FEEDRATE_PRINT,Com::tEPRYHomingFeedrate);
+#endif // FEATURE_CNC_MODE >  0
 #endif
-    writeFloat(EPR_Z_HOMING_FEEDRATE,Com::tEPRZHomingFeedrate);
-    writeFloat(EPR_MAX_JERK,Com::tEPRMaxJerk);
+
+#if FEATURE_CNC_MODE > 0
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+		writeFloat(EPR_Z_HOMING_FEEDRATE_PRINT,Com::tEPRZHomingFeedrate);
+	}
+	else
+	{
+		writeFloat(EPR_Z_HOMING_FEEDRATE_CNC,Com::tEPRZHomingFeedrate);
+	}
+#else
+	writeFloat(EPR_Z_HOMING_FEEDRATE_PRINT,Com::tEPRZHomingFeedrate);
+#endif // FEATURE_CNC_MODE > 0
+
+	writeFloat(EPR_MAX_JERK,Com::tEPRMaxJerk);
 #if DRIVE_SYSTEM!=3
     writeFloat(EPR_MAX_ZJERK,Com::tEPRMaxZJerk);
 #endif
@@ -834,6 +961,11 @@ void EEPROM::writeSettings()
         writeFloat(o+EPR_EXTRUDER_ADVANCE_L,Com::tEPRAdvanceL);
 #endif
     }
+
+	// RF1000 specific
+	writeByte(EPR_RF1000_BEEPER_MODE,Com::tEPRBeeperMode);
+	writeByte(EPR_RF1000_LIGHTS_MODE,Com::tEPRLightsMode);
+	writeByte(EPR_RF1000_OPERATING_MODE,Com::tEPROperatingMode);
 
 #else
     Com::printErrorF(Com::tNoEEPROMSupport);

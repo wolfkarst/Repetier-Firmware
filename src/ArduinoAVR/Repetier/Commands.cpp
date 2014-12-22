@@ -86,12 +86,20 @@ void Commands::checkForPeriodicalActions()
 */
 void Commands::waitUntilEndOfAllMoves()
 {
+	char	bWait = 0;
+
+
 #ifdef DEBUG_PRINT
     debugWaitLoop = 8;
 #endif
 
-	while(PrintLine::hasLines())
-    {
+	if( PrintLine::hasLines() )		bWait = 1;
+#if FEATURE_FIND_Z_ORIGIN
+	if( g_nFindZOriginStatus )		bWait = 1;
+#endif // FEATURE_FIND_Z_ORIGIN
+
+	while( bWait )
+	{
 #if FEATURE_WATCHDOG
 		HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
@@ -99,7 +107,13 @@ void Commands::waitUntilEndOfAllMoves()
 		GCode::readFromSerial();
         Commands::checkForPeriodicalActions();
         UI_MEDIUM;
-    }
+
+		bWait = 0;
+		if( PrintLine::hasLines() )		bWait = 1;
+#if FEATURE_FIND_Z_ORIGIN
+		if( g_nFindZOriginStatus )		bWait = 1;
+#endif // FEATURE_FIND_Z_ORIGIN
+	}
 }
 void Commands::waitUntilEndOfAllBuffers()
 {
@@ -703,13 +717,17 @@ void Commands::executeGCode(GCode *com)
             break;
         case 92: // G92
         {
-            float xOff = Printer::coordinateOffset[X_AXIS];
-            float yOff = Printer::coordinateOffset[Y_AXIS];
-            float zOff = Printer::coordinateOffset[Z_AXIS];
-            if(com->hasX()) xOff = Printer::convertToMM(com->X)-Printer::currentPosition[X_AXIS];
-            if(com->hasY()) yOff = Printer::convertToMM(com->Y)-Printer::currentPosition[Y_AXIS];
-            if(com->hasZ()) zOff = Printer::convertToMM(com->Z)-Printer::currentPosition[Z_AXIS];
-            Printer::setOrigin(xOff,yOff,zOff);
+			if(!com->hasNoXYZ())
+			{
+				// set the origin only in case we got any x, y and/or z offset
+				float xOff = Printer::coordinateOffset[X_AXIS];
+				float yOff = Printer::coordinateOffset[Y_AXIS];
+				float zOff = Printer::coordinateOffset[Z_AXIS];
+				if(com->hasX()) xOff = Printer::convertToMM(com->X)-Printer::currentPosition[X_AXIS];
+				if(com->hasY()) yOff = Printer::convertToMM(com->Y)-Printer::currentPosition[Y_AXIS];
+				if(com->hasZ()) zOff = Printer::convertToMM(com->Z)-Printer::currentPosition[Z_AXIS];
+				Printer::setOrigin(xOff,yOff,zOff);
+			}
             if(com->hasE())
             {
                 Printer::currentPositionSteps[E_AXIS] = Printer::convertToMM(com->E)*Printer::axisStepsPerMM[E_AXIS];
@@ -1196,12 +1214,42 @@ void Commands::executeGCode(GCode *com)
             Com::printF(Printer::isYMaxEndstopHit()?Com::tHSpace:Com::tLSpace);
 #endif
 #if (Z_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_Z
-            Com::printF(Com::tZMinColon);
+
+#if FEATURE_CNC_MODE == 2
+			if( Printer::operatingMode == OPERATING_MODE_PRINT )
+			{
+				// in operating mode "print", the min endstop is used
+				Com::printF(Com::tZMinColon);
+				Com::printF(Printer::isZMinEndstopHit()?Com::tHSpace:Com::tLSpace);
+			}
+			else
+			{
+				// in operating mode "CNC", the min endstop is not used
+			}
+#else
+			Com::printF(Com::tZMinColon);
             Com::printF(Printer::isZMinEndstopHit()?Com::tHSpace:Com::tLSpace);
+#endif // FEATURE_CNC_MODE == 2
+
 #endif
 #if (Z_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_Z
+
+#if FEATURE_CNC_MODE == 2
+			if( Printer::operatingMode == OPERATING_MODE_CNC )
+			{
+				// in operating mode "CNC", the max endstop is used
+				Com::printF(Com::tZMaxColon);
+				Com::printF(Printer::isZMaxEndstopHit()?Com::tHSpace:Com::tLSpace);
+			}
+			else
+			{
+				// in operating mode "print", the max endstop is not used
+			}
+#else
             Com::printF(Com::tZMaxColon);
             Com::printF(Printer::isZMaxEndstopHit()?Com::tHSpace:Com::tLSpace);
+#endif // FEATURE_CNC_MODE == 2
+
 #endif
             Com::println();
             break;
@@ -1422,23 +1470,34 @@ void Commands::executeGCode(GCode *com)
             }
 			break;
 #endif // FEATURE_SERVO
-#if Z_HOME_DIR>0 && MAX_HARDWARE_ENDSTOP_Z
+
         case 251:	// M251
-            Printer::zLength -= Printer::currentPosition[Z_AXIS];
-            Printer::currentPositionSteps[Z_AXIS] = 0;
-            Printer::updateDerivedParameter();
-#if NONLINEAR_SYSTEM
-            transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentDeltaPositionSteps);
-#endif
-            Printer::updateCurrentPosition();
-            Com::printFLN(Com::tZProbePrinterHeight,Printer::zLength);
-#if EEPROM_MODE!=0
-            EEPROM::storeDataIntoEEPROM(false);
-            Com::printFLN(Com::tEEPROMUpdated);
-#endif
-            Commands::printCurrentPosition();
-            break;
-#endif
+		{
+			char	nProcess = 0;
+
+
+#if FEATURE_CNC_MODE == 2
+
+			if( Printer::operatingMode == OPERATING_MODE_CNC )
+			{
+				// in case the CNC mode is enabled, we support this command
+				nProcess = 1;
+			}
+#else
+
+#if Z_HOME_DIR>0 && MAX_HARDWARE_ENDSTOP_Z
+			nProcess = 1;
+#endif // Z_HOME_DIR>0 && MAX_HARDWARE_ENDSTOP_Z
+
+#endif // FEATURE_CNC_MODE
+
+			if( nProcess )
+			{
+				setZOrigin();
+			}
+		    break;
+		}
+
 #ifdef DEBUG_QUEUE_MOVE
         case 533:	// M533 - Write move data
             Com::printF(PSTR("Buf:"),(int)PrintLine::linesCount);

@@ -33,9 +33,9 @@ extern const int8_t encoder_table[16] PROGMEM ;
 #endif
 #endif
 
-#if UI_AUTORETURN_TO_MENU_AFTER!=0
+#if UI_PRINT_AUTORETURN_TO_MENU_AFTER || UI_CNC_AUTORETURN_TO_MENU_AFTER
 long ui_autoreturn_time=0;
-#endif
+#endif // UI_PRINT_AUTORETURN_TO_MENU_AFTER || UI_CNC_AUTORETURN_TO_MENU_AFTER
 
 
 void beep(uint8_t duration,uint8_t count)
@@ -794,7 +794,6 @@ void UIDisplay::initialize()
     cwd[1]=0;
     folderLevel=0;
 #endif
-    UI_STATUS(UI_TEXT_PRINTER_READY);
 
 #if UI_DISPLAY_TYPE>0
     initializeLCD();
@@ -994,6 +993,8 @@ UI_STRING(ui_print_pos,UI_TEXT_PRINT_POS);
 UI_STRING(ui_selected,UI_TEXT_SEL);
 UI_STRING(ui_unselected,UI_TEXT_NOSEL);
 UI_STRING(ui_action,UI_TEXT_STRING_ACTION);
+UI_STRING(ui_text_print_mode,UI_TEXT_PRINT_MODE);
+UI_STRING(ui_text_cnc_mode,UI_TEXT_CNC_MODE);
 
 void UIDisplay::parse(char *txt,bool ram)
 {
@@ -1042,12 +1043,33 @@ void UIDisplay::parse(char *txt,bool ram)
 			else if(c2=='b') addStringP(Printer::enableBeeper?ui_text_on:ui_text_off);
             break;
 
+		case 'D':
+			if(c2=='x')			addLong(g_nScanXStepSizeMm,3);
+			else if(c2=='y')	addLong(g_nScanYStepSizeMm,3);
+			break;
+
+#if FEATURE_WORK_PART_Z_COMPENSATION
+		case 'W':
+			if(c2=='P')			addLong(g_nActiveWorkPart,1);
+			break;
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+
         case 'e': // Extruder temperature
             if(c2=='r')   // Extruder relative mode
             {
                 addStringP(Printer::relativeExtruderCoordinateMode?ui_yes:ui_no);
                 break;
             }
+
+#if FEATURE_CNC_MODE > 0
+			if( Printer::operatingMode == OPERATING_MODE_CNC )
+			{
+				// we do not maintain temperatures in CNC mode
+				addStringP( PSTR( " n/a " ));
+				break;
+			}
+#endif // FEATURE_CNC_MODE > 0
+
             ivalue = UI_TEMP_PRECISION;
             if(Printer::flag0 & PRINTER_FLAG0_TEMPSENSOR_DEFECT)
             {
@@ -1090,6 +1112,14 @@ void UIDisplay::parse(char *txt,bool ram)
             else if(c2=='p') addLong(maxInactiveTime/1000,4);
             break;
         case 'O': // ops related stuff
+			if(c2=='M')
+			{
+#if FEATURE_CNC_MODE > 0
+				addStringP(Printer::operatingMode==OPERATING_MODE_PRINT?ui_text_print_mode:ui_text_cnc_mode);
+#else
+				addStringP(ui_text_print_mode);
+#endif //FEATURE_CNC_MODE > 0
+			}
             break;
         case 'l':
             if(c2=='a') addInt(lastAction,4);
@@ -1173,15 +1203,19 @@ void UIDisplay::parse(char *txt,bool ram)
 					{
 	                    fvalue = 0;
 
-#if FEATURE_Z_COMPENSATION
+#if FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
 		                // add the current z-compensation
 			            fvalue += (float)Printer::currentCompensationZ;
-				        fvalue += (float)g_nHeatBedScanZ;
-#endif // FEATURE_Z_COMPENSATION
+				        fvalue += (float)g_nZScanZPosition;
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
+
+#if FEATURE_FIND_Z_ORIGIN
+						fvalue += (float)g_nZOriginZPosition;
+#endif // FEATURE_FIND_Z_ORIGIN
 
 #if FEATURE_EXTENDED_BUTTONS
 					    // add the current manual z-steps
-						fvalue += (float)Printer::targetPositionStepsZ;
+						fvalue += (float)Printer::currentPositionStepsZ;
 #endif // FEATURE_EXTENDED_BUTTONS
 
 						fvalue *= Printer::invAxisStepsPerMM[Z_AXIS];
@@ -1330,17 +1364,35 @@ void UIDisplay::parse(char *txt,bool ram)
                 addStringP(ui_text_na);
 #endif
             if(c2=='z')
+			{
 #if (Z_MIN_PIN > -1) && MIN_HARDWARE_ENDSTOP_Z
+
+#if FEATURE_CNC_MODE == 2
+				Printer::isZMinEndstopHit();
+				addStringP(Printer::endstopZMinHit==ENDSTOP_IS_HIT?ui_text_on:ui_text_off);
+#else
                 addStringP(Printer::isZMinEndstopHit()?ui_text_on:ui_text_off);
+#endif // FEATURE_CNC_MODE == 2
+
 #else
                 addStringP(ui_text_na);
 #endif
+			}
             if(c2=='Z')
+			{
 #if (Z_MAX_PIN > -1) && MAX_HARDWARE_ENDSTOP_Z
-                addStringP(Printer::isZMaxEndstopHit()?ui_text_on:ui_text_off);
+
+#if FEATURE_CNC_MODE == 2
+				Printer::isZMaxEndstopHit();
+				addStringP(Printer::endstopZMaxHit==ENDSTOP_IS_HIT?ui_text_on:ui_text_off);
+#else
+				addStringP(Printer::isZMaxEndstopHit()?ui_text_on:ui_text_off);
+#endif // FEATURE_CNC_MODE == 2
+
 #else
                 addStringP(ui_text_na);
 #endif
+			}
 
 #if MOTHERBOARD == 12
             if(c2=='1')
@@ -1611,11 +1663,31 @@ void UIDisplay::refreshPage()
     char cache[UI_ROWS][MAX_COLS+1];
     adjustMenuPos();
 
-#if UI_AUTORETURN_TO_MENU_AFTER!=0
+#if FEATURE_CNC_MODE > 0
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+#if UI_PRINT_AUTORETURN_TO_MENU_AFTER
+	    // Reset timeout on menu back when user active on menu
+		if (uid.encoderLast != encoderStartScreen)
+			ui_autoreturn_time=HAL::timeInMilliseconds()+UI_PRINT_AUTORETURN_TO_MENU_AFTER;
+#endif // UI_PRINT_AUTORETURN_TO_MENU_AFTER
+	}
+	else
+	{
+#if UI_CNC_AUTORETURN_TO_MENU_AFTER
+	    // Reset timeout on menu back when user active on menu
+		if (uid.encoderLast != encoderStartScreen)
+			ui_autoreturn_time=HAL::timeInMilliseconds()+UI_CNC_AUTORETURN_TO_MENU_AFTER;
+#endif // UI_PRINT_AUTORETURN_TO_MENU_AFTER
+	}
+#else
+#if UI_PRINT_AUTORETURN_TO_MENU_AFTER
     // Reset timeout on menu back when user active on menu
     if (uid.encoderLast != encoderStartScreen)
-        ui_autoreturn_time=HAL::timeInMilliseconds()+UI_AUTORETURN_TO_MENU_AFTER;
-#endif
+        ui_autoreturn_time=HAL::timeInMilliseconds()+UI_PRINT_AUTORETURN_TO_MENU_AFTER;
+#endif // UI_PRINT_AUTORETURN_TO_MENU_AFTER
+#endif // FEATURE_CNC_MODE > 0
+
     encoderStartScreen = uid.encoderLast;
 
     // Copy result into cache
@@ -2724,10 +2796,43 @@ void UIDisplay::nextPreviousAction(int8_t next)
         INCREMENT_MIN_MAX(Extruder::current->advanceL,1,0,600);
         break;
 #endif
-    }
-#if UI_AUTORETURN_TO_MENU_AFTER!=0
-    ui_autoreturn_time=HAL::timeInMilliseconds()+UI_AUTORETURN_TO_MENU_AFTER;
+
+#if FEATURE_WORK_PART_Z_COMPENSATION
+	case UI_ACTION_RF1000_SET_WORK_PART:
+        INCREMENT_MIN_MAX(g_nActiveWorkPart,1,1,EEPROM_MAX_WORK_PART_SECTORS);
+		switchActiveWorkPart(g_nActiveWorkPart);
+		break;
+	case UI_ACTION_RF1000_SET_SCAN_DELTA_X:
+        INCREMENT_MIN_MAX(g_nScanXStepSizeMm,1,WORK_PART_SCAN_X_STEP_SIZE_MIN_MM,100);
+		g_nScanXStepSizeSteps = (long)((float)g_nScanXStepSizeMm * XAXIS_STEPS_PER_MM);
+		break;
+	case UI_ACTION_RF1000_SET_SCAN_DELTA_Y:
+        INCREMENT_MIN_MAX(g_nScanYStepSizeMm,1,WORK_PART_SCAN_Y_STEP_SIZE_MIN_MM,100);
+		g_nScanYStepSizeSteps = (long)((float)g_nScanYStepSizeMm * YAXIS_STEPS_PER_MM);
+		break;
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+
+	}
+
+#if FEATURE_CNC_MODE > 0
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+#if UI_PRINT_AUTORETURN_TO_MENU_AFTER!=0
+	    ui_autoreturn_time=HAL::timeInMilliseconds()+UI_PRINT_AUTORETURN_TO_MENU_AFTER;
 #endif
+	}
+	else
+	{
+#if UI_CNC_AUTORETURN_TO_MENU_AFTER!=0
+	    ui_autoreturn_time=HAL::timeInMilliseconds()+UI_CNC_AUTORETURN_TO_MENU_AFTER;
+#endif
+	}
+#else
+#if UI_PRINT_AUTORETURN_TO_MENU_AFTER!=0
+    ui_autoreturn_time=HAL::timeInMilliseconds()+UI_PRINT_AUTORETURN_TO_MENU_AFTER;
+#endif
+#endif // FEATURE_CNC_MODE > 0
+
 #endif
 }
 
@@ -2807,8 +2912,11 @@ void UIDisplay::executeAction(int action)
             Printer::homeAxis(false,false,true);
             Commands::printCurrentPosition();
             break;
-        case UI_ACTION_SET_ORIGIN:
-            Printer::setOrigin(0,0,0);
+        case UI_ACTION_SET_XY_ORIGIN:
+            if( Printer::setOrigin(-Printer::currentPosition[X_AXIS],-Printer::currentPosition[Y_AXIS],Printer::coordinateOffset[Z_AXIS]) )
+			{
+				BEEP_ACCEPT_SET_POSITION
+			}
             break;
         case UI_ACTION_DEBUG_ECHO:
             if(Printer::debugEcho()) Printer::debugLevel-=1;
@@ -2846,13 +2954,37 @@ void UIDisplay::executeAction(int action)
             TOGGLE(PS_ON_PIN);
 #endif
             break;
+
 #if CASE_LIGHTS_PIN > 0
         case UI_ACTION_LIGHTS_ONOFF:
 			if( Printer::enableLights )	Printer::enableLights = 0;
             else						Printer::enableLights = 1;
 			WRITE(CASE_LIGHTS_PIN, Printer::enableLights);
             break;
-#endif
+#endif // CASE_LIGHTS_PIN > 0
+
+#if FEATURE_CNC_MODE > 0
+		case UI_ACTION_OPERATING_MODE:
+		{
+			if( PrintLine::linesCount )
+			{
+				// the operating mode can not be switched while the printing is in progress
+				Com::printFLN( PSTR( "executeAction(): The operating mode can not be switched while the printing is in progress" ) );
+				break;
+			}
+
+			if( Printer::operatingMode == OPERATING_MODE_PRINT )
+			{
+				switchOperatingMode( OPERATING_MODE_CNC );
+			}
+			else
+			{
+				switchOperatingMode( OPERATING_MODE_PRINT );
+			}
+			break;
+		}
+#endif // FEATURE_CNC_MODE > 0
+
         case UI_ACTION_PREHEAT_PLA:
             UI_STATUS(UI_TEXT_PREHEAT_PLA);
             Extruder::setTemperatureForExtruder(UI_SET_PRESET_EXTRUDER_TEMP_PLA,0);
@@ -2939,7 +3071,7 @@ void UIDisplay::executeAction(int action)
 
 			GCode::executeFString(Com::tMountFilament);
 			break;
-        case UI_ACTION_RESET_EXTRUDER:
+        case UI_ACTION_SET_E_ORIGIN:
             Printer::currentPositionSteps[E_AXIS] = 0;
             break;
         case UI_ACTION_EXTRUDER_RELATIVE:
@@ -3157,22 +3289,9 @@ void UIDisplay::executeAction(int action)
 #endif
         break;
 #if MAX_HARDWARE_ENDSTOP_Z
-        case UI_ACTION_SET_MEASURED_ORIGIN:
+        case UI_ACTION_SET_Z_ORIGIN:
         {
-            Printer::updateCurrentPosition();
-            Printer::zLength -= Printer::currentPosition[Z_AXIS];
-            Printer::currentPositionSteps[Z_AXIS] = 0;
-            Printer::updateDerivedParameter();
-#if NONLINEAR_SYSTEM
-            transformCartesianStepsToDeltaSteps(Printer::currentPositionSteps, Printer::currentDeltaPositionSteps);
-#endif
-            Printer::updateCurrentPosition(true);
-            Com::printFLN(Com::tZProbePrinterHeight,Printer::zLength);
-#if EEPROM_MODE!=0
-            EEPROM::storeDataIntoEEPROM(false);
-            Com::printFLN(Com::tEEPROMUpdated);
-#endif
-            Commands::printCurrentPosition();
+			setZOrigin();
         }
         break;
 #endif
@@ -3257,9 +3376,26 @@ void UIDisplay::executeAction(int action)
     refreshPage();
     if(!skipBeep)
         BEEP_SHORT
-#if UI_AUTORETURN_TO_MENU_AFTER!=0
-        ui_autoreturn_time=HAL::timeInMilliseconds()+UI_AUTORETURN_TO_MENU_AFTER;
+
+#if FEATURE_CNC_MODE > 0
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+#if UI_PRINT_AUTORETURN_TO_MENU_AFTER!=0
+	    ui_autoreturn_time=HAL::timeInMilliseconds()+UI_PRINT_AUTORETURN_TO_MENU_AFTER;
 #endif
+	}
+	else
+	{
+#if UI_CNC_AUTORETURN_TO_MENU_AFTER!=0
+	    ui_autoreturn_time=HAL::timeInMilliseconds()+UI_CNC_AUTORETURN_TO_MENU_AFTER;
+#endif
+	}
+#else
+#if UI_PRINT_AUTORETURN_TO_MENU_AFTER!=0
+    ui_autoreturn_time=HAL::timeInMilliseconds()+UI_PRINT_AUTORETURN_TO_MENU_AFTER;
+#endif
+#endif // FEATURE_CNC_MODE > 0
+
 #endif
 }
 void UIDisplay::mediumAction()
@@ -3358,14 +3494,17 @@ void UIDisplay::slowAction()
     }
     HAL::allowInterrupts();
 #endif
-#if UI_AUTORETURN_TO_MENU_AFTER!=0
-    if(menuLevel>0 && ui_autoreturn_time<time)
+
+#if UI_PRINT_AUTORETURN_TO_MENU_AFTER || UI_CNC_AUTORETURN_TO_MENU_AFTER
+    if(menuLevel>0 && ui_autoreturn_time && ui_autoreturn_time<time)
     {
         lastSwitch = time;
         menuLevel=0;
         activeAction = 0;
+		ui_autoreturn_time = 0;
     }
-#endif
+#endif // UI_PRINT_AUTORETURN_TO_MENU_AFTER || UI_CNC_AUTORETURN_TO_MENU_AFTER
+
     if(menuLevel==0 && time>4000)
     {
         if(time-lastSwitch>UI_PAGES_DURATION)

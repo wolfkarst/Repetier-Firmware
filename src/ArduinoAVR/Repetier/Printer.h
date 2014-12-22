@@ -41,6 +41,7 @@ union floatLong {
 #define PRINTER_FLAG1_ALLKILLED             8
 #define PRINTER_FLAG1_UI_ERROR_MESSAGE      16
 #define PRINTER_FLAG1_NO_DESTINATION_CHECK  32
+#define PRINTER_FLAG1_Z_ORIGIN_SET			64
 
 class Printer
 {
@@ -166,14 +167,22 @@ public:
     static float maxRealJerk;
 #endif
 
-#if FEATURE_Z_COMPENSATION
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+    static char	doHeatBedZCompensation;
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+
+#if FEATURE_WORK_PART_Z_COMPENSATION
+    static char	doWorkPartZCompensation;
+	static long staticCompensationZ;			// this is the z-delta which can occur in case the x/y position of the z-origin from the work part scan is different to the x/y position of the z-origin from the moment of the start of the milling
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+
+#if FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
     static long nonCompensatedPositionStepsX;
     static long nonCompensatedPositionStepsY;
     static long	nonCompensatedPositionStepsZ;
     static long targetCompensationZ;
     static long currentCompensationZ;
-    static char	doZCompensation;
-#endif // FEATURE_Z_COMPENSATION
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
 
 #if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
     static long targetPositionStepsX;
@@ -185,6 +194,18 @@ public:
     static long currentPositionStepsZ;
     static long currentPositionStepsE;
 #endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
+
+#if FEATURE_CNC_MODE > 0
+	static char operatingMode;
+#endif // FEATURE_CNC_MODE > 0
+
+#if FEATURE_CNC_MODE == 2
+	static char				lastZDirection;
+	static char				endstopZMinHit;
+	static char				endstopZMaxHit;
+	static long				stepsSinceZMinEndstop;
+	static long				stepsSinceZMaxEndstop;
+#endif // FEATURE_CNC_MODE == 2
 
 #if STEPPER_ON_DELAY
 	static char	enabledX;
@@ -204,10 +225,6 @@ public:
 	static unsigned long	prepareFanOff;
 	static unsigned long	fanOffDelay;
 #endif // CASE_FAN_PIN >= 0
-
-	static long allowedZStepsAfterEndstop;
-    static long currentZStepsAfterEndstop;
-
 
 	static inline void setMenuMode(uint8_t mode,bool on)
 	{
@@ -294,12 +311,21 @@ public:
 		Printer::enabledZ = 0;
 #endif // STEPPER_ON_DELAY
 
+#if FEATURE_CNC_MODE == 2
+		Printer::lastZDirection		   = 0;
+		Printer::endstopZMinHit		   = ENDSTOP_NOT_HIT;
+		Printer::endstopZMaxHit		   = ENDSTOP_NOT_HIT;
+		Printer::stepsSinceZMinEndstop = 0;
+		Printer::stepsSinceZMaxEndstop = 0;
+#endif // FEATURE_CNC_MODE == 2
+
 		// when the stepper is disabled we loose our home position because somebody else can move our mechanical parts
 		setHomed(false);
+		setZOriginSet(false);
 		cleanupZPositions();
 	}
     /** \brief Enable stepper motor for x direction. */
-    static inline void  enableXStepper()
+    static inline void enableXStepper()
     {
 #if (X_ENABLE_PIN > -1)
         WRITE(X_ENABLE_PIN, X_ENABLE_ON);
@@ -317,7 +343,7 @@ public:
 #endif // STEPPER_ON_DELAY
     }
     /** \brief Enable stepper motor for y direction. */
-    static inline void  enableYStepper()
+    static inline void enableYStepper()
     {
 #if (Y_ENABLE_PIN > -1)
         WRITE(Y_ENABLE_PIN, Y_ENABLE_ON);
@@ -335,7 +361,7 @@ public:
 #endif // STEPPER_ON_DELAY
     }
     /** \brief Enable stepper motor for z direction. */
-    static inline void  enableZStepper()
+    static inline void enableZStepper()
     {
 #if (Z_ENABLE_PIN > -1)
         WRITE(Z_ENABLE_PIN, Z_ENABLE_ON);
@@ -357,25 +383,25 @@ public:
         if(positive)
         {
             // extruder moves to the right
-            if( g_nDirectionX != 1 )
+            if( g_nMainDirectionX != 1 )
             {
                 WRITE(X_DIR_PIN,!INVERT_X_DIR);
 #if FEATURE_TWO_XSTEPPER
                 WRITE(X2_DIR_PIN,!INVERT_X_DIR);
 #endif
-                g_nDirectionX = 1;
+                g_nMainDirectionX = 1;
             }
         }
         else
         {
             // extruder moves to the left
-            if( g_nDirectionX != -1 )
+            if( g_nMainDirectionX != -1 )
             {
                 WRITE(X_DIR_PIN,INVERT_X_DIR);
 #if FEATURE_TWO_XSTEPPER
                 WRITE(X2_DIR_PIN,INVERT_X_DIR);
 #endif
-                g_nDirectionX = -1;
+                g_nMainDirectionX = -1;
             }
         }
     }
@@ -384,25 +410,25 @@ public:
         if(positive)
         {
             // heat bed moves to the front
-            if( g_nDirectionY != 1 )
+            if( g_nMainDirectionY != 1 )
             {
                 WRITE(Y_DIR_PIN,!INVERT_Y_DIR);
 #if FEATURE_TWO_YSTEPPER
                 WRITE(Y2_DIR_PIN,!INVERT_Y_DIR);
 #endif
-                g_nDirectionY = 1;
+                g_nMainDirectionY = 1;
             }
         }
         else
         {
             // heat bed moves to the back
-            if( g_nDirectionY != -1 )
+            if( g_nMainDirectionY != -1 )
             {
                 WRITE(Y_DIR_PIN,INVERT_Y_DIR);
 #if FEATURE_TWO_YSTEPPER
                 WRITE(Y2_DIR_PIN,INVERT_Y_DIR);
 #endif
-                g_nDirectionY = -1;
+                g_nMainDirectionY = -1;
             }
         }
     }
@@ -416,25 +442,37 @@ public:
         if(positive)
         {
             // heat bed moves to the bottom
-            if( g_nDirectionZ != 1 )
+//            if( g_nMainDirectionZ != 1 )
             {
-                WRITE(Z_DIR_PIN,!INVERT_Z_DIR);
+				// prepareBedDown() can not be called at this place
+				WRITE( Z_DIR_PIN, !INVERT_Z_DIR );
 #if FEATURE_TWO_ZSTEPPER
-                WRITE(Z2_DIR_PIN,!INVERT_Z_DIR);
+				WRITE( Z2_DIR_PIN, !INVERT_Z_DIR );
 #endif
-                g_nDirectionZ = 1;
+
+#if FEATURE_CNC_MODE == 2
+				increaseLastZDirection();
+#endif // FEATURE_CNC_MODE == 2
+
+				g_nMainDirectionZ = 1;
             }
         }
         else
         {
             // heat bed moves to the top
-            if( g_nDirectionZ != -1 )
+//            if( g_nMainDirectionZ != -1 )
             {
-                WRITE(Z_DIR_PIN,INVERT_Z_DIR);
+				// prepareBedUp() can not be called at this place
+				WRITE( Z_DIR_PIN, INVERT_Z_DIR );
 #if FEATURE_TWO_ZSTEPPER
-                WRITE(Z2_DIR_PIN,INVERT_Z_DIR);
+				WRITE( Z2_DIR_PIN, INVERT_Z_DIR );
 #endif
-                g_nDirectionZ = -1;
+
+#if FEATURE_CNC_MODE == 2
+				Printer::decreaseLastZDirection();
+#endif // FEATURE_CNC_MODE == 2
+
+                g_nMainDirectionZ = -1;
             }
         }
     }
@@ -442,6 +480,18 @@ public:
     {
         return ((READ(Z_DIR_PIN)!=0) ^ INVERT_Z_DIR);
     }
+
+#if FEATURE_CNC_MODE == 2
+	static inline void increaseLastZDirection()
+	{
+		lastZDirection = 1;
+	}
+	static inline void decreaseLastZDirection()
+	{
+		lastZDirection = -1;
+	}
+#endif // FEATURE_CNC_MODE == 2
+
     static inline bool getYDirection()
     {
         return((READ(Y_DIR_PIN)!=0) ^ INVERT_Y_DIR);
@@ -473,6 +523,14 @@ public:
     static inline void setHomed(uint8_t b)
     {
         flag1 = (b ? flag1 | PRINTER_FLAG1_HOMED : flag1 & ~PRINTER_FLAG1_HOMED);
+    }
+    static inline uint8_t isZOriginSet()
+    {
+        return flag1 & PRINTER_FLAG1_Z_ORIGIN_SET;
+    }
+    static inline void setZOriginSet(uint8_t b)
+    {
+        flag1 = (b ? flag1 | PRINTER_FLAG1_Z_ORIGIN_SET : flag1 & ~PRINTER_FLAG1_Z_ORIGIN_SET);
     }
     static inline uint8_t isAllKilled()
     {
@@ -541,7 +599,59 @@ public:
     static inline bool isZMinEndstopHit()
     {
 #if Z_MIN_PIN>-1 && MIN_HARDWARE_ENDSTOP_Z
+
+#if FEATURE_CNC_MODE == 2
+
+		if( READ(Z_MIN_PIN) != ENDSTOP_Z_MIN_INVERTING )
+		{
+			// either the min or the max endstop is hit
+			if( endstopZMaxHit == ENDSTOP_IS_HIT )
+			{
+				// when the z-max endstop is hit already we know that the z-min endstop is not hit
+				return false;
+			}
+
+			if( endstopZMinHit == ENDSTOP_IS_HIT )
+			{
+				// we remember that the z-min endstop is hit at the moment
+				return true;
+			}
+
+			if( stepsSinceZMaxEndstop && stepsSinceZMaxEndstop > MINIMAL_Z_ENDSTOP_MAX_TO_MIN_STEPS )
+			{
+				// the z-max endstop was hit a few steps ago, so the z-min endstop can not be hit right now
+				return false;
+			}
+				
+			if( lastZDirection > 0 )
+			{
+				// z-min was not hit and we are moving downwards, so z-min can not become hit right now
+				return false;
+			}
+
+			// the last z-direction is unknown or the heat bed has been moved upwards, thus we have to assume that the z-min endstop is hit
+			endstopZMinHit		  = ENDSTOP_IS_HIT;
+			endstopZMaxHit		  = ENDSTOP_NOT_HIT;
+			stepsSinceZMinEndstop = 0;
+			stepsSinceZMaxEndstop = 0;
+			return true;
+		}
+
+		// no z endstop is hit
+		if( endstopZMinHit == ENDSTOP_IS_HIT )
+		{
+			endstopZMinHit = ENDSTOP_WAS_HIT;
+		}
+		if( endstopZMaxHit == ENDSTOP_IS_HIT )
+		{
+			endstopZMaxHit = ENDSTOP_WAS_HIT;
+		}
+		return false;
+
+#else
         return READ(Z_MIN_PIN) != ENDSTOP_Z_MIN_INVERTING;
+#endif // FEATURE_CNC_MODE == 2
+
 #else
         return false;
 #endif
@@ -565,7 +675,59 @@ public:
     static inline bool isZMaxEndstopHit()
     {
 #if Z_MAX_PIN>-1 && MAX_HARDWARE_ENDSTOP_Z
-        return READ(Z_MAX_PIN) != ENDSTOP_Z_MAX_INVERTING;
+
+#if FEATURE_CNC_MODE == 2
+
+		if( READ(Z_MAX_PIN) != ENDSTOP_Z_MAX_INVERTING )
+		{
+			// either the min or the max endstop is hit
+			if( endstopZMinHit == ENDSTOP_IS_HIT )
+			{
+				// when the z-min endstop is hit already we know that the z-max endstop is not hit
+				return false;
+			}
+
+			if( endstopZMaxHit == ENDSTOP_IS_HIT )
+			{
+				// we remember that the z-max endstop is hit at the moment
+				return true;
+			}
+				
+			if( stepsSinceZMinEndstop && stepsSinceZMinEndstop < MINIMAL_Z_ENDSTOP_MIN_TO_MAX_STEPS )
+			{
+				// the z-min endstop was hit a few steps ago, so the z-max endstop can not be hit right now
+				return false;
+			}
+				
+			if( lastZDirection < 0 )
+			{
+				// z-max was not hit and we are moving upwards, so z-max can not become hit right now
+				return false;
+			}
+
+			// the last z-direction is unknown or the heat bed has been moved downwards, thus we have to assume that the z-max endstop is hit
+			endstopZMinHit		  = ENDSTOP_NOT_HIT;
+			endstopZMaxHit		  = ENDSTOP_IS_HIT;
+			stepsSinceZMinEndstop = 0;
+			stepsSinceZMaxEndstop = 0;
+			return true;
+		}
+
+		// no z endstop is hit
+		if( endstopZMinHit == ENDSTOP_IS_HIT )
+		{
+			endstopZMinHit = ENDSTOP_WAS_HIT;
+		}
+		if( endstopZMaxHit == ENDSTOP_IS_HIT )
+		{
+			endstopZMaxHit = ENDSTOP_WAS_HIT;
+		}
+		return false;
+
+#else
+		return READ(Z_MAX_PIN) != ENDSTOP_Z_MAX_INVERTING;
+#endif // FEATURE_CNC_MODE == 2
+
 #else
         return false;
 #endif
@@ -580,6 +742,7 @@ public:
 
 		// when the stepper is disabled we loose our home position because somebody else can move our mechanical parts
 		setHomed(false);
+		setZOriginSet(false);
     }
     static inline void unsetAllSteppersDisabled()
     {
@@ -724,17 +887,17 @@ public:
     }
     static inline float realXPosition()
     {
-        return currentPosition[0];
+        return currentPosition[X_AXIS];
     }
 
     static inline float realYPosition()
     {
-        return currentPosition[1];
+        return currentPosition[Y_AXIS];
     }
 
     static inline float realZPosition()
     {
-        return currentPosition[2];
+        return currentPosition[Z_AXIS];
     }
     static inline void realPosition(float &xp,float &yp,float &zp)
     {
@@ -758,7 +921,7 @@ public:
     static void moveTo(float x,float y,float z,float e,float f);
     static void moveToReal(float x,float y,float z,float e,float f);
     static void homeAxis(bool xaxis,bool yaxis,bool zaxis); /// Home axis
-    static void setOrigin(float xOff,float yOff,float zOff);
+    static uint8_t setOrigin(float xOff,float yOff,float zOff);
     static bool isPositionAllowed(float x,float y,float z);
     static inline int getFanSpeed()
 	{
@@ -773,10 +936,11 @@ public:
     }
     static void deltaMoveToTopEndstops(float feedrate);
 #endif
+
+#if FEATURE_Z_PROBE
 #if MAX_HARDWARE_ENDSTOP_Z
     static float runZMaxProbe();
 #endif
-#if FEATURE_Z_PROBE
     static float runZProbe(bool first,bool last,uint8_t repeat = Z_PROBE_REPETITIONS);
     static void waitForZProbeStart();
 #if FEATURE_AUTOLEVEL

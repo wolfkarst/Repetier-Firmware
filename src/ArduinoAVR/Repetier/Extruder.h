@@ -205,18 +205,18 @@ class Extruder   // Size: 12*1 Byte+12*4 Byte+4*2Byte = 68 Byte
 #if NUM_EXTRUDER==1
         if(dir)
         {
-            if( g_nDirectionE != 1 )
+//            if( g_nMainDirectionE != 1 )
             {
                 WRITE(EXT0_DIR_PIN,!EXT0_INVERSE);
-                g_nDirectionE = 1;
+                g_nMainDirectionE = 1;
             }
         }
         else
         {
-            if( g_nDirectionE != -1 )
+//            if( g_nMainDirectionE != -1 )
             {
                 WRITE(EXT0_DIR_PIN,EXT0_INVERSE);
-                g_nDirectionE = -1;
+                g_nMainDirectionE = -1;
             }
         }
 #else

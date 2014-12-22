@@ -339,6 +339,9 @@ FSTRINGVALUE(Com::tEPRDistanceRetractHeating,"distance to retract when heating [
 FSTRINGVALUE(Com::tEPRExtruderCoolerSpeed,"extruder cooler speed [0-255]")
 FSTRINGVALUE(Com::tEPRAdvanceK,"advance K [0=off]")
 FSTRINGVALUE(Com::tEPRAdvanceL,"advance L [0=off]")
+FSTRINGVALUE(Com::tEPRBeeperMode,"beeper mode [0=off]")
+FSTRINGVALUE(Com::tEPRLightsMode,"lights mode [0=off]")
+FSTRINGVALUE(Com::tEPROperatingMode,"operating mode [1=print, 2=mill]")
 
 #endif
 #if SDSUPPORT
@@ -367,6 +370,10 @@ FSTRINGVALUE(Com::tSDErrorCode,"SD errorCode:")
 FSTRINGVALUE(Com::tOutputObject,OUTPUT_OBJECT_SCRIPT)
 FSTRINGVALUE(Com::tUnmountFilament,UNMOUNT_FILAMENT_SCRIPT)
 FSTRINGVALUE(Com::tMountFilament,MOUNT_FILAMENT_SCRIPT)
+
+#if FEATURE_FIND_Z_ORIGIN
+FSTRINGVALUE(Com::tFindZOrigin,FIND_Z_ORIGIN_SCRIPT)
+#endif // FEATURE_FIND_Z_ORIGIN
 
 void Com::printWarningF(FSTRINGPARAM(text)) {
     printF(tWarning);

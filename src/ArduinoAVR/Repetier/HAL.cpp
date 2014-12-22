@@ -1,7 +1,10 @@
 #include "Repetier.h"
 #include <compat/twi.h>
 
+
 //extern "C" void __cxa_pure_virtual() { }
+unsigned long	g_uLastManualMoveTime	 = 0;
+
 
 HAL::HAL()
 {
@@ -679,8 +682,322 @@ ISR(TIMER1_COMPA_vect)
         "end%=: \n\t"
         :[ex]"=&d"(doExit):[ocr]"i" (_SFR_MEM_ADDR(OCR1A)):"r22","r23" );
     if(doExit) return;
-    insideTimer1 = 1;
-    OCR1A = 61000;
+
+    insideTimer1				= 1;
+	unsigned short	uTimerValue = 65000;
+    OCR1A						= 61000;
+
+#if FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
+	char	doZCompensation = 0;
+
+
+	uTimerValue = 1000;
+
+	// the order of the following checks shall not be changed
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+	if( Printer::doHeatBedZCompensation )
+	{
+		doZCompensation = 1;
+	}
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+
+#if FEATURE_WORK_PART_Z_COMPENSATION
+	if( Printer::doWorkPartZCompensation )
+	{
+		doZCompensation = 1;
+	}
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+
+	if( g_nBlockZ )
+	{
+		// do not perform any compensation in case the moving into z-direction is blocked
+		doZCompensation = 0;
+	}
+	if( PrintLine::cur )
+	{
+		if( PrintLine::cur->isZMove() )
+		{
+			// do not peform any compensation while there is a "real" move into z-direction
+			doZCompensation = 0;
+		}
+	}
+
+	if( doZCompensation )
+	{
+		if( Printer::currentCompensationZ < Printer::targetCompensationZ )
+		{
+			// we must move the heat bed do the bottom
+			if( g_nMainDirectionZ >= 0 )
+			{
+				// here we shall move the z-axis only in case bresenhamStep() is not moving into the other direction at the moment
+				if( g_nMainDirectionZ == 0 )
+				{
+					// set the direction only in case it is not set already
+					prepareBedDown();
+					g_nMainDirectionZ = 1;
+					HAL::delayMicroseconds( 1 );
+				}
+				startZStep( 1 );
+
+#if STEPPER_HIGH_DELAY>0
+				HAL::delayMicroseconds( STEPPER_HIGH_DELAY );
+#endif
+				endZStep();
+				
+				Printer::currentCompensationZ ++;
+			}
+
+			if( Printer::currentCompensationZ == Printer::targetCompensationZ )
+			{
+				g_nMainDirectionZ = 0;
+			}
+		}
+		else if( Printer::currentCompensationZ > Printer::targetCompensationZ )
+		{
+			// we must move the heat bed to the top
+			if( g_nMainDirectionZ <= 0 )
+			{
+				// here we shall move the z-axis only in case bresenhamStep() is not moving into the other direction at the moment
+				if( g_nMainDirectionZ == 0 )
+				{
+					// set the direction only in case it is not set already
+					prepareBedUp();
+					g_nMainDirectionZ = -1;
+					HAL::delayMicroseconds( 1 );
+				}
+				startZStep( -1 );
+
+#if STEPPER_HIGH_DELAY>0
+				HAL::delayMicroseconds( STEPPER_HIGH_DELAY );
+#endif
+				endZStep();
+				
+				Printer::currentCompensationZ --;
+			}
+
+			if( Printer::currentCompensationZ == Printer::targetCompensationZ )
+			{
+				g_nMainDirectionZ = 0;
+			}
+		}
+	}
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
+
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
+	uTimerValue = 1000;
+
+	if( (HAL::timeInMilliseconds() - g_uLastManualMoveTime) >= MANUAL_MOVE_INTERVAL )
+	{
+		bool	bDone = 0;
+
+
+		g_uLastManualMoveTime = HAL::timeInMilliseconds();
+		
+		if( Printer::currentPositionStepsE > Printer::targetPositionStepsE )
+		{
+			bDone = true;
+			if( g_nMainDirectionE <= 0 )
+			{
+				// this interrupt shall move the extruder only in case bresenhamStep() does not move into the other direction at the moment
+				
+				// we must retract filament
+				if( g_nMainDirectionE == 0 )
+				{
+					// set the direction only in case it is not set already
+					Extruder::setDirection( false );
+					HAL::delayMicroseconds( 1 );
+				}
+				Extruder::step();
+
+#if STEPPER_HIGH_DELAY>0
+				HAL::delayMicroseconds( STEPPER_HIGH_DELAY );
+#endif
+				Extruder::unstep();
+				
+				Printer::currentPositionStepsE --;
+
+				if( Printer::currentPositionStepsE == Printer::targetPositionStepsE )
+				{
+					// we have reached the target position
+					g_nMainDirectionE = 0;
+				}
+			}
+		}
+		
+		if( !bDone )
+		{
+			char	nDirectionX	= 0;
+			char	nDirectionY	= 0;
+			char	nDirectionZ	= 0;
+			char	nIterations	= 0;
+
+
+			if( Printer::currentPositionStepsX < Printer::targetPositionStepsX )
+			{
+				if( g_nMainDirectionX >= 0 )
+				{
+					// move the extruder to the right
+					WRITE(X_DIR_PIN,!INVERT_X_DIR);
+					nDirectionX = 1;
+					bDone		= true;
+				}
+			}
+			else if( Printer::currentPositionStepsX > Printer::targetPositionStepsX )
+			{
+				if( g_nMainDirectionX <= 0 )
+				{
+					// move the extruder to the left
+					WRITE(X_DIR_PIN,INVERT_X_DIR);
+					nDirectionX = -1;
+					bDone		= true;
+				}
+			}
+
+			if( Printer::currentPositionStepsY < Printer::targetPositionStepsY )
+			{
+				if( g_nMainDirectionY >= 0 )
+				{
+					// move the heat bed to the front
+					WRITE(Y_DIR_PIN,!INVERT_Y_DIR);
+					nDirectionY = 1;
+					bDone		= true;
+				}
+			}
+			else if( Printer::currentPositionStepsY > Printer::targetPositionStepsY )
+			{
+				if( g_nMainDirectionY <= 0 )
+				{
+					// move the heat bed to the back
+					WRITE(Y_DIR_PIN,INVERT_Y_DIR);
+					nDirectionY = -1;
+					bDone		= true;
+				}
+			}
+	
+			if( !g_nBlockZ )
+			{
+				// we have to move into z-direction
+				if( Printer::currentPositionStepsZ < Printer::targetPositionStepsZ )
+				{
+					if( g_nMainDirectionZ >= 0 )
+					{
+						// move the heat bed to the bottom
+						prepareBedDown();
+
+						nDirectionZ = 1;
+						bDone		= true;
+					}
+				}
+				else if( Printer::currentPositionStepsZ > Printer::targetPositionStepsZ )
+				{
+					if( g_nMainDirectionZ <= 0 )
+					{
+						// move the heat bed to the top
+						prepareBedUp();
+
+						nDirectionZ = -1;
+						bDone		= true;
+					}
+				}
+			}
+
+			nIterations = 4;
+			while( nDirectionX || nDirectionY || nDirectionZ )
+			{
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+				HAL::delayMicroseconds( EXTENDED_BUTTONS_STEPPER_DELAY );
+
+				if( g_nBlockZ )
+				{
+					// (probably) paranoid check
+					nDirectionZ = 0;
+				}
+
+				if( nDirectionX )	WRITE( X_STEP_PIN, HIGH );
+				if( nDirectionY )	WRITE( Y_STEP_PIN, HIGH );
+				if( nDirectionZ )	startZStep( nDirectionZ );
+
+				HAL::delayMicroseconds( EXTENDED_BUTTONS_STEPPER_DELAY );
+
+				if( nDirectionX )
+				{
+					WRITE( X_STEP_PIN, LOW );
+					Printer::currentPositionStepsX += nDirectionX;
+					if( Printer::currentPositionStepsX == Printer::targetPositionStepsX )
+					{
+						// we have finished to move in x-direction
+						nDirectionX = 0;
+					}
+				}
+				if( nDirectionY )
+				{
+					WRITE( Y_STEP_PIN, LOW );
+					Printer::currentPositionStepsY += nDirectionY;
+					if( Printer::currentPositionStepsY == Printer::targetPositionStepsY )
+					{
+						// we have finished to move in y-direction
+						nDirectionY = 0;
+					}
+				}
+				if( nDirectionZ )
+				{
+					endZStep();
+
+					Printer::currentPositionStepsZ += nDirectionZ;
+					if( Printer::currentPositionStepsZ == Printer::targetPositionStepsZ )
+					{
+						// we have finished to move in z-direction
+						nDirectionZ = 0;
+					}
+				}
+
+				nIterations --;
+				if( !nIterations )
+				{
+					// we shall not loop here too long - when we exit here, we will come back to here later and continue the remaining steps
+					break;
+				}
+			}
+		}
+		
+		if( !bDone )
+		{
+			if( Printer::currentPositionStepsE < Printer::targetPositionStepsE )
+			{
+				if( g_nMainDirectionE >= 0 )
+				{
+					// this interrupt shall move the extruder only in case bresenhamStep() does not move into the other direction at the moment
+				
+					// we must output filament
+					if( g_nMainDirectionE == 0 )
+					{
+						// set the direction only in case it is not set already
+						Extruder::setDirection( true );
+						HAL::delayMicroseconds( 1 );
+					}
+					Extruder::step();
+
+#if STEPPER_HIGH_DELAY>0
+					HAL::delayMicroseconds( STEPPER_HIGH_DELAY );
+#endif
+					Extruder::unstep();
+				
+					Printer::currentPositionStepsE ++;
+
+					if( Printer::currentPositionStepsE == Printer::targetPositionStepsE )
+					{
+						// we have reached the target position
+						g_nMainDirectionE = 0;
+					}
+				}
+			}
+		}
+	}
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
+
     if(PrintLine::hasLines())
     {
         setTimer(PrintLine::bresenhamStep());
@@ -711,9 +1028,10 @@ ISR(TIMER1_COMPA_vect)
 #endif
         }
         else waitRelax--;
-        stepperWait = 0; // Importent becaus of optimization in asm at begin
-        OCR1A = 65500; // Wait for next move
+        stepperWait = 0; // Important because of optimization in asm at begin
+        OCR1A = uTimerValue; // Wait for next move
     }
+
     DEBUG_MEMORY;
     insideTimer1 = 0;
 }
@@ -747,19 +1065,6 @@ This timer is called 3906 timer per second. It is used to update pwm values for 
 */
 ISR(PWM_TIMER_VECTOR)
 {
-#if FEATURE_Z_COMPENSATION
-	static char		nCounterZCompensation	= Z_COMPENSATION_COUNTER;
-#endif // FEATURE_Z_COMPENSATION
-
-#if FEATURE_EXTENDED_BUTTONS
-	static char		nCounterExtendedButtons = EXTENDED_BUTTONS_COUNTER_NORMAL;
-	char			bDone;
-	char			nDirectionX;
-	char			nDirectionY;
-	char			nDirectionZ;
-	unsigned long	uIterations;
-#endif // FEATURE_EXTENDED_BUTTONS
-  
     static uint8_t pwm_count = 0;
     static uint8_t pwm_count_heater = 0;
     static uint8_t pwm_pos_set[NUM_EXTRUDER+3];
@@ -933,281 +1238,6 @@ ISR(PWM_TIMER_VECTOR)
     UI_FAST; // Short timed user interface action
     pwm_count++;
     pwm_count_heater += HEATER_PWM_STEP;
-
-#if FEATURE_Z_COMPENSATION
-	nCounterZCompensation --;
-
-	if( !nCounterZCompensation )
-	{
-		nCounterZCompensation = Z_COMPENSATION_COUNTER;
-
-		if( Printer::doZCompensation && !g_printingPaused )
-		{
-			if( g_nDirectionZ == 0 && !g_nBlockZ )
-			{
-				// this interrupt shall move the z-axis only in case the "main" interrupt (bresenhamStep()) is not running at the moment
-				HAL::forbidInterrupts();
-				if( Printer::currentCompensationZ < Printer::targetCompensationZ )
-				{
-					// we must move the heat bed up
-					WRITE( Z_DIR_PIN, !INVERT_Z_DIR );
-					HAL::delayMicroseconds( 1 );
-					WRITE( Z_STEP_PIN, HIGH );
-
-#if STEPPER_HIGH_DELAY>0
-					HAL::delayMicroseconds( STEPPER_HIGH_DELAY );
-#endif
-					WRITE( Z_STEP_PIN, LOW );
-				
-					Printer::currentCompensationZ ++;
-				}
-				else if( Printer::currentCompensationZ > Printer::targetCompensationZ )
-				{
-					// we must move the heat bed down
-					WRITE( Z_DIR_PIN, INVERT_Z_DIR );
-					HAL::delayMicroseconds( 1 );
-					WRITE( Z_STEP_PIN, HIGH );
-
-#if STEPPER_HIGH_DELAY>0
-					HAL::delayMicroseconds( STEPPER_HIGH_DELAY );
-#endif
-					WRITE( Z_STEP_PIN, LOW );
-				
-					Printer::currentCompensationZ --;
-				}
-				HAL::allowInterrupts();
-			}
-		}
-	}
-#endif // FEATURE_Z_COMPENSATION
-
-#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
-	nCounterExtendedButtons --;
-	
-	if( !nCounterExtendedButtons )
-	{
-		HAL::forbidInterrupts();
-		nCounterExtendedButtons = EXTENDED_BUTTONS_COUNTER_NORMAL;
-		bDone					= false;
-		
-		if( Printer::currentPositionStepsE < Printer::targetPositionStepsE )
-		{
-			if( g_nDirectionE <= 0 )
-			{
-				// this interrupt shall move the extruder only in case the "main" interrupt (bresenhamStep()) is not running at the moment
-				
-				// we must retract filament
-				if( g_nDirectionE == 0 )
-				{
-					// set the direction only in case it is not set already
-					Extruder::setDirection( false );
-					HAL::delayMicroseconds( 1 );
-				}
-				Extruder::step();
-
-#if STEPPER_HIGH_DELAY>0
-				HAL::delayMicroseconds( STEPPER_HIGH_DELAY );
-#endif
-				Extruder::unstep();
-				
-				Printer::currentPositionStepsE ++;
-
-#if FEATURE_PAUSE_PRINTING
-				if( g_printingPaused )
-				{
-					// we move faster while the printing is paused
-					nCounterExtendedButtons = EXTENDED_BUTTONS_COUNTER_FAST;
-				}
-#endif // FEATURE_PAUSE_PRINTING
-
-				if( Printer::currentPositionStepsE == Printer::targetPositionStepsE )
-				{
-					// we have reached the target position
-					g_nDirectionE = 0;
-				}
-			}
-
-			bDone = true;
-		}
-		
-		if( !bDone )
-		{
-			nDirectionX = 0;
-			nDirectionY = 0;
-			nDirectionZ = 0;
-
-			if( Printer::currentPositionStepsX != Printer::targetPositionStepsX )
-			{
-				// we have to move into x-direction
-				if( Printer::currentPositionStepsX < Printer::targetPositionStepsX )
-				{
-					if( g_nDirectionX >= 0 )
-					{
-						// move the extruder to the right
-						WRITE(X_DIR_PIN,!INVERT_X_DIR);
-						nDirectionX = 1;
-						bDone		= true;
-					}
-				}
-				else
-				{
-					if( g_nDirectionX <= 0 )
-					{
-						// move the extruder to the left
-						WRITE(X_DIR_PIN,INVERT_X_DIR);
-						nDirectionX = -1;
-						bDone		= true;
-					}
-				}
-			}
-
-			if( Printer::currentPositionStepsY != Printer::targetPositionStepsY )
-			{
-				// we have to move into y-direction
-				if( Printer::currentPositionStepsY < Printer::targetPositionStepsY )
-				{
-					if( g_nDirectionY >= 0 )
-					{
-						// move the heat bed to the front
-						WRITE(Y_DIR_PIN,!INVERT_Y_DIR);
-						nDirectionY = 1;
-						bDone		= true;
-					}
-				}
-				else
-				{
-					if( g_nDirectionY <= 0 )
-					{
-						// move the heat bed to the back
-						WRITE(Y_DIR_PIN,INVERT_Y_DIR);
-						nDirectionY = -1;
-						bDone		= true;
-					}
-				}
-			}
-
-			if( Printer::currentPositionStepsZ != Printer::targetPositionStepsZ && !g_nBlockZ )
-			{
-				// we have to move into z-direction
-				if( Printer::currentPositionStepsZ < Printer::targetPositionStepsZ )
-				{
-					if( g_nDirectionZ >= 0 )
-					{
-						// move the heat bed to the bottom
-						WRITE(Z_DIR_PIN,!INVERT_Z_DIR);
-						nDirectionZ = 1;
-						bDone		= true;
-					}
-				}
-				else
-				{
-					if( g_nDirectionZ <= 0 )
-					{
-						// move the heat bed to the top
-						WRITE(Z_DIR_PIN,INVERT_Z_DIR);
-						nDirectionZ = -1;
-						bDone		= true;
-					}
-				}
-			}
-
-			uIterations = EXTENDED_BUTTONS_COUNTER_NORMAL;
-			while( nDirectionX || nDirectionY || nDirectionZ )
-			{
-#if FEATURE_WATCHDOG
-				HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
-				HAL::delayMicroseconds( EXTENDED_BUTTONS_STEPPER_DELAY );
-
-				if( g_nBlockZ )
-				{
-					// (probably) paranoid check
-					nDirectionZ = 0;
-				}
-
-				if( nDirectionX )	WRITE( X_STEP_PIN, HIGH );
-				if( nDirectionY )	WRITE( Y_STEP_PIN, HIGH );
-				if( nDirectionZ )	WRITE( Z_STEP_PIN, HIGH );
-
-				HAL::delayMicroseconds( EXTENDED_BUTTONS_STEPPER_DELAY );
-
-				if( nDirectionX )
-				{
-					WRITE( X_STEP_PIN, LOW );
-					Printer::currentPositionStepsX += nDirectionX;
-					if( Printer::currentPositionStepsX == Printer::targetPositionStepsX )
-					{
-						// we have finished to move in x-direction
-						nDirectionX = 0;
-					}
-				}
-				if( nDirectionY )
-				{
-					WRITE( Y_STEP_PIN, LOW );
-					Printer::currentPositionStepsY += nDirectionY;
-					if( Printer::currentPositionStepsY == Printer::targetPositionStepsY )
-					{
-						// we have finished to move in y-direction
-						nDirectionY = 0;
-					}
-				}
-				if( nDirectionZ )
-				{
-					WRITE( Z_STEP_PIN, LOW );
-					Printer::currentPositionStepsZ += nDirectionZ;
-					if( Printer::currentPositionStepsZ == Printer::targetPositionStepsZ )
-					{
-						// we have finished to move in z-direction
-						nDirectionZ = 0;
-					}
-				}
-
-				uIterations --;
-				if( !uIterations )
-				{
-					// we shall not loop here too long - when we exit here, we will come back to here later and continue the remaining steps
-					break;
-				}
-			}
-		}
-		
-		if( !bDone )
-		{
-			if( Printer::currentPositionStepsE > Printer::targetPositionStepsE )
-			{
-				if( g_nDirectionE >= 0 )
-				{
-					// this interrupt shall move the extruder only in case the "main" interrupt (bresenhamStep()) is not running at the moment
-				
-					// we must output filament
-					if( g_nDirectionE == 0 )
-					{
-						// set the direction only in case it is not set already
-						Extruder::setDirection( true );
-						HAL::delayMicroseconds( 1 );
-					}
-					Extruder::step();
-
-#if STEPPER_HIGH_DELAY>0
-					HAL::delayMicroseconds( STEPPER_HIGH_DELAY );
-#endif
-					Extruder::unstep();
-				
-					Printer::currentPositionStepsE --;
-
-					if( Printer::currentPositionStepsE == Printer::targetPositionStepsE )
-					{
-						// we have reached the target position
-						g_nDirectionE = 0;
-					}
-				}
-			}
-		}
-		HAL::allowInterrupts();
-	}
-#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
-
 }
 #if defined(USE_ADVANCE)
 

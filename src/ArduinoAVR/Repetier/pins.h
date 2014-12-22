@@ -1402,13 +1402,15 @@ STEPPER_CURRENT_CONTROL
 #define ORIG_Y_DIR_PIN          61	// PINF.7, 90, DIR_DRV2
 #define ORIG_Y_ENABLE_PIN       56	// PINF.2, 95, ENA_DRV2
 #define ORIG_Y_MIN_PIN           2	// PINE.4,  6, ES2
-#define ORIG_Y_MAX_PIN          -1   // not installed
+#define ORIG_Y_MAX_PIN          -1  // not installed
 
 #define ORIG_Z_STEP_PIN         46	// PINL.3, 38, STP_DRV3
 #define ORIG_Z_DIR_PIN          48	// PINL.1, 36, DIR_DRV3
 #define ORIG_Z_ENABLE_PIN       62	// PINK.0, 89, ENA_DRV3
+
+// the RF1000 with CNC functionality can provide min and max endstops at the same pin
 #define ORIG_Z_MIN_PIN          31	// PINC.6, 59, ES3
-#define ORIG_Z_MAX_PIN          -1   // not installed
+#define ORIG_Z_MAX_PIN          31	// PINC.6, 59, ES3
 
 #define ORIG_E0_STEP_PIN        26	// PINA.4, 74, STP_DRV4
 #define ORIG_E0_DIR_PIN         28	// PINA.6, 72, DIR_DRV4

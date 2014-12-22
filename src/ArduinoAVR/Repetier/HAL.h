@@ -458,6 +458,7 @@ public:
     static int32_t CPUDivU2(unsigned int divisor);
     static inline void delayMicroseconds(unsigned int delayUs)
     {
+		pingWatchdog();
         ::delayMicroseconds(delayUs);
     }
     static inline void delayMilliseconds(unsigned int delayMs)
@@ -467,6 +468,7 @@ public:
 		unsigned int	doneMs = 0;
 		unsigned int	tempMs;
 
+		pingWatchdog();
 		while( doneMs < delayMs )
 		{
 			tempMs = delayMs - doneMs;

@@ -42,12 +42,31 @@ To override EEPROM settings with config settings, set EEPROM_MODE 0
 
 */
 
+#define	HOTEND_TYPE_1			1
+#define	HOTEND_TYPE_2			2
+#define	HOTEND_TYPE_3			3
+
+#define MILLER_TYPE_1			1	// one track in x- and y-direction
+#define MILLER_TYPE_2			2	// two tracks in x- and y-direction
+
 
 // BASIC SETTINGS: select your board type, thermistor type, axis scaling, and endstop configuration
 
-/** Define the to-be-use micro steps */
-#define	RF1000_MICRO_STEPS	8
+/** Define the to-be-used micro steps */
+#define	RF1000_MICRO_STEPS		32
 
+/** Define whether the CNC functionality shall be allowed.
+0 = do not support the CNC mode
+1 = experimental, do not use this value (support the CNC mode, only the endstop at z-min is present)
+2 = support the CNC mode, the endstops at z-min and z-max are in one circle
+*/
+#define	FEATURE_CNC_MODE		0
+
+/** Define the type of the present extruders */
+#define EXT0_HOTEND_TYPE		HOTEND_TYPE_2
+
+/** Define the type of the present miller hardware */
+#define MILLER_TYPE				MILLER_TYPE_1
 
 /** Number of extruders. Maximum 6 extruders. */
 #define NUM_EXTRUDER 1
@@ -227,32 +246,57 @@ Overridden if EEPROM activated.*/
 /** Wait x seconds, after reaching target temperature. Only used for M109.  Overridden if EEPROM activated. */
 #define EXT0_WATCHPERIOD 20
 
-/** \brief The maximum value, I-gain can contribute to the output.
+#if EXT0_HOTEND_TYPE == HOTEND_TYPE_1
+	/** \brief The maximum value, I-gain can contribute to the output. Overridden if EEPROM activated. */
+	#define EXT0_PID_INTEGRAL_DRIVE_MAX 130
 
-A good value is slightly higher then the output needed for your temperature.
-Values for starts:
-130 => PLA for temperatures from 170-180 deg C
-180 => ABS for temperatures around 240 deg C
+	/** \brief lower value for integral part. Overridden if EEPROM activated. */
+	#define EXT0_PID_INTEGRAL_DRIVE_MIN 60
 
-The precise values may differ for different nozzle/resistor combination.
- Overridden if EEPROM activated.
-*/
-#define EXT0_PID_INTEGRAL_DRIVE_MAX 180
-/** \brief lower value for integral part
+	/** P-gain.  Overridden if EEPROM activated. */
+	#define EXT0_PID_P		37.52
 
-The I state should converge to the exact heater output needed for the target temperature.
-To prevent a long deviation from the target zone, this value limits the lower value.
-A good start is 30 lower then the optimal value. You need to leave room for cooling.
- Overridden if EEPROM activated.
-*/
-#define EXT0_PID_INTEGRAL_DRIVE_MIN 40
-/** P-gain.  Overridden if EEPROM activated. */
-#define EXT0_PID_P   20
-/** I-gain. Overridden if EEPROM activated.
-*/
-#define EXT0_PID_I   5
-/** Dgain.  Overridden if EEPROM activated.*/
-#define EXT0_PID_D 13
+	/** I-gain. Overridden if EEPROM activated. */
+	#define EXT0_PID_I		10
+
+	/** Dgain.  Overridden if EEPROM activated.*/
+	#define EXT0_PID_D		35.18
+#endif // EXT0_HOTEND_TYPE == HOTEND_TYPE_1
+
+#if EXT0_HOTEND_TYPE == HOTEND_TYPE_2
+	/** \brief The maximum value, I-gain can contribute to the output. Overridden if EEPROM activated. */
+	#define EXT0_PID_INTEGRAL_DRIVE_MAX 180
+
+	/** \brief lower value for integral part. Overridden if EEPROM activated. */
+	#define EXT0_PID_INTEGRAL_DRIVE_MIN 40
+
+	/** P-gain.  Overridden if EEPROM activated. */
+	#define EXT0_PID_P   20
+
+	/** I-gain. Overridden if EEPROM activated. */
+	#define EXT0_PID_I   5
+
+	/** Dgain.  Overridden if EEPROM activated.*/
+	#define EXT0_PID_D 13
+#endif // EXT0_HOTEND_TYPE == HOTEND_TYPE_2
+
+#if EXT0_HOTEND_TYPE == HOTEND_TYPE_3
+	/** \brief The maximum value, I-gain can contribute to the output. Overridden if EEPROM activated. */
+	#define EXT0_PID_INTEGRAL_DRIVE_MAX 180
+
+	/** \brief lower value for integral part. Overridden if EEPROM activated. */
+	#define EXT0_PID_INTEGRAL_DRIVE_MIN 40
+
+	/** P-gain.  Overridden if EEPROM activated. */
+	#define EXT0_PID_P   20
+
+	/** I-gain. Overridden if EEPROM activated. */
+	#define EXT0_PID_I   5
+
+	/** Dgain.  Overridden if EEPROM activated.*/
+	#define EXT0_PID_D 13
+#endif // EXT0_HOTEND_TYPE == HOTEND_TYPE_3
+
 // maximum time the heater is can be switched on. Max = 255.  Overridden if EEPROM activated.
 #define EXT0_PID_MAX 255
 /** \brief Faktor for the advance algorithm. 0 disables the algorithm.  Overridden if EEPROM activated.
@@ -622,7 +666,12 @@ on this endstop.
 #define MIN_HARDWARE_ENDSTOP_Z true
 #define MAX_HARDWARE_ENDSTOP_X false
 #define MAX_HARDWARE_ENDSTOP_Y false
+
+#if FEATURE_CNC_MODE == 2
+#define MAX_HARDWARE_ENDSTOP_Z true
+#else
 #define MAX_HARDWARE_ENDSTOP_Z false
+#endif // FEATURE_CNC_MODE
 
 //If your axes are only moving in one direction, make sure the endstops are connected properly.
 //If your axes move in one direction ONLY when the endstops are triggered, set ENDSTOPS_INVERTING to true here
@@ -651,7 +700,10 @@ on this endstop.
 // Sets direction of endstops when homing; 1=MAX, -1=MIN
 #define X_HOME_DIR -1
 #define Y_HOME_DIR -1
+
+#if FEATURE_CNC_MODE < 2
 #define Z_HOME_DIR -1
+#endif // FEATURE_CNC_MODE < 2
 
 // Delta robot radius endstop
 #define max_software_endstop_r true
@@ -681,7 +733,13 @@ on this endstop.
 // small amount back. This is also the case with H-belt systems.
 #define ENDSTOP_X_BACK_ON_HOME 0
 #define ENDSTOP_Y_BACK_ON_HOME 0
+
+#if FEATURE_CNC_MODE == 2
+#define	LEAVE_Z_MAX_ENDSTOP_AFTER_HOME		long(-ZAXIS_STEPS_PER_MM * 2)	// [steps]
+#else
+// Remark: in case this value is set to non-0, the z-compensation must be made fit for this first
 #define ENDSTOP_Z_BACK_ON_HOME 0
+#endif // FEATURE_CNC_MODE != 2
 
 // You can disable endstop checking for print moves. This is needed, if you get sometimes
 // false signals from your endstops. If your endstops don't give false signals, you
@@ -694,7 +752,7 @@ on this endstop.
 // If EEPROM is enabled these values will be overidden with the values in the EEPROM
 #define X_MAX_LENGTH	(long)245
 #define Y_MAX_LENGTH	(long)245
-#define Z_MAX_LENGTH	(long)202
+#define Z_MAX_LENGTH	(long)200
 
 // Coordinates for the minimum axis. Can also be negative if you want to have the bed start at 0 and the printer can go to the left side
 // of the bed. Maximum coordinate is given by adding the above X_MAX_LENGTH values.
@@ -833,12 +891,21 @@ Mega. Used only for nonlinear systems like delta or tuga. */
 #define MAX_FEEDRATE_Z  50
 
 /** Home position speed in mm/s. Overridden if EEPROM activated. */
-#define HOMING_FEEDRATE_X 165
-#define HOMING_FEEDRATE_Y 165
-#define HOMING_FEEDRATE_Z 15
+#define HOMING_FEEDRATE_X_PRINT	165
+#define HOMING_FEEDRATE_Y_PRINT	165
+#define HOMING_FEEDRATE_Z_PRINT	10
+
+#define HOMING_FEEDRATE_X_CNC	50
+#define HOMING_FEEDRATE_Y_CNC	50
+#define HOMING_FEEDRATE_Z_CNC	5
 
 /** Set order of axis homing. Use HOME_ORDER_XYZ and replace XYZ with your order. */
-#define HOMING_ORDER HOME_ORDER_XYZ
+#if FEATURE_CNC_MODE > 0
+	#define HOMING_ORDER_PRINT	HOME_ORDER_XYZ
+	#define HOMING_ORDER_CNC	HOME_ORDER_ZXY
+#else
+	#define HOMING_ORDER		HOME_ORDER_XYZ
+#endif // FEATURE_CNC_MODE > 0
 
 /* If you have a backlash in both z-directions, you can use this. For most printer, the bed will be pushed down by it's
 own weight, so this is nearly never needed. */
@@ -887,12 +954,12 @@ If the interval at full speed is below this value, smoothing is disabled for tha
 */
 #define MAX_ACCELERATION_UNITS_PER_SQ_SECOND_X 1000
 #define MAX_ACCELERATION_UNITS_PER_SQ_SECOND_Y 1000
-#define MAX_ACCELERATION_UNITS_PER_SQ_SECOND_Z 1000
+#define MAX_ACCELERATION_UNITS_PER_SQ_SECOND_Z 100
 
 /** \brief X, Y, Z max acceleration in mm/s^2 for travel moves.  Overridden if EEPROM activated.*/
 #define MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_X 1000
 #define MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Y 1000
-#define MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Z 1000
+#define MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Z 100
 
 /** \brief Maximum allowable jerk.
 
@@ -918,7 +985,7 @@ Corner can be printed with full speed of 50 mm/s
 Overridden if EEPROM activated.
 */
 #define MAX_JERK  10  // 0.5
-#define MAX_ZJERK 20  // 0.3
+#define MAX_ZJERK 0.1  // 0.3
 
 /** \brief Number of moves we can cache in advance.
 
@@ -1043,8 +1110,13 @@ matches, the stored values are used to overwrite the settings.
 IMPORTANT: With mode <>0 some changes in Configuration.h are not set any more, as they are
            taken from the EEPROM.
 */
-#define EEPROM_MODE 0
+#define EEPROM_MODE			0
 
+/** \brief EEPROM reset mode
+
+In case FULL_EEPROM_RESET is set to 1, the complete EEPROM is reset and filled with the values from Configuration.h whenever the EEPROM becomes corruped or its EEPROM_MODE is different to the value from Configuration.h.
+*/
+#define	FULL_EEPROM_RESET	1
 
 /**************** duplicate motor driver ***************
 
@@ -1142,7 +1214,7 @@ is always running and is not hung up for some unknown reason. */
 
 /* Define a pin to turn the case fan on/off */
 #define	CASE_FAN_PIN				 9	// PINH.6, 18, HZ2
-#define	CASE_FAN_ON_TEMPERATURE		50	// °C
+#define	CASE_FAN_ON_TEMPERATURE		50	// Â°C
 #define	CASE_FAN_OFF_DELAY		 60000	// [ms]
 
 /* Enable the following define for applications where the case fan shall always be on */
@@ -1225,7 +1297,8 @@ info pages with next/previous button/click-encoder */
 #define UI_DISABLE_AUTO_PAGESWITCH true
 
 /** Time to return to info menu if x millisconds no key was pressed. Set to 0 to disable it. */
-#define UI_AUTORETURN_TO_MENU_AFTER 30000
+#define UI_PRINT_AUTORETURN_TO_MENU_AFTER	30000
+#define UI_CNC_AUTORETURN_TO_MENU_AFTER		0
 
 #define FEATURE_UI_KEYS 0
 
@@ -1261,16 +1334,21 @@ and longer beeps for important actions.
 Parameter is delay in microseconds and the second is the number of repetitions.
 Values must be in range 1..255
 */
-#define BEEPER_SHORT_SEQUENCE				2,2
-#define BEEPER_LONG_SEQUENCE				8,8
-#define BEEPER_START_PRINTING_SEQUENCE		100,2
-#define BEEPER_ABORT_PRINTING_SEQUENCE		250,5
-#define BEEPER_STOP_PRINTING_SEQUENCE		100,3
-#define BEEPER_PAUSE_SEQUENCE				50,3
-#define BEEPER_CONTINUE_SEQUENCE			50,2
-#define BEEPER_START_HEAT_BED_SCAN_SEQUENCE	100,2
-#define BEEPER_ABORT_HEAT_BED_SCAN_SEQUENCE	250,5
-#define BEEPER_STOP_HEAT_BED_SCAN_SEQUENCE	100,3
+#define BEEPER_SHORT_SEQUENCE					2,2
+#define BEEPER_LONG_SEQUENCE					8,8
+#define BEEPER_START_PRINTING_SEQUENCE			100,2
+#define BEEPER_ABORT_PRINTING_SEQUENCE			250,5
+#define BEEPER_STOP_PRINTING_SEQUENCE			100,3
+#define BEEPER_PAUSE_SEQUENCE					50,3
+#define BEEPER_CONTINUE_SEQUENCE				50,2
+#define BEEPER_START_HEAT_BED_SCAN_SEQUENCE		100,2
+#define BEEPER_ABORT_HEAT_BED_SCAN_SEQUENCE		250,5
+#define BEEPER_STOP_HEAT_BED_SCAN_SEQUENCE		100,3
+#define BEEPER_START_WORK_PART_SCAN_SEQUENCE	100,2
+#define BEEPER_ABORT_WORK_PART_SCAN_SEQUENCE	250,5
+#define BEEPER_STOP_WORK_PART_SCAN_SEQUENCE		100,3
+#define	BEEPER_ABORT_SET_POSITION_SEQUENCE		250,5
+#define	BEEPER_ACCEPT_SET_POSITION_SEQUENCE		100,2
 
 // ###############################################################################
 // ##                         Values for menu settings                          ##
@@ -1298,7 +1376,7 @@ Values must be in range 1..255
 #define FEATURE_EXTENDED_BUTTONS			1													// 1 = on, 0 = off
 #define EXTENDED_BUTTONS_COUNTER_NORMAL		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
 #define EXTENDED_BUTTONS_COUNTER_FAST		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
-#define	EXTENDED_BUTTONS_STEPPER_DELAY		1													// [µs]
+#define	EXTENDED_BUTTONS_STEPPER_DELAY		1													// [Âµs]
 
 #define	EXTENDED_BUTTONS_Z_MIN				-(ZAXIS_STEPS_PER_MM *2)							// [steps]
 #define	EXTENDED_BUTTONS_Z_MAX				long(ZAXIS_STEPS_PER_MM * (Z_MAX_LENGTH -2))		// [steps]
@@ -1308,49 +1386,85 @@ Values must be in range 1..255
 #define FEATURE_ENABLE_MANUAL_Z_SAFETY		1													// 1 = checks enabled, 0 = checks disabled
 #define	MANUAL_Z_OVERRIDE_MAX				ZAXIS_STEPS_PER_MM
 
-/** \brief Enables automatic compensation in z direction
+/** \brief Enables automatic compensation in z direction for the operationg mode "print"
 
 Printers which are able to scan the surface of the heating bed and to remember the 
 offsets in z-direction can use this feature in order to perform an automatic compensation
 in z direction during the printing of the first layers.
 */
-#define FEATURE_Z_COMPENSATION				1													// 1 = on, 0 = off
-#define Z_COMPENSATION_COUNTER				39													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
+#define FEATURE_HEAT_BED_Z_COMPENSATION		1													// 1 = on, 0 = off
 
 /** \brief Enables debug outputs from the compensation in z direction
 */
-#define DEBUG_Z_COMPENSATION				0													// 1 = on, 0 = off
-
-/** \brief Allows to pause the processing of G-Codes
-*/
-#define FEATURE_PAUSE_PRINTING				1													// 1 = on, 0 = off
-
-#if FEATURE_PAUSE_PRINTING && !FEATURE_Z_COMPENSATION
-	#error FEATURE_PAUSE_PRINTING can not be used without FEATURE_Z_COMPENSATION
-#endif // FEATURE_PAUSE_PRINTING && !FEATURE_Z_COMPENSATION
-
-/** \brief Allows to cause an emergency stop via a 3-times push of the pause button
-*/
-#define FEATURE_EMERGENCY_STOP_VIA_PAUSE	0													// 1 = on, 0 = off
+#define DEBUG_HEAT_BED_Z_COMPENSATION		0													// 1 = on, 0 = off
 
 /** \brief Specifies until which height the z compensation must complete
 
 This value should be roughly the double amount of mm which is detected as error of the heat bed.
 */
-#define Z_COMPENSATION_MAX_MM				2													// [mm]
-#define Z_COMPENSATION_MAX_STEPS			long(Z_COMPENSATION_MAX_MM * ZAXIS_STEPS_PER_MM)	// [steps]
+#define HEAT_BED_Z_COMPENSATION_MAX_MM		2															// [mm]
+#define HEAT_BED_Z_COMPENSATION_MAX_STEPS	long(HEAT_BED_Z_COMPENSATION_MAX_MM * ZAXIS_STEPS_PER_MM)	// [steps]
 
 /** \brief Specifies from which height on the z compensation shall be performed
 
 Below this value the z compensation will only change the z axis so that a constant distance to the heat bed is hold (this is good for the first layer).
-Above this value the z compensation will distribute the roughness of the surface over the layers until Z_COMPENSATION_MAX_STEPS is reached.
+Above this value the z compensation will distribute the roughness of the surface over the layers until HEAT_BED_Z_COMPENSATION_MAX_STEPS is reached.
 */
-#define	Z_COMPENSATION_NO_MM				float(0.35)												// [mm]
-#define Z_COMPENSATION_NO_STEPS				long(Z_COMPENSATION_NO_MM * ZAXIS_STEPS_PER_MM)			// [steps]
+#define	HEAT_BED_Z_COMPENSATION_MIN_MM		float(0.2)													// [mm]
+#define HEAT_BED_Z_COMPENSATION_MIN_STEPS	long(HEAT_BED_Z_COMPENSATION_MIN_MM * ZAXIS_STEPS_PER_MM)	// [steps]
 
 /** \brief Enables debug outputs from the heat bed scan
 */
 #define DEBUG_HEAT_BED_SCAN					0													// 1 = on, 0 = off
+
+#if FEATURE_CNC_MODE > 0
+/** \brief Enables automatic compensation in z direction for the operationg mode "mill"
+
+Millers which are able to scan the surface of the work part and to remember the 
+offsets in z-direction can use this feature in order to perform an automatic compensation
+in z direction during the milling.
+*/
+#define FEATURE_WORK_PART_Z_COMPENSATION	1													// 1 = on, 0 = off
+
+/** \brief Enables debug outputs from the compensation in z direction
+*/
+#define DEBUG_WORK_PART_Z_COMPENSATION		0													// 1 = on, 0 = off
+
+/** \brief Enables debug outputs from the work part scan
+*/
+#define DEBUG_WORK_PART_SCAN				0													// 1 = on, 0 = off
+
+/** \brief Specifies the maximal allowed z-error of the scanned work part.
+*/
+#define WORK_PART_Z_COMPENSATION_MAX_MM		20															// [mm]
+#define WORK_PART_Z_COMPENSATION_MAX_STEPS	long(WORK_PART_Z_COMPENSATION_MAX_MM * ZAXIS_STEPS_PER_MM)	// [steps]
+
+/** \brief Specifies the maximal static z-offset which can be configured.
+*/
+#define WORK_PART_MAX_STATIC_Z_OFFSET_MM	10													// [mm]
+#endif // FEATURE_CNC_MODE > 0
+
+/** \brief Specifies the interval which is used for the z-compensation.
+*/
+#define Z_COMPENSATION_INTERVAL				10													// [ms]
+
+/** \brief Specifies the interval which is used for the manual moves (from the hardware buttons and from the pause functionality).
+*/
+#define MANUAL_MOVE_INTERVAL				1													// [ms]
+
+/** \brief Allows to pause the processing of G-Codes
+*/
+#define FEATURE_PAUSE_PRINTING				1													// 1 = on, 0 = off
+
+#if FEATURE_PAUSE_PRINTING 
+#if !FEATURE_HEAT_BED_Z_COMPENSATION && !FEATURE_WORK_PART_Z_COMPENSATION
+	#error FEATURE_PAUSE_PRINTING can not be used without FEATURE_HEAT_BED_Z_COMPENSATION or FEATURE_WORK_PART_Z_COMPENSATION
+#endif // !FEATURE_HEAT_BED_Z_COMPENSATION && !FEATURE_WORK_PART_Z_COMPENSATION
+#endif // FEATURE_PAUSE_PRINTING
+
+/** \brief Allows to cause an emergency stop via a 3-times push of the pause button
+*/
+#define FEATURE_EMERGENCY_STOP_VIA_PAUSE	0													// 1 = on, 0 = off
 
 /** \brief Defines the I2C address for the strain gauge
 */
@@ -1372,9 +1486,9 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define	SUPPORT_CURA						0
 
-/** \brief Enables/disables the set to origin feature
+/** \brief Enables/disables the set to x/y origin feature
 */
-#define FEATURE_SET_TO_ORIGIN				0													// 1 = on, 0 = off
+#define FEATURE_SET_TO_XY_ORIGIN			1													// 1 = on, 0 = off
 
 /** \brief Configures the delay between the stop of a print and the clean-up like disabling of heaters, disabling of steppers and the outputting of the object
 */
@@ -1386,7 +1500,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief The following script allows to configure the exact behavior of the automatic object output
 */
-#define	OUTPUT_OBJECT_SCRIPT				"G21\nG91\nG1 E-10\nG1 Z210 F5000\nG1 X0 Y250 F7500\n"
+#define	OUTPUT_OBJECT_SCRIPT				"G21\nG91\nG1 E-10\nG1 Z210 F5000\nG1 X0 Y220 F7500\n"
 
 /** \brief Enables/disables the park feature
 */
@@ -1502,44 +1616,106 @@ Enabling of the following feature can be dangerous because it allows to manually
 
 #endif // MOTHERBOARD == 13
 
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+
 /** \brief Configuration of the heat bed scan
 */
-#define SCAN_X_START_MM					15																// [mm]
-#define SCAN_X_START_STEPS				long(XAXIS_STEPS_PER_MM * SCAN_X_START_MM)						// [steps]
-#define SCAN_X_END_MM					5																// [mm]
-#define SCAN_X_END_STEPS				long(XAXIS_STEPS_PER_MM * SCAN_X_END_MM)						// [steps]
-#define SCAN_X_STEP_SIZE_MM				20																// [mm]
-#define SCAN_X_STEP_SIZE_STEPS			long(XAXIS_STEPS_PER_MM * SCAN_X_STEP_SIZE_MM)					// [steps]
-#define SCAN_X_MAX_POSITION_STEPS		long(X_MAX_LENGTH * XAXIS_STEPS_PER_MM - SCAN_X_END_STEPS)		// [steps]
+#define HEAT_BED_SCAN_X_START_MM				15																		// [mm] from the left border of the heat bed
+#define HEAT_BED_SCAN_X_START_STEPS				long(XAXIS_STEPS_PER_MM * HEAT_BED_SCAN_X_START_MM)						// [steps]
+#define HEAT_BED_SCAN_X_END_MM					5																		// [mm] from the right border of the heat bed
+#define HEAT_BED_SCAN_X_END_STEPS				long(XAXIS_STEPS_PER_MM * HEAT_BED_SCAN_X_END_MM)						// [steps]
+#define HEAT_BED_SCAN_X_STEP_SIZE_MM			20																		// [mm]
+#define HEAT_BED_SCAN_X_STEP_SIZE_STEPS			long(XAXIS_STEPS_PER_MM * HEAT_BED_SCAN_X_STEP_SIZE_MM)					// [steps]
+#define HEAT_BED_SCAN_X_STEP_SIZE_MIN_MM		10																		// [mm]
+#define HEAT_BED_SCAN_X_STEP_SIZE_MIN_STEPS		long(XAXIS_STEPS_PER_MM * HEAT_BED_SCAN_X_STEP_SIZE_MIN_MM)				// [steps]
+#define HEAT_BED_SCAN_X_MAX_POSITION_STEPS		long(X_MAX_LENGTH * XAXIS_STEPS_PER_MM - HEAT_BED_SCAN_X_END_STEPS)		// [steps]
 
-#define	SCAN_Y_START_MM					30																// [mm]
-#define	SCAN_Y_START_STEPS				long(YAXIS_STEPS_PER_MM * SCAN_Y_START_MM)						// [steps]
-#define	SCAN_Y_END_MM					5																// [mm]
-#define	SCAN_Y_END_STEPS				long(YAXIS_STEPS_PER_MM * SCAN_Y_END_MM)						// [steps]
-#define SCAN_Y_STEP_SIZE_MM				20																// [mm]
-#define	SCAN_Y_STEP_SIZE_STEPS			long(YAXIS_STEPS_PER_MM * SCAN_Y_STEP_SIZE_MM)					// [steps]
-#define SCAN_Y_MAX_POSITION_STEPS		long(Y_MAX_LENGTH * YAXIS_STEPS_PER_MM - SCAN_Y_END_STEPS)		// [steps]
+#define	HEAT_BED_SCAN_Y_START_MM				30																		// [mm] from the front border of the heat bed
+#define	HEAT_BED_SCAN_Y_START_STEPS				long(YAXIS_STEPS_PER_MM * HEAT_BED_SCAN_Y_START_MM)						// [steps]
+#define	HEAT_BED_SCAN_Y_END_MM					5																		// [mm] from the back border of the heat bed
+#define	HEAT_BED_SCAN_Y_END_STEPS				long(YAXIS_STEPS_PER_MM * HEAT_BED_SCAN_Y_END_MM)						// [steps]
+#define HEAT_BED_SCAN_Y_STEP_SIZE_MM			20																		// [mm]
+#define	HEAT_BED_SCAN_Y_STEP_SIZE_STEPS			long(YAXIS_STEPS_PER_MM * HEAT_BED_SCAN_Y_STEP_SIZE_MM)					// [steps]
+#define HEAT_BED_SCAN_Y_STEP_SIZE_MIN_MM		10																		// [mm]
+#define	HEAT_BED_SCAN_Y_STEP_SIZE_MIN_STEPS		long(YAXIS_STEPS_PER_MM * HEAT_BED_SCAN_Y_STEP_SIZE_MIN_MM)				// [steps]
+#define HEAT_BED_SCAN_Y_MAX_POSITION_STEPS		long(Y_MAX_LENGTH * YAXIS_STEPS_PER_MM - HEAT_BED_SCAN_Y_END_STEPS)		// [steps]
 
-#define SCAN_HEAT_BED_UP_FAST_STEPS		-20																// [steps]
-#define SCAN_HEAT_BED_UP_SLOW_STEPS		-4																// [steps]
-#define SCAN_HEAT_BED_DOWN_SLOW_STEPS	10																// [steps]
-#define SCAN_HEAT_BED_DOWN_FAST_STEPS	long(ZAXIS_STEPS_PER_MM / 4)									// [steps]
-#define	SCAN_FAST_STEP_DELAY_MS			5																// [ms]
-#define	SCAN_SLOW_STEP_DELAY_MS			100																// [ms]
-#define SCAN_IDLE_DELAY_MS				250																// [ms]
+#define HEAT_BED_SCAN_UP_FAST_STEPS				long(-ZAXIS_STEPS_PER_MM / 40)											// [steps]
+#define HEAT_BED_SCAN_UP_SLOW_STEPS				long(-ZAXIS_STEPS_PER_MM / 200)											// [steps]
+#define HEAT_BED_SCAN_DOWN_SLOW_STEPS			long(ZAXIS_STEPS_PER_MM / 80)											// [steps]
+#define HEAT_BED_SCAN_DOWN_FAST_STEPS			long(ZAXIS_STEPS_PER_MM / 4)											// [steps]
+#define	HEAT_BED_SCAN_FAST_STEP_DELAY_MS		5																		// [ms]
+#define	HEAT_BED_SCAN_SLOW_STEP_DELAY_MS		100																		// [ms]
+#define HEAT_BED_SCAN_IDLE_DELAY_MS				250																		// [ms]
 
-#define SCAN_CONTACT_PRESSURE_DELTA		10																// [digits]
-#define SCAN_RETRY_PRESSURE_DELTA		5																// [digits]
-#define SCAN_IDLE_PRESSURE_DELTA		0																// [digits]
-#define SCAN_IDLE_PRESSURE_MIN			-5000															// [digits]
-#define SCAN_IDLE_PRESSURE_MAX			5000															// [digits]
+#define HEAT_BED_SCAN_CONTACT_PRESSURE_DELTA	10																		// [digits]
+#define HEAT_BED_SCAN_RETRY_PRESSURE_DELTA		5																		// [digits]
+#define HEAT_BED_SCAN_IDLE_PRESSURE_DELTA		0																		// [digits]
+#define HEAT_BED_SCAN_IDLE_PRESSURE_MIN			-7500																	// [digits]
+#define HEAT_BED_SCAN_IDLE_PRESSURE_MAX			7500																	// [digits]
 
-#define SCAN_RETRIES					3																// [-]
-#define	SCAN_PRESSURE_READS				15																// [-]
-#define SCAN_PRESSURE_TOLERANCE			15																// [digits]
-#define SCAN_PRESSURE_READ_DELAY_MS		15																// [ms]
+#define HEAT_BED_SCAN_RETRIES					3																		// [-]
+#define	HEAT_BED_SCAN_PRESSURE_READS			15																		// [-]
+#define HEAT_BED_SCAN_PRESSURE_TOLERANCE		15																		// [digits]
+#define HEAT_BED_SCAN_PRESSURE_READ_DELAY_MS	15																		// [ms]
 
-#define REMEMBER_PRESSURE				0
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+
+#if FEATURE_WORK_PART_Z_COMPENSATION
+
+/** \brief Configuration of the heat bed scan
+*/
+#define WORK_PART_SCAN_X_START_MM				5																		// [mm] from the left border of the work bed
+#define WORK_PART_SCAN_X_START_STEPS			long(XAXIS_STEPS_PER_MM * WORK_PART_SCAN_X_START_MM)					// [steps]
+#define WORK_PART_SCAN_X_END_MM					220																		// [mm]
+#define WORK_PART_SCAN_X_END_STEPS				long(XAXIS_STEPS_PER_MM * WORK_PART_SCAN_X_END_MM)						// [steps]
+#define WORK_PART_SCAN_X_STEP_SIZE_MM			20																		// [mm]
+#define WORK_PART_SCAN_X_STEP_SIZE_STEPS		long(XAXIS_STEPS_PER_MM * WORK_PART_SCAN_X_STEP_SIZE_MM)				// [steps]
+#define WORK_PART_SCAN_X_STEP_SIZE_MIN_MM		10																		// [mm]
+#define WORK_PART_SCAN_X_STEP_SIZE_MIN_STEPS	long(XAXIS_STEPS_PER_MM * WORK_PART_SCAN_X_STEP_SIZE_MIN_MM)			// [steps]
+#define WORK_PART_SCAN_X_MAX_POSITION_STEPS		long(X_MAX_LENGTH * XAXIS_STEPS_PER_MM - WORK_PART_SCAN_X_END_STEPS)	// [steps]
+
+#define	WORK_PART_SCAN_Y_START_MM				55																		// [mm] from the front border of the work bed
+#define	WORK_PART_SCAN_Y_START_STEPS			long(YAXIS_STEPS_PER_MM * WORK_PART_SCAN_Y_START_MM)					// [steps]
+#define	WORK_PART_SCAN_Y_END_MM					170																		// [mm]
+#define	WORK_PART_SCAN_Y_END_STEPS				long(YAXIS_STEPS_PER_MM * WORK_PART_SCAN_Y_END_MM)						// [steps]
+#define WORK_PART_SCAN_Y_STEP_SIZE_MM			20																		// [mm]
+#define	WORK_PART_SCAN_Y_STEP_SIZE_STEPS		long(YAXIS_STEPS_PER_MM * WORK_PART_SCAN_Y_STEP_SIZE_MM)				// [steps]
+#define WORK_PART_SCAN_Y_STEP_SIZE_MIN_MM		10																		// [mm]
+#define	WORK_PART_SCAN_Y_STEP_SIZE_MIN_STEPS	long(YAXIS_STEPS_PER_MM * WORK_PART_SCAN_Y_STEP_SIZE_MIN_MM)			// [steps]
+#define WORK_PART_SCAN_Y_MAX_POSITION_STEPS		long(Y_MAX_LENGTH * YAXIS_STEPS_PER_MM - WORK_PART_SCAN_Y_END_STEPS)	// [steps]
+
+#define WORK_PART_SCAN_UP_FAST_STEPS			long(-ZAXIS_STEPS_PER_MM / 40)											// [steps]
+#define WORK_PART_SCAN_UP_SLOW_STEPS			long(-ZAXIS_STEPS_PER_MM / 200)											// [steps]
+#define WORK_PART_SCAN_DOWN_SLOW_STEPS			long(ZAXIS_STEPS_PER_MM / 80)											// [steps]
+#define WORK_PART_SCAN_DOWN_FAST_STEPS			long(ZAXIS_STEPS_PER_MM / 2)											// [steps]
+#define	WORK_PART_SCAN_FAST_STEP_DELAY_MS		5																		// [ms]
+#define	WORK_PART_SCAN_SLOW_STEP_DELAY_MS		100																		// [ms]
+#define WORK_PART_SCAN_IDLE_DELAY_MS			250																		// [ms]
+
+#if MILLER_TYPE == MILLER_TYPE_1
+#define WORK_PART_SCAN_CONTACT_PRESSURE_DELTA	10																		// [digits]
+#define WORK_PART_SCAN_RETRY_PRESSURE_DELTA		5																		// [digits]
+#elif MILLER_TYPE == MILLER_TYPE_2
+#define WORK_PART_SCAN_CONTACT_PRESSURE_DELTA	500																		// [digits]
+#define WORK_PART_SCAN_RETRY_PRESSURE_DELTA		250																		// [digits]
+#endif // MILLER_TYPE
+
+#define WORK_PART_SCAN_IDLE_PRESSURE_DELTA		0																		// [digits]
+#define WORK_PART_SCAN_IDLE_PRESSURE_MIN		-5000																	// [digits]
+#define WORK_PART_SCAN_IDLE_PRESSURE_MAX		5000																	// [digits]
+
+#define WORK_PART_SCAN_RETRIES					3																		// [-]
+#define	WORK_PART_SCAN_PRESSURE_READS			15																		// [-]
+#define WORK_PART_SCAN_PRESSURE_TOLERANCE		15																		// [digits]
+#define WORK_PART_SCAN_PRESSURE_READ_DELAY_MS	15																		// [ms]
+
+#define	WORK_PART_SCAN_Z_START_MM				15																		// [mm]
+#define	WORK_PART_SCAN_Z_START_STEPS			long(ZAXIS_STEPS_PER_MM * WORK_PART_SCAN_Z_START_MM)					// [steps]
+
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+
+#define REMEMBER_PRESSURE						0
 
 /** \brief Configuration of the manual steps
 */
@@ -1569,10 +1745,57 @@ Enabling of the following feature can be dangerous because it allows to manually
 */
 #define	MOUNT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E90 F100"
 
+
+#if FEATURE_CNC_MODE > 0
+
+/** \brief Default operating mode
+*/
+#define	OPERATING_MODE_PRINT				1
+#define OPERATING_MODE_CNC					2
+#define	DEFAULT_OPERATING_MODE				OPERATING_MODE_CNC
+
+/** \brief This feature allows to move the milling bed upwards automatically until the miller is hit. The found position is taken over as Z=0 automatically.
+           Be aware that mis-using of this functionality can ruin the tool (e.g. in case the tool is placed above the milling bed and not above the to-be-milled object).
+*/
+#define FEATURE_FIND_Z_ORIGIN				1													// 1 = on, 0 = off
+
+#if FEATURE_WORK_PART_Z_COMPENSATION && !FEATURE_FIND_Z_ORIGIN
+	#error It does not make sense to enable the work part z-compensation without enabling of the automatic detection of the z-origin
+#endif // FEATURE_WORK_PART_Z_COMPENSATION && !FEATURE_FIND_Z_ORIGIN
+
+#if FEATURE_FIND_Z_ORIGIN
+
+#define	SEARCH_Z_ORIGIN_CONTACT_PRESSURE_DELTA		500													// [digits]
+#define SEARCH_Z_ORIGIN_BREAKOUT_DELAY				100													// [ms]
+#define	SEARCH_Z_ORIGIN_BED_UP_STEPS				long(-ZAXIS_STEPS_PER_MM / 20)						// [steps]
+#define SEARCH_Z_ORIGIN_BED_DOWN_STEPS				long(ZAXIS_STEPS_PER_MM / 40)						// [steps]
+
+/** \brief The following commands are executed before the z-origin is set to 0.
+*/
+#define	FIND_Z_ORIGIN_SCRIPT						"G91\nG1 Z15 F5000"
+
+/** \brief Enables debug outputs from the search of the z-origin
+*/
+#define DEBUG_FIND_Z_ORIGIN					0													// 1 = on, 0 = off
+
+#endif // FEATURE_FIND_Z_ORIGIN
+
+/** \brief There can not be less than the following amount of time between the hits of the z-min and z-max endstops.
+*/
+#define MINIMAL_Z_ENDSTOP_MIN_TO_MAX_STEPS			long(ZAXIS_STEPS_PER_MM * 1)						// [steps]
+#define MINIMAL_Z_ENDSTOP_MAX_TO_MIN_STEPS			long(-ZAXIS_STEPS_PER_MM * 1)						// [steps]
+
+#define	ENDSTOP_NOT_HIT								0
+#define	ENDSTOP_IS_HIT								1
+#define	ENDSTOP_WAS_HIT								2
+
+#endif // FEATURE_CNC_MODE > 0
+
+
 /** \brief Printer name and firmware version
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".47"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".49"
 
 #endif

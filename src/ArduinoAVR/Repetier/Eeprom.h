@@ -20,7 +20,7 @@
 #define _EEPROM_H
 
 // Id to distinguish version changes
-#define EEPROM_PROTOCOL_VERSION 7
+#define EEPROM_PROTOCOL_VERSION 8
 
 /** Where to start with our datablock in memory. Can be moved if you
 have problems with other modules using the eeprom */
@@ -34,9 +34,9 @@ have problems with other modules using the eeprom */
 #define EPR_X_MAX_FEEDRATE         15
 #define EPR_Y_MAX_FEEDRATE         19
 #define EPR_Z_MAX_FEEDRATE         23
-#define EPR_X_HOMING_FEEDRATE      27
-#define EPR_Y_HOMING_FEEDRATE      31
-#define EPR_Z_HOMING_FEEDRATE      35
+#define EPR_X_HOMING_FEEDRATE_PRINT      27
+#define EPR_Y_HOMING_FEEDRATE_PRINT      31
+#define EPR_Z_HOMING_FEEDRATE_PRINT      35
 #define EPR_MAX_JERK               39
 //#define EPR_OPS_MIN_DISTANCE       43
 #define EPR_MAX_ZJERK              47
@@ -107,8 +107,12 @@ have problems with other modules using the eeprom */
 #define EPR_DELTA_DIAGONAL_CORR_B 937
 #define EPR_DELTA_DIAGONAL_CORR_C 941
 
-#define EPR_RF1000_BEEPER_MODE	 1000
-#define	EPR_RF1000_LIGHTS_MODE	 1001
+#define EPR_RF1000_BEEPER_MODE		1000
+#define	EPR_RF1000_LIGHTS_MODE		1001
+#define EPR_RF1000_OPERATING_MODE	1002
+#define EPR_X_HOMING_FEEDRATE_CNC	1003
+#define EPR_Y_HOMING_FEEDRATE_CNC	1007
+#define EPR_Z_HOMING_FEEDRATE_CNC	1011
 
 #define EEPROM_EXTRUDER_OFFSET 200
 // bytes per extruder needed, leave some space for future development
@@ -157,6 +161,8 @@ public:
     static void storeDataIntoEEPROM(uint8_t corrupted=0);
     static void readDataFromEEPROM();
     static void restoreEEPROMSettingsFromConfiguration();
+	static void initializeAllOperatingModes();
+	static void clearEEPROM();
     static void writeSettings();
     static void update(GCode *com);
     static void updatePrinterUsage();

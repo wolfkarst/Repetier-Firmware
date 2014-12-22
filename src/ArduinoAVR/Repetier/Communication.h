@@ -327,6 +327,9 @@ FSTRINGVAR(tEPRDistanceRetractHeating)
 FSTRINGVAR(tEPRExtruderCoolerSpeed)
 FSTRINGVAR(tEPRAdvanceK)
 FSTRINGVAR(tEPRAdvanceL)
+FSTRINGVAR(tEPRBeeperMode)
+FSTRINGVAR(tEPRLightsMode)
+FSTRINGVAR(tEPROperatingMode)
 #endif
 #if SDSUPPORT
 FSTRINGVAR(tSDRemoved)
@@ -354,6 +357,10 @@ FSTRINGVAR(tSDErrorCode)
 FSTRINGVAR(tOutputObject)
 FSTRINGVAR(tUnmountFilament)
 FSTRINGVAR(tMountFilament)
+
+#if FEATURE_FIND_Z_ORIGIN
+FSTRINGVAR(tFindZOrigin)
+#endif // FEATURE_FIND_Z_ORIGIN
 
 static void printNumber(uint32_t n);
 static void printWarningF(FSTRINGPARAM(text));

@@ -200,6 +200,7 @@ void SDCard::abortPrint()
 		HAL::forbidInterrupts();
 
 		g_uPauseTime			 = 0;
+		g_preparePause			 = 0;
 		g_pausePrint			 = 0;
 		g_printingPaused		 = 0;
 
@@ -224,10 +225,10 @@ void SDCard::abortPrint()
 	}
 
 	HAL::forbidInterrupts();
-    g_nDirectionX = 0;
-    g_nDirectionY = 0;
-    g_nDirectionZ = 0;
-    g_nDirectionE = 0;
+    g_nMainDirectionX = 0;
+    g_nMainDirectionY = 0;
+    g_nMainDirectionZ = 0;
+    g_nMainDirectionE = 0;
 
 	HAL::allowInterrupts();
 

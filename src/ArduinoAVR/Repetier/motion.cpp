@@ -1829,7 +1829,7 @@ long PrintLine::bresenhamStep() // Version for delta printer
                 {
                     if((cur->error[Z_AXIS] -= curd->deltaSteps[Z_AXIS]) < 0)
                     {
-                        cur->startZStep();
+                        startZStep( g_nMainDirectionZ );
                         cur->error[Z_AXIS] += curd_errupd;
 
                         Printer::realDeltaPositionSteps[Z_AXIS] += curd->isZPositiveMove() ? 1 : -1;
@@ -1881,7 +1881,7 @@ long PrintLine::bresenhamStep() // Version for delta printer
                                 else
                                     cur->error[Y_AXIS] += curd_errupd;
                                 if(curd->dir & 4)
-                                    cur->startZStep();
+                                    startZStep( g_nMainDirectionZ );
                                 else
                                     cur->error[Z_AXIS] += curd_errupd;
                                 Printer::zBabystepsMissing--;
@@ -1899,7 +1899,7 @@ long PrintLine::bresenhamStep() // Version for delta printer
                                 if(curd->dir & 4)
                                     cur->error[Z_AXIS] += curd_errupd;
                                 else
-                                    cur->startZStep();
+                                    startZStep( g_nMainDirectionZ );
                                 Printer::zBabystepsMissing++;
                             }
                             HAL::delayMicroseconds(1);
@@ -2058,11 +2058,12 @@ long PrintLine::bresenhamStep() // version for cartesian printer
         if( g_pausePrint )
         {
             // the printing is paused, there is nothing to do here at the moment
-            g_printingPaused = 1;
-            g_nDirectionX	 = 0;
-            g_nDirectionY	 = 0;
-            g_nDirectionZ	 = 0;
-            g_nDirectionE	 = 0;
+			g_preparePause	  = 0;
+            g_printingPaused  = 1;
+            g_nMainDirectionX = 0;
+            g_nMainDirectionY = 0;
+            g_nMainDirectionZ = 0;
+            g_nMainDirectionE = 0;
             return 1000;
         }
         else
@@ -2107,11 +2108,19 @@ long PrintLine::bresenhamStep() // version for cartesian printer
                     g_nContinueStepsZ		 = 0;
 					g_nContinueStepsExtruder = 0;
 
-                    if( g_nPauseStepsExtruder )
-                    {
-                        Printer::targetPositionStepsE += g_nPauseStepsExtruder;
-						g_nContinueStepsExtruder	  =  g_nPauseStepsExtruder;
-                    }
+#if FEATURE_CNC_MODE > 0
+					if( Printer::operatingMode == OPERATING_MODE_PRINT )
+					{
+						// we do not process the extruder in case we are not in operating mode "print"
+#endif // FEATURE_CNC_MODE > 0
+						if( g_nPauseStepsExtruder )
+						{
+							Printer::targetPositionStepsE -= g_nPauseStepsExtruder;
+							g_nContinueStepsExtruder	  =  g_nPauseStepsExtruder;
+						}
+#if FEATURE_CNC_MODE > 0
+					}
+#endif // FEATURE_CNC_MODE > 0
 
 					g_pausePrint = 1;
 
@@ -2127,6 +2136,18 @@ long PrintLine::bresenhamStep() // version for cartesian printer
             }
             if( cur->task == TASK_PAUSE_PRINT_2 )
             {
+#if FEATURE_CNC_MODE > 0
+				if( Printer::operatingMode != OPERATING_MODE_PRINT )
+				{
+					// for now, we do not allow to move away from the pause position in case the operating mode is not print
+					nextPlannerIndex(linesPos);
+					cur = 0;
+					HAL::forbidInterrupts();
+					--linesCount;
+					return 1000;
+				}
+#endif // FEATURE_CNC_MODE > 0
+
 				if( g_pausePrint >= 2 )
 				{
 					// this operation can not be performed in case we are in pause position 2 already
@@ -2150,7 +2171,7 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 						// move the extruder only in case we are not in pause position 1 already
 						if( g_nPauseStepsExtruder )
 						{
-							Printer::targetPositionStepsE += g_nPauseStepsExtruder;
+							Printer::targetPositionStepsE -= g_nPauseStepsExtruder;
 							g_nContinueStepsExtruder	  =  g_nPauseStepsExtruder;
 						}
 					}
@@ -2172,19 +2193,50 @@ long PrintLine::bresenhamStep() // version for cartesian printer
         }
 #endif // FEATURE_PAUSE_PRINTING
 
-#if FEATURE_Z_COMPENSATION
+#if FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
 		if( cur->task )
 		{
 			if( cur->task == TASK_ENABLE_Z_COMPENSATION )
 			{
 				// enable the z compensation
-				if( g_HeatBedCompensation[0][0] == COMPENSATION_VERSION )
+				if( g_ZCompensationMatrix[0][0] == EEPROM_FORMAT )
 				{
 					// enable the z compensation only in case we have valid compensation values
-					Printer::doZCompensation	  = 1;
-					Printer::targetCompensationZ  = 0;
-					Printer::currentCompensationZ = 0;
-					g_recalculatedCompensation	  = 0;
+#if FEATURE_CNC_MODE > 0
+					if( Printer::operatingMode == OPERATING_MODE_PRINT )
+					{
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+						Printer::doHeatBedZCompensation = 1;
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+					}
+					else
+					{
+#if FEATURE_WORK_PART_Z_COMPENSATION
+						Printer::doWorkPartZCompensation = 1;
+
+#if FEATURE_FIND_Z_ORIGIN
+						if( g_nZOriginXPosition && g_nZOriginYPosition )
+						{
+							determineStaticCompensationZ();
+						}
+						else
+						{
+							// we know nothing about a static z-delta in case we do not know the x and y positions at which the z-origin has been determined
+							Printer::staticCompensationZ = 0;
+						}
+#else
+						// we know nothing about a static z-delta when we do not have the automatic search of the z-origin available
+						Printer::staticCompensationZ = 0;
+#endif // FEATURE_FIND_Z_ORIGIN
+
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+					}
+#else
+					Printer::doHeatBedZCompensation = 1;
+#endif // FEATURE_CNC_MODE > 0
+
+					Printer::targetCompensationZ    = 0;
+					Printer::currentCompensationZ   = 0;
 				
 #if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 					Printer::targetPositionStepsX	= 
@@ -2196,8 +2248,6 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 					Printer::currentPositionStepsZ	= 
 					Printer::currentPositionStepsE	= 0;
 #endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
-
-					calculateAllowedZStepsAfterEndStop();
 				}
 			
 				nextPlannerIndex(linesPos);
@@ -2209,8 +2259,27 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 			if( cur->task == TASK_DISABLE_Z_COMPENSATION )
 			{
 				// disable the z compensation
-				Printer::doZCompensation = 0;
-			
+				Printer::targetCompensationZ  = 0;
+				Printer::currentCompensationZ = 0;
+
+#if FEATURE_CNC_MODE > 0
+				if( Printer::operatingMode == OPERATING_MODE_PRINT )
+				{
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+					Printer::doHeatBedZCompensation = 0;
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+				}
+				else
+				{
+#if FEATURE_WORK_PART_Z_COMPENSATION
+					Printer::doWorkPartZCompensation = 0;
+					Printer::staticCompensationZ	 = 0;
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+				}
+#else
+				Printer::doHeatBedZCompensation = 0;
+#endif // FEATURE_CNC_MODE > 0
+
 				nextPlannerIndex(linesPos);
 				cur = 0;
 				HAL::forbidInterrupts();
@@ -2220,12 +2289,11 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 			if( cur->task == TASK_INIT_Z_COMPENSATION )
 			{
 				// initialize the z compensation
-				if( g_HeatBedCompensation[0][0] == COMPENSATION_VERSION )
+				if( g_ZCompensationMatrix[0][0] == EEPROM_FORMAT )
 				{
 					// initialize the z compensation only in case we have valid compensation values
 					Printer::targetCompensationZ  = 0;
 					Printer::currentCompensationZ = 0;
-					g_recalculatedCompensation	  = 0;
 				}
 			
 				nextPlannerIndex(linesPos);
@@ -2235,7 +2303,7 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 				return 1000;
 			}
 		}
-#endif // FEATURE_Z_COMPENSATION
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
 
 		if(cur->isBlocked())   // This step is in computation - shouldn't happen
         {
@@ -2285,15 +2353,28 @@ long PrintLine::bresenhamStep() // version for cartesian printer
             Printer::enableYStepper();
         }
 #else
-        if(cur->isXMove()) Printer::enableXStepper();
-        if(cur->isYMove()) Printer::enableYStepper();
+        if(cur->isXMove())
+		{
+			Printer::enableXStepper();
+			Printer::setXDirection(cur->isXPositiveMove());
+		}
+        if(cur->isYMove())
+		{
+			Printer::enableYStepper();
+			Printer::setYDirection(cur->isYPositiveMove());
+		}
 #endif
         if(cur->isZMove())
         {
             Printer::enableZStepper();
 			Printer::unsetAllSteppersDisabled();
+			Printer::setZDirection(cur->isZPositiveMove());
         }
-        if(cur->isEMove()) Extruder::enable();
+        if(cur->isEMove())
+		{
+			Extruder::enable();
+			Extruder::setDirection(cur->isEPositiveMove());
+		}
         cur->fixStartAndEndSpeed();
 
 		HAL::allowInterrupts();
@@ -2308,8 +2389,8 @@ long PrintLine::bresenhamStep() // version for cartesian printer
         HAL::forbidInterrupts();
         //Determine direction of movement,check if endstop was hit
 #if !defined(XY_GANTRY)
-        Printer::setXDirection(cur->isXPositiveMove());
-        Printer::setYDirection(cur->isYPositiveMove());
+//        Printer::setXDirection(cur->isXPositiveMove());
+//        Printer::setYDirection(cur->isYPositiveMove());
 #else
         long gdx = (cur->dir & 1 ? cur->delta[0] : -cur->delta[0]); // Compute signed difference in steps
         long gdy = (cur->dir & 2 ? cur->delta[1] : -cur->delta[1]);
@@ -2320,11 +2401,11 @@ long PrintLine::bresenhamStep() // version for cartesian printer
         Printer::setYDirection(gdx<=gdy);
 #endif
 #endif
-        Printer::setZDirection(cur->isZPositiveMove());
+//        Printer::setZDirection(cur->isZPositiveMove());
 #if defined(USE_ADVANCE)
         if(!Printer::isAdvanceActivated()) // Set direction if no advance/OPS enabled
 #endif
-            Extruder::setDirection(cur->isEPositiveMove());
+//            Extruder::setDirection(cur->isEPositiveMove());
 #ifdef USE_ADVANCE
 #ifdef ENABLE_QUADRATIC_ADVANCE
         Printer::advanceExecuted = cur->advanceStart;
@@ -2392,9 +2473,9 @@ long PrintLine::bresenhamStep() // version for cartesian printer
                     cur->startXStep();
                     cur->error[X_AXIS] += cur_errupd;
 
-#if FEATURE_Z_COMPENSATION
-                    Printer::nonCompensatedPositionStepsX += g_nDirectionX;
-#endif // FEATURE_Z_COMPENSATION
+#if FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
+                    Printer::nonCompensatedPositionStepsX += g_nMainDirectionX;
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
                 }
             }
             if(cur->isYMove())
@@ -2404,9 +2485,9 @@ long PrintLine::bresenhamStep() // version for cartesian printer
                     cur->startYStep();
                     cur->error[Y_AXIS] += cur_errupd;
                 
-#if FEATURE_Z_COMPENSATION
-                    Printer::nonCompensatedPositionStepsY += g_nDirectionY;
-#endif // FEATURE_Z_COMPENSATION
+#if FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
+                    Printer::nonCompensatedPositionStepsY += g_nMainDirectionY;
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
                 }
             }
 #if defined(XY_GANTRY)
@@ -2415,39 +2496,21 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 
             if(cur->isZMove() && !g_nBlockZ )
             {
+				//g_debugInt32 = cur->stepsRemaining;
+
                 if((cur->error[Z_AXIS] -= cur->delta[Z_AXIS]) < 0)
                 {
-                    cur->startZStep();
+                    startZStep( g_nMainDirectionZ );
                     cur->error[Z_AXIS] += cur_errupd;
 #ifdef DEBUG_STEPCOUNT
                     cur->totalStepsRemaining--;
 #endif
 
-#if FEATURE_Z_COMPENSATION
-					Printer::nonCompensatedPositionStepsZ += g_nDirectionZ;
-#endif // FEATURE_Z_COMPENSATION
+#if FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
+					Printer::nonCompensatedPositionStepsZ += g_nMainDirectionZ;
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
 
-					if( g_nDirectionZ < 0 )
-					{
-#if Z_MIN_PIN>-1
-					  if(READ(Z_MIN_PIN) != ENDSTOP_Z_MIN_INVERTING)
-#endif // Z_MIN_PIN>-1
-					  {
-						// we are moving after the endstop in z-direction - this can be dangerous but it can be necessary in case of
-						// a) a very rough surface of the heating bed and/or
-						// b) in case the user is moving into the z-direction manually
-						Printer::currentZStepsAfterEndstop ++;
-						if( Printer::allowedZStepsAfterEndstop <= Printer::currentZStepsAfterEndstop )
-						{
-						  // we have reached the endstop and shall not continue to move the heating bed upwards
-						  cur->dir&=~64;
-						}
-					  }
-					}
-					else if( Printer::currentZStepsAfterEndstop )
-					{
-					  Printer::currentZStepsAfterEndstop --;
-					}
+					// Note: There is not need to check whether we are past the z-min endstop here because G-Codes typically are not able to go past the z-min endstop anyways.
 				}
             }
             Printer::insertStepperHighDelay();
@@ -2460,22 +2523,22 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 
 		if( !cur->isEMove() )
 		{
-			g_nDirectionE = 0;
+			g_nMainDirectionE = 0;
 		}
 
 		if( !cur->isXMove() )
 		{
-			g_nDirectionX = 0;
+			g_nMainDirectionX = 0;
 		}
 
 		if( !cur->isYMove() )
 		{
-			g_nDirectionY = 0;
+			g_nMainDirectionY = 0;
 		}
 
 		if( !cur->isZMove() )
 		{
-			g_nDirectionZ = 0;
+			g_nMainDirectionZ = 0;
 		}
 
 		if(doOdd)  // Update timings
@@ -2561,16 +2624,58 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 #endif
         removeCurrentLineForbidInterrupt();
         Printer::disableAllowedStepper();
-        if(linesCount == 0 && !g_nHeatBedScanStatus) UI_STATUS(UI_TEXT_IDLE);
+
+		char	nIdle = 1;
+
+#if FEATURE_CNC_MODE > 0
+		if( Printer::operatingMode == OPERATING_MODE_PRINT )
+		{
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+			if( g_nHeatBedScanStatus )
+			{
+				// we are not idle because the heat bed scan is going on at the moment
+				nIdle = 0;
+			}
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+		}
+		else
+		{
+#if FEATURE_WORK_PART_Z_COMPENSATION
+			if( g_nWorkPartScanStatus )
+			{
+				// we are not idle because the work part scan is going on at the moment
+				nIdle = 0;
+			}
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+		}
+#else
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+		if( g_nHeatBedScanStatus )
+		{
+			// we are not idle because the heat bed scan is going on at the moment
+			nIdle = 0;
+		}
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+#endif // FEATURE_CNC_MODE > 0
+
+        if(linesCount == 0 && nIdle)
+		{
+			UI_STATUS(UI_TEXT_IDLE);
+		}
+
         interval = Printer::interval = interval >> 1; // 50% of time to next call to do cur=0
         DEBUG_MEMORY;
     } // Do even
 
-    if(FEATURE_BABYSTEPPING && Printer::zBabystepsMissing)
+#if FEATURE_BABYSTEPPING
+    if(Printer::zBabystepsMissing)
     {
         Printer::zBabystep();
     }
+#endif // FEATURE_BABYSTEPPING
 
 	return interval;
 }
+
+
 #endif
