@@ -1,3 +1,12 @@
+V 0.91.51 (2015-01-14)
+- It was possible to enable the z-compensation multiple times in case M3001 was sent multiple times in a certain order.
+  - As a result, the z-compensation value could be applied multiple times because each new enabling of the z-compensation assumed the current z-position to be the not-compensated one.
+- The recalculation of the current z-compensation value has been speeded up from 10 times to 1000 times per second.
+  - This improvement reduces the number of z-axis steps which must be performed after each recalculation and as a result the z-axis is moved more smoothly.
+- M3001 does not allow anymore to enable the z-compensation in case the home position of the z-axis is unknown.
+- The z-axis correction now is being applied directly after M3001 has been sent, no matter whether another move into x or y direction has been performed already.
+  - As always, the z-axis correction is applied only in case the current z-axis position is bigger than 0.
+
 V 0.91.49 (2014-12-22)
 - Adding of FEATURE_CNC_MODE.
   - When this #define is set to 2, the RF1000 can be switched between the "print" and the "mill" mode via its menu.

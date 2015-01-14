@@ -2196,111 +2196,166 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 #if FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
 		if( cur->task )
 		{
-			if( cur->task == TASK_ENABLE_Z_COMPENSATION )
+			switch( cur->task )
 			{
-				// enable the z compensation
-				if( g_ZCompensationMatrix[0][0] == EEPROM_FORMAT )
+				case TASK_ENABLE_Z_COMPENSATION:
 				{
-					// enable the z compensation only in case we have valid compensation values
+					char	Exit = 0;
+
 #if FEATURE_CNC_MODE > 0
 					if( Printer::operatingMode == OPERATING_MODE_PRINT )
 					{
 #if FEATURE_HEAT_BED_Z_COMPENSATION
-						Printer::doHeatBedZCompensation = 1;
+						if( Printer::doHeatBedZCompensation )
+						{
+								Exit = 1;
+						}
 #endif // FEATURE_HEAT_BED_Z_COMPENSATION
 					}
 					else
 					{
 #if FEATURE_WORK_PART_Z_COMPENSATION
-						Printer::doWorkPartZCompensation = 1;
-
-#if FEATURE_FIND_Z_ORIGIN
-						if( g_nZOriginXPosition && g_nZOriginYPosition )
+						if( Printer::doWorkPartZCompensation )
 						{
-							determineStaticCompensationZ();
+							Exit = 1;
 						}
-						else
-						{
-							// we know nothing about a static z-delta in case we do not know the x and y positions at which the z-origin has been determined
-							Printer::staticCompensationZ = 0;
-						}
-#else
-						// we know nothing about a static z-delta when we do not have the automatic search of the z-origin available
-						Printer::staticCompensationZ = 0;
-#endif // FEATURE_FIND_Z_ORIGIN
-
 #endif // FEATURE_WORK_PART_Z_COMPENSATION
 					}
 #else
-					Printer::doHeatBedZCompensation = 1;
+					if( Printer::doHeatBedZCompensation )
+					{
+						Exit = 1;
+					}
 #endif // FEATURE_CNC_MODE > 0
 
-					Printer::targetCompensationZ    = 0;
-					Printer::currentCompensationZ   = 0;
-				
-#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
-					Printer::targetPositionStepsX	= 
-					Printer::targetPositionStepsY	= 
-					Printer::targetPositionStepsZ	= 
-					Printer::targetPositionStepsE	= 
-					Printer::currentPositionStepsX	= 
-					Printer::currentPositionStepsY	= 
-					Printer::currentPositionStepsZ	= 
-					Printer::currentPositionStepsE	= 0;
-#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
-				}
-			
-				nextPlannerIndex(linesPos);
-				cur = 0;
-				HAL::forbidInterrupts();
-				--linesCount;
-				return 1000;
-			}
-			if( cur->task == TASK_DISABLE_Z_COMPENSATION )
-			{
-				// disable the z compensation
-				Printer::targetCompensationZ  = 0;
-				Printer::currentCompensationZ = 0;
+					if( Exit )
+					{
+						// do not enable the z compensation in case it is enabled already
+						nextPlannerIndex(linesPos);
+						cur->task = TASK_NO_TASK;
+						cur = 0;
+						HAL::forbidInterrupts();
+						--linesCount;
+						return 1000;
+					}
 
+					// enable the z compensation
+					if( g_ZCompensationMatrix[0][0] == EEPROM_FORMAT )
+					{
+						// enable the z compensation only in case we have valid compensation values
 #if FEATURE_CNC_MODE > 0
-				if( Printer::operatingMode == OPERATING_MODE_PRINT )
-				{
+						if( Printer::operatingMode == OPERATING_MODE_PRINT )
+						{
 #if FEATURE_HEAT_BED_Z_COMPENSATION
-					Printer::doHeatBedZCompensation = 0;
+							Printer::doHeatBedZCompensation = 1;
 #endif // FEATURE_HEAT_BED_Z_COMPENSATION
-				}
-				else
-				{
+						}
+						else
+						{
 #if FEATURE_WORK_PART_Z_COMPENSATION
-					Printer::doWorkPartZCompensation = 0;
-					Printer::staticCompensationZ	 = 0;
-#endif // FEATURE_WORK_PART_Z_COMPENSATION
-				}
+							Printer::doWorkPartZCompensation = 1;
+
+#if FEATURE_FIND_Z_ORIGIN
+							if( g_nZOriginXPosition && g_nZOriginYPosition )
+							{
+								determineStaticCompensationZ();
+							}
+							else
+							{
+								// we know nothing about a static z-delta in case we do not know the x and y positions at which the z-origin has been determined
+								Printer::staticCompensationZ = 0;
+							}
 #else
-				Printer::doHeatBedZCompensation = 0;
+							// we know nothing about a static z-delta when we do not have the automatic search of the z-origin available
+							Printer::staticCompensationZ = 0;
+#endif // FEATURE_FIND_Z_ORIGIN
+
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+						}
+#else
+						Printer::doHeatBedZCompensation = 1;
 #endif // FEATURE_CNC_MODE > 0
 
-				nextPlannerIndex(linesPos);
-				cur = 0;
-				HAL::forbidInterrupts();
-				--linesCount;
-				return 1000;
-			}
-			if( cur->task == TASK_INIT_Z_COMPENSATION )
-			{
-				// initialize the z compensation
-				if( g_ZCompensationMatrix[0][0] == EEPROM_FORMAT )
+						Printer::targetCompensationZ    = 0;
+						Printer::currentCompensationZ   = 0;
+						
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
+						Printer::targetPositionStepsX	= 
+						Printer::targetPositionStepsY	= 
+						Printer::targetPositionStepsZ	= 
+						Printer::targetPositionStepsE	= 
+						Printer::currentPositionStepsX	= 
+						Printer::currentPositionStepsY	= 
+						Printer::currentPositionStepsZ	= 
+						Printer::currentPositionStepsE	= 0;
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
+					}
+			
+					nextPlannerIndex(linesPos);
+					cur->task = TASK_NO_TASK;
+					cur = 0;
+					HAL::forbidInterrupts();
+					--linesCount;
+					return 1000;
+				}
+				case TASK_DISABLE_Z_COMPENSATION:
 				{
-					// initialize the z compensation only in case we have valid compensation values
+					// disable the z compensation
 					Printer::targetCompensationZ  = 0;
 					Printer::currentCompensationZ = 0;
+
+#if FEATURE_CNC_MODE > 0
+					if( Printer::operatingMode == OPERATING_MODE_PRINT )
+					{
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+						Printer::doHeatBedZCompensation = 0;
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+					}
+					else
+					{
+#if FEATURE_WORK_PART_Z_COMPENSATION
+						Printer::doWorkPartZCompensation = 0;
+						Printer::staticCompensationZ	 = 0;
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+					}
+#else
+					Printer::doHeatBedZCompensation = 0;
+#endif // FEATURE_CNC_MODE > 0
+
+					nextPlannerIndex(linesPos);
+					cur->task = TASK_NO_TASK;
+					cur = 0;
+					HAL::forbidInterrupts();
+					--linesCount;
+					return 1000;
 				}
+				case TASK_INIT_Z_COMPENSATION:
+				{
+					// initialize the z compensation
+					if( g_ZCompensationMatrix[0][0] == EEPROM_FORMAT )
+					{
+						// initialize the z compensation only in case we have valid compensation values
+						Printer::targetCompensationZ  = 0;
+						Printer::currentCompensationZ = 0;
+					}
 			
-				nextPlannerIndex(linesPos);
-				cur = 0;
-				HAL::forbidInterrupts();
-				--linesCount;
-				return 1000;
+					nextPlannerIndex(linesPos);
+					cur->task = TASK_NO_TASK;
+					cur = 0;
+					HAL::forbidInterrupts();
+					--linesCount;
+					return 1000;
+				}
+				default:
+				{
+					// we should never end up here
+					nextPlannerIndex(linesPos);
+					cur->task = TASK_NO_TASK;
+					cur = 0;
+					HAL::forbidInterrupts();
+					--linesCount;
+					return 1000;
+				}
 			}
 		}
 #endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
@@ -2370,7 +2425,8 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 			Printer::unsetAllSteppersDisabled();
 			Printer::setZDirection(cur->isZPositiveMove());
         }
-        if(cur->isEMove())
+
+		if(cur->isEMove())
 		{
 			Extruder::enable();
 			Extruder::setDirection(cur->isEPositiveMove());
@@ -2496,12 +2552,10 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 
             if(cur->isZMove() && !g_nBlockZ )
             {
-				//g_debugInt32 = cur->stepsRemaining;
-
                 if((cur->error[Z_AXIS] -= cur->delta[Z_AXIS]) < 0)
                 {
                     startZStep( g_nMainDirectionZ );
-                    cur->error[Z_AXIS] += cur_errupd;
+					cur->error[Z_AXIS] += cur_errupd;
 #ifdef DEBUG_STEPCOUNT
                     cur->totalStepsRemaining--;
 #endif
@@ -2607,6 +2661,12 @@ long PrintLine::bresenhamStep() // version for cartesian printer
         {
             Printer::stepNumber += max_loops;
             cur->stepsRemaining -= max_loops;
+
+			if( !cur->stepsRemaining && cur->isZMove() )
+			{
+				// we have finished to move into z direction
+				g_nMainDirectionZ = 0;
+			}
         }
 
     } // stepsRemaining

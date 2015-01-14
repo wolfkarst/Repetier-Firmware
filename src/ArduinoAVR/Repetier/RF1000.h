@@ -225,6 +225,7 @@ we use blocks of 2 kByte size for the structure of our EEPROM
 #define EXTRUDER_STEPPER_LOW_DELAY			250																// [µs]
 #define	LOOP_INTERVAL						500																// [ms]
 
+#define	TASK_NO_TASK						-1
 #define	TASK_ENABLE_Z_COMPENSATION			1
 #define	TASK_DISABLE_Z_COMPENSATION			2
 #define	TASK_INIT_Z_COMPENSATION			3
@@ -419,6 +420,9 @@ extern unsigned char readByte24C256( int addressI2C, unsigned int addressEEPROM 
 
 // readWord24C256()
 extern unsigned short readWord24C256( int addressI2C, unsigned int addressEEPROM );
+
+// doZCompensation()
+extern void doZCompensation( void );
 
 // loopRF1000()
 extern void loopRF1000( void );

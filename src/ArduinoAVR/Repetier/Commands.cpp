@@ -65,6 +65,8 @@ void Commands::commandLoop()
 
 void Commands::checkForPeriodicalActions()
 {
+	doZCompensation();
+
     if(!executePeriodical) return;
     executePeriodical=0;
     Extruder::manageTemperatures();

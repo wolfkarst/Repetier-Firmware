@@ -88,7 +88,7 @@ short			g_HeatBedPressure[COMPENSATION_MATRIX_MAX_X][COMPENSATION_MATRIX_MAX_Y];
 #endif // REMEMBER_PRESSURE
 
 long			g_staticZSteps				= 0;
-char			g_debugLevel				= 6;
+char			g_debugLevel				= 0;
 char			g_debugLog					= 0;
 //short			g_debugCounter[10]			= { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 unsigned long	g_uStopTime					= 0;
@@ -923,6 +923,8 @@ void doHeatBedZCompensation( void )
 		return;
 	}
 
+	g_debugInt32 ++;
+
 	HAL::forbidInterrupts();
 	nCurrentPosition[X_AXIS] = Printer::nonCompensatedPositionStepsX;
 	nCurrentPosition[Y_AXIS] = Printer::nonCompensatedPositionStepsY;
@@ -934,8 +936,6 @@ void doHeatBedZCompensation( void )
 		// check whether we have to perform a compensation in z-direction
 		if( nCurrentPosition[Z_AXIS] < g_maxZCompensationSteps )
 		{
-			g_debugInt32 ++;
-
 #if FEATURE_WATCHDOG
 			HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
@@ -1851,8 +1851,6 @@ void doWorkPartZCompensation( void )
 
 	if( nCurrentPosition[Z_AXIS] > 0 )
 	{
-		g_debugInt32 ++;
-
 #if FEATURE_WATCHDOG
 		HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
@@ -3403,6 +3401,34 @@ unsigned short readWord24C256( int addressI2C, unsigned int addressEEPROM )
 } // readWord24C256
 
 
+void doZCompensation( void )
+{
+#if FEATURE_CNC_MODE == 2
+
+	if( Printer::operatingMode == OPERATING_MODE_PRINT )
+	{
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+		doHeatBedZCompensation();
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+	}
+	else
+	{
+#if FEATURE_WORK_PART_Z_COMPENSATION
+		doWorkPartZCompensation();
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+	}
+
+#else
+
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+	doHeatBedZCompensation();
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+
+#endif // FEATURE_CNC_MODE == 2
+
+} // doZCompensation
+
+
 void loopRF1000( void )
 {
 	static char		nEntered = 0;
@@ -3440,8 +3466,6 @@ void loopRF1000( void )
 	if( Printer::operatingMode == OPERATING_MODE_PRINT )
 	{
 #if FEATURE_HEAT_BED_Z_COMPENSATION
-		doHeatBedZCompensation();
-
 		if( g_nHeatBedScanStatus )
 		{
 			scanHeatBed();
@@ -3451,8 +3475,6 @@ void loopRF1000( void )
 	else
 	{
 #if FEATURE_WORK_PART_Z_COMPENSATION
-		doWorkPartZCompensation();
-
 		if( g_nWorkPartScanStatus )
 		{
 			scanWorkPart();
@@ -3463,8 +3485,6 @@ void loopRF1000( void )
 #else
 
 #if FEATURE_HEAT_BED_Z_COMPENSATION
-	doHeatBedZCompensation();
-
 	if( g_nHeatBedScanStatus )
 	{
 		scanHeatBed();
@@ -3678,7 +3698,8 @@ void loopRF1000( void )
 #endif // FEATURE_CNC_MODE == 2
 */
 #if FEATURE_HEAT_BED_Z_COMPENSATION
-		if( g_debugLevel && Printer::debugInfo() && PrintLine::linesCount )
+		if( g_debugLevel && Printer::debugInfo() )
+//		if( g_debugLevel && Printer::debugInfo() && PrintLine::linesCount )
 		{
 #if DEBUG_HEAT_BED_Z_COMPENSATION
 			switch( g_debugLevel )
@@ -3724,6 +3745,7 @@ void loopRF1000( void )
 					Com::printF( PSTR( "nCPS X;" ), Printer::nonCompensatedPositionStepsX );
 					Com::printF( PSTR( "; nCPS Y;" ), Printer::nonCompensatedPositionStepsY );
 					Com::printF( PSTR( "; nCPS Z;" ), Printer::nonCompensatedPositionStepsZ );
+					Com::printF( PSTR( "; MDZ;" ), g_nMainDirectionZ );
 					Com::printF( PSTR( "; tCZ;" ), Printer::targetCompensationZ );
 					Com::printF( PSTR( "; cCZ;" ), Printer::currentCompensationZ );
 					Com::printF( PSTR( "; tPSZ;" ), Printer::targetPositionStepsZ );
@@ -3731,10 +3753,11 @@ void loopRF1000( void )
 					Com::printF( PSTR( "; dZ;" ), Printer::destinationSteps[Z_AXIS] );
 					Com::printF( PSTR( "; cZ;" ), Printer::currentPositionSteps[Z_AXIS] );
 					Com::printF( PSTR( "; Int32;" ), g_debugInt32 );
+					Com::printF( PSTR( "; Int16;" ), g_debugInt16 );
 					Com::printF( PSTR( "; RAM;" ), Commands::lowestRAMValue );
+					Com::printF( PSTR( "; doZC;" ), Printer::doHeatBedZCompensation );
 					break;
 				}
-
 
 				default:
 				{
@@ -3838,7 +3861,7 @@ void loopRF1000( void )
 					Com::printF( PSTR( "; Dir;" ), READ( Z_DIR_PIN ) );
 					Com::printF( PSTR( "; TempDir;" ), g_nTempDirectionZ );
 					Com::printF( PSTR( "; Status;" ), g_nFindZOriginStatus );
-					Com::printF( PSTR( "; Pressure;" ), g_debugInt16 );
+					//Com::printF( PSTR( "; Pressure;" ), g_debugInt16 );
 					break;
 				}
 
@@ -4069,7 +4092,6 @@ void pausePrint( void )
 #endif // FEATURE_WATCHDOG
 
 			HAL::delayMilliseconds( 1 );
-			loopRF1000();
 			Commands::checkForPeriodicalActions();
 
 			// NOTE: do not run runStandardTasks() within this loop
@@ -4168,7 +4190,6 @@ void continuePrint( void )
 #endif // FEATURE_WATCHDOG
 
 				HAL::delayMilliseconds( 1 );
-				loopRF1000();
 				Commands::checkForPeriodicalActions();
 
 				// NOTE: do not run runStandardTasks() within this loop
@@ -4208,7 +4229,6 @@ void continuePrint( void )
 #endif // FEATURE_WATCHDOG
 
 					HAL::delayMilliseconds( 1 );
-					loopRF1000();
 					Commands::checkForPeriodicalActions();
 
 					// NOTE: do not run runStandardTasks() within this loop
@@ -4235,7 +4255,6 @@ void continuePrint( void )
 				break;
 			}
 			HAL::delayMilliseconds( 1 );
-			loopRF1000();
 			Commands::checkForPeriodicalActions();
 
 			// NOTE: do not run runStandardTasks() within this loop
@@ -4470,17 +4489,24 @@ void processCommand( GCode* pCommand )
 			}
 			case 3001: // M3001 - turn the z-compensation on
 			{
-				if( g_ZCompensationMatrix[0][0] == EEPROM_FORMAT )
+				if( Printer::isHomed() )
 				{
-					// enable the z compensation only in case we have valid compensation values
-					Com::printFLN( PSTR( "M3001: enabling z compensation" ) );
-					PrintLine::queueTask( TASK_ENABLE_Z_COMPENSATION );
+					if( g_ZCompensationMatrix[0][0] == EEPROM_FORMAT )
+					{
+						// enable the z compensation only in case we have valid compensation values
+						Com::printFLN( PSTR( "M3001: enabling z compensation" ) );
+						PrintLine::queueTask( TASK_ENABLE_Z_COMPENSATION );
+					}
+					else
+					{
+						Com::printF( PSTR( "M3001: the z compensation can not be enabled because the heat bed compensation matrix is not valid ( " ), g_ZCompensationMatrix[0][0] );
+						Com::printF( PSTR( " / " ), EEPROM_FORMAT );
+						Com::printFLN( PSTR( " )" ) );
+					}
 				}
 				else
 				{
-					Com::printF( PSTR( "M3001: the z compensation can not be enabled because the heat bed compensation matrix is not valid ( " ), g_ZCompensationMatrix[0][0] );
-					Com::printF( PSTR( " / " ), EEPROM_FORMAT );
-					Com::printFLN( PSTR( " )" ) );
+					Com::printFLN( PSTR( "M3001: the z compensation can not be enabled because the home position is unknown" ) );
 				}
 				break;
 			}
@@ -7377,7 +7403,7 @@ void findZOrigin( void )
 #endif // FEATURE_WATCHDOG
 
 					nCurrentPressure = readStrainGauge( SCAN_STRAIN_GAUGE );
-					g_debugInt16	 = nCurrentPressure;
+					//g_debugInt16	 = nCurrentPressure;
 
 					if( nCurrentPressure > nMaxPressureContact || nCurrentPressure < nMinPressureContact )
 					{
@@ -7424,7 +7450,7 @@ void findZOrigin( void )
 #endif // FEATURE_WATCHDOG
 
 					nCurrentPressure = readStrainGauge( SCAN_STRAIN_GAUGE );
-					g_debugInt16	 = nCurrentPressure;
+					//g_debugInt16	 = nCurrentPressure;
 
 					if( nCurrentPressure > nMinPressureContact && nCurrentPressure < nMaxPressureContact )
 					{

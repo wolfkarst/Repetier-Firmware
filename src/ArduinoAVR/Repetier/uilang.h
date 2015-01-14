@@ -469,7 +469,7 @@
 #define	UI_TEXT_FIND_Z_ORIGIN_ABORTED "Suche abgebr."
 #define UI_TEXT_FIND_Z_ORIGIN_DONE	  "Suche beendet"
 #define UI_TEXT_PRINT_MODE		   "Drucker"
-#define UI_TEXT_CNC_MODE		   "Fr" STR_auuml "ser"
+#define UI_TEXT_CNC_MODE		   "Fr" STR_auml "ser"
 #define UI_TEXT_WORK_PART_SCAN	 "Werkst" STR_uuml " Scan"
 #define UI_TEXT_WORK_PART_SCAN_ABORTED "Scan abgebrochen"
 #define UI_TEXT_WORK_PART_SCAN_DONE "Scan beendet"
