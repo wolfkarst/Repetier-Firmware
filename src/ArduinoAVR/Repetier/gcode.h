@@ -131,6 +131,7 @@ public:
     static GCode *peekCurrentCommand();
     /** Frees the cache used by the last command fetched. */
     static void readFromSerial();
+    static void readFromSD();
     static void pushCommand();
     static void executeFString(FSTRINGPARAM(cmd));
     static void executeString(char *cmd);

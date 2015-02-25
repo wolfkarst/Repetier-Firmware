@@ -1,3 +1,26 @@
+V 0.91.53 (2015-02-25)
+- Redefinition of prog_char in order to allow to compile the sources also with Arduino V 1.6.0.
+  - This version of Arduino outputs a warning about "Low memory available" available memory, but this warning is misguided and can be ignored.
+- Improved clean-up after the end/abort of a print from the SD card.
+  - Previous versions of the firmware might have performed a small additional move into x and/or y-direction after the output of the object.
+- In case the to-be-processed G-code from the SD card contained a non-ASCII character, the interpreter could switch from ASCII to binary - and as a result, it was not able to interpret the following G-code(s) properly.
+- All micro (µ) signs have been replaced through a standard-u in order to avoid problems which occurred at some platforms.
+- Removing of the support for M26, M42, M92 and M251.
+- M30 (delete file) can not be used anymore while the printing/milling from the SD card is in progress.
+- Pausing via the menu of the RF1000 now works in the same way as the pausing via the hardware buttons.
+- The z-compensation matrix is not loaded during the startup of the firmware anymore.
+  - Instead, the z-compensation matrix is loading before it is needed the first time. This allows a significant faster startup of the firmware.
+- The z-compensation works also for negative z-positions in the operating mode "mill".
+- The setting of the x/y start and x/y end positions for the work part scan is more tolerant:
+  - In case the new start position would be right and/or behind the current end position, the new start position is taken over and the end position is set to the same x/y position.
+  - In case the new end position would be left and/or in front of the current start position, the new end position is taken over and the start position is set to the same x/y position.
+- In case the current operating mode is not "print" but "mill", the firmware does not accept the commands for the configuration/reading of (heat bed and extruder) temperatures anymore.
+- Improved handling of print and mill specific M-codes.
+- Fine tunning of settings within Configuration.h:
+  - The G-code script for the output of printed objects has been updated.
+  - A separate G-code script has been introduced for the output of milled objects (see OUTPUT_OBJECT_SCRIPT_MILL).
+- Review of menu texts.
+
 V 0.91.51 (2015-01-14)
 - It was possible to enable the z-compensation multiple times in case M3001 was sent multiple times in a certain order.
   - As a result, the z-compensation value could be applied multiple times because each new enabling of the z-compensation assumed the current z-position to be the not-compensated one.
@@ -30,8 +53,8 @@ V 0.91.49 (2014-12-22)
   - The actual calculation of the z-compensation is done with less blocking of interrupts.
   - This modification should eliminate seldom communication errors (and as a result, short stops of the printing process) which could have occurred with previous versions.
 - Fine tunning of settings within Configuration.h:
-  - the default number of microsteps has been changed from 8 to 32
-  - OUTPUT_OBJECT_SCRIPT uses a slower z-axis speed now
+  - The default number of microsteps has been changed from 8 to 32.
+  - OUTPUT_OBJECT_SCRIPT uses a slower z-axis speed now.
 
 V 0.91.47 (2014-10-29)
 - Adding of M3105, which allows to specify the movement after pause in [mm].

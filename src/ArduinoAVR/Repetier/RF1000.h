@@ -37,9 +37,9 @@
 - M3002 - configure the min z-compensation offset (units are [steps])
 - M3003 - configure the max z-compensation offset (units are [steps])
 - M3004 - obsolete (use M3006 from now on and consider the changed meaning of the configured value)
-- M3006 - configure the static z-offset (units are [µm])
-- M3007 - configure the min z-compensation offset (units are [µm])
-- M3008 - configure the max z-compensation offset (units are [µm])
+- M3006 - configure the static z-offset (units are [um])
+- M3007 - configure the min z-compensation offset (units are [um])
+- M3008 - configure the max z-compensation offset (units are [um])
 
 - M3010 - start/abort the heat bed scan
 - M3011 - clear the z-compensation matrix from the EEPROM
@@ -100,7 +100,7 @@
 
 - M3140 - turn the z-compensation off
 - M3141 - turn the z-compensation on
-- M3146 - configure the static z-offset (units are [µm])
+- M3146 - configure the static z-offset (units are [um])
 - M3149 - get/choose the active work part z-compensation matrix
 
 - M3150 - start/abort the work part scan
@@ -217,12 +217,12 @@ we use blocks of 2 kByte size for the structure of our EEPROM
 #endif // FEATURE_WORK_PART_Z_COMPENSATION
 
 
-#define XYZ_DIRECTION_CHANGE_DELAY			250																// [µs]
-#define XYZ_STEPPER_HIGH_DELAY				250																// [µs]
-#define XYZ_STEPPER_LOW_DELAY				250																// [µs]
-#define EXTRUDER_DIRECTION_CHANGE_DELAY		250																// [µs]
-#define EXTRUDER_STEPPER_HIGH_DELAY			40000															// [µs]
-#define EXTRUDER_STEPPER_LOW_DELAY			250																// [µs]
+#define XYZ_DIRECTION_CHANGE_DELAY			250																// [us]
+#define XYZ_STEPPER_HIGH_DELAY				250																// [us]
+#define XYZ_STEPPER_LOW_DELAY				250																// [us]
+#define EXTRUDER_DIRECTION_CHANGE_DELAY		250																// [us]
+#define EXTRUDER_STEPPER_HIGH_DELAY			40000															// [us]
+#define EXTRUDER_STEPPER_LOW_DELAY			250																// [us]
 #define	LOOP_INTERVAL						500																// [ms]
 
 #define	TASK_NO_TASK						-1
@@ -271,6 +271,7 @@ extern	char			g_debugLevel;
 extern	char			g_debugLog;
 //extern	short			g_debugCounter[10];
 extern	unsigned long	g_uStopTime;
+extern	unsigned long	g_uBlockCommands;
 extern	short			g_debugInt16;
 extern	unsigned short	g_debugUInt16;
 extern	long			g_debugInt32;
@@ -542,5 +543,14 @@ extern void setupForPrinting( void );
 // setupForMilling()
 extern void setupForMilling( void );
 
+// prepareZCompensation()
+extern void prepareZCompensation( void );
+
 // resetZCompensation()
 extern void resetZCompensation( void );
+
+// isSupportedCommand()
+extern unsigned char isSupportedCommand( unsigned int currentMCode, char neededMode, char outputLog = 1 );
+
+// showInvalidSyntax()
+extern void showInvalidSyntax( unsigned int currentMCode );

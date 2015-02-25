@@ -632,7 +632,7 @@ public:
 			// the last z-direction is unknown or the heat bed has been moved upwards, thus we have to assume that the z-min endstop is hit
 			endstopZMinHit		  = ENDSTOP_IS_HIT;
 			endstopZMaxHit		  = ENDSTOP_NOT_HIT;
-			stepsSinceZMinEndstop = 0;
+			stepsSinceZMinEndstop = Z_ENDSTOP_MIN_TO_MAX_INITIAL_STEPS;
 			stepsSinceZMaxEndstop = 0;
 			return true;
 		}
@@ -705,11 +705,13 @@ public:
 				return false;
 			}
 
+//			g_debugInt32 = stepsSinceZMinEndstop;
+
 			// the last z-direction is unknown or the heat bed has been moved downwards, thus we have to assume that the z-max endstop is hit
 			endstopZMinHit		  = ENDSTOP_NOT_HIT;
 			endstopZMaxHit		  = ENDSTOP_IS_HIT;
 			stepsSinceZMinEndstop = 0;
-			stepsSinceZMaxEndstop = 0;
+			stepsSinceZMaxEndstop = Z_ENDSTOP_MAX_TO_MIN_INITIAL_STEPS;
 			return true;
 		}
 

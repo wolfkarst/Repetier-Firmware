@@ -145,6 +145,13 @@ void PrintLine::queueCartesianMove(uint8_t check_endstops,uint8_t pathOptimize)
 {
 	Printer::unsetAllSteppersDisabled();
     waitForXFreeLines(1);
+
+	if( g_uBlockCommands )
+	{
+		// the print has been aborted
+		return;
+	}
+
     uint8_t newPath=insertWaitMovesIfNeeded(pathOptimize, 0);
     PrintLine *p = getNextWriteLine();
 
@@ -229,6 +236,16 @@ void PrintLine::queueCartesianMove(uint8_t check_endstops,uint8_t pathOptimize)
             p->distance = RMath::max((float)sqrt(xydist2 + axis_diff[Z_AXIS] * axis_diff[Z_AXIS]),fabs(axis_diff[E_AXIS]));
         else
             p->distance = RMath::max((float)sqrt(xydist2),fabs(axis_diff[E_AXIS]));
+
+#ifdef DEBUG_QUEUE_MOVE
+		if(Printer::debugEcho())
+		{
+			Com::printF( PSTR( "qCM(): ID=" ), (int)p );
+			Com::printF( PSTR( ", x=" ), Printer::destinationSteps[X_AXIS] );
+			Com::printF( PSTR( ", y=" ), Printer::destinationSteps[Y_AXIS] );
+			Com::printFLN( PSTR( ", z=" ), Printer::destinationSteps[Z_AXIS] );
+	    }
+#endif
     }
     else
         p->distance = fabs(axis_diff[E_AXIS]);
@@ -864,6 +881,14 @@ void PrintLine::logLine()
 #endif // DEBUG_QUEUE_MOVE
 }
 
+void PrintLine::logLine2()
+{
+    Com::printF(PSTR("Move: dir="),dir);
+    Com::printF(PSTR(", flags="),flags);
+    Com::printF(PSTR(", steps="),stepsRemaining);
+
+} // logLine2
+
 void PrintLine::waitForXFreeLines(uint8_t b)
 {
     while(linesCount+b>MOVE_CACHE_SIZE)   // wait for a free entry in movement cache
@@ -876,6 +901,19 @@ void PrintLine::waitForXFreeLines(uint8_t b)
         Commands::checkForPeriodicalActions();
     }
 }
+
+bool PrintLine::checkForXFreeLines(uint8_t freeLines)
+{
+    if(linesCount+freeLines>MOVE_CACHE_SIZE)
+	{
+		// we have less than freeLines free lines within our cache
+		return false;
+	}
+
+	// we have more than freeLines free lines within our cache
+	return true;
+
+} // checkForXFreeLines
 
 
 #if DRIVE_SYSTEM == 3
@@ -2140,6 +2178,8 @@ long PrintLine::bresenhamStep() // version for cartesian printer
 				if( Printer::operatingMode != OPERATING_MODE_PRINT )
 				{
 					// for now, we do not allow to move away from the pause position in case the operating mode is not print
+					g_preparePause = 0;
+
 					nextPlannerIndex(linesPos);
 					cur = 0;
 					HAL::forbidInterrupts();

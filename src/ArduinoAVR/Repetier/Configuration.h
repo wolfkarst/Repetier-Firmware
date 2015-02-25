@@ -60,7 +60,7 @@ To override EEPROM settings with config settings, set EEPROM_MODE 0
 1 = experimental, do not use this value (support the CNC mode, only the endstop at z-min is present)
 2 = support the CNC mode, the endstops at z-min and z-max are in one circle
 */
-#define	FEATURE_CNC_MODE		0
+#define	FEATURE_CNC_MODE		2
 
 /** Define the type of the present extruders */
 #define EXT0_HOTEND_TYPE		HOTEND_TYPE_2
@@ -1110,7 +1110,7 @@ matches, the stored values are used to overwrite the settings.
 IMPORTANT: With mode <>0 some changes in Configuration.h are not set any more, as they are
            taken from the EEPROM.
 */
-#define EEPROM_MODE			0
+#define EEPROM_MODE			53
 
 /** \brief EEPROM reset mode
 
@@ -1376,7 +1376,7 @@ Values must be in range 1..255
 #define FEATURE_EXTENDED_BUTTONS			1													// 1 = on, 0 = off
 #define EXTENDED_BUTTONS_COUNTER_NORMAL		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
 #define EXTENDED_BUTTONS_COUNTER_FAST		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
-#define	EXTENDED_BUTTONS_STEPPER_DELAY		1													// [µs]
+#define	EXTENDED_BUTTONS_STEPPER_DELAY		1													// [us]
 
 #define	EXTENDED_BUTTONS_Z_MIN				-(ZAXIS_STEPS_PER_MM *2)							// [steps]
 #define	EXTENDED_BUTTONS_Z_MAX				long(ZAXIS_STEPS_PER_MM * (Z_MAX_LENGTH -2))		// [steps]
@@ -1402,7 +1402,7 @@ in z direction during the printing of the first layers.
 
 This value should be roughly the double amount of mm which is detected as error of the heat bed.
 */
-#define HEAT_BED_Z_COMPENSATION_MAX_MM		2															// [mm]
+#define HEAT_BED_Z_COMPENSATION_MAX_MM		3															// [mm]
 #define HEAT_BED_Z_COMPENSATION_MAX_STEPS	long(HEAT_BED_Z_COMPENSATION_MAX_MM * ZAXIS_STEPS_PER_MM)	// [steps]
 
 /** \brief Specifies from which height on the z compensation shall be performed
@@ -1492,7 +1492,11 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Configures the delay between the stop of a print and the clean-up like disabling of heaters, disabling of steppers and the outputting of the object
 */
-#define	CLEAN_UP_DELAY_AFTER_STOP_PRINT		100													// [ms]
+#define	CLEAN_UP_DELAY_AFTER_STOP_PRINT		1000												// [ms]
+
+/** \brief Configures the duration for which the processing of commands shall be blocked.
+*/
+#define	COMMAND_BLOCK_DELAY					1000												// [ms]
 
 /** \brief Enables/disables the output of the printed object feature
 */
@@ -1500,7 +1504,8 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief The following script allows to configure the exact behavior of the automatic object output
 */
-#define	OUTPUT_OBJECT_SCRIPT				"G21\nG91\nG1 E-10\nG1 Z210 F5000\nG1 X0 Y220 F7500\n"
+#define	OUTPUT_OBJECT_SCRIPT_PRINT				"G21\nG91\nG1 E-10\nG1 Z210 F5000\nG1 Y250 F7500"
+#define	OUTPUT_OBJECT_SCRIPT_MILL				"G28 Z0\nG21\nG91\nG1 Y250 F7500"
 
 /** \brief Enables/disables the park feature
 */
@@ -1739,20 +1744,20 @@ Enabling of the following feature can be dangerous because it allows to manually
 
 /** \brief Automatic filament change, unmounting of the filament - ensure that G1 does not attempt to extrude more than EXTRUDE_MAXLENGTH
 */
-#define	UNMOUNT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E50 F100\nG92 E0\nG1 E-90 F500\n"
+#define	UNMOUNT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E50 F100\nG92 E0\nG1 E-90 F500"
 
 /** \brief Automatic filament change, mounting of the filament - ensure that G1 does not attempt to extrude more than EXTRUDE_MAXLENGTH
 */
 #define	MOUNT_FILAMENT_SCRIPT				"G21\nG90\nG92 E0\nG1 E90 F100"
 
-
-#if FEATURE_CNC_MODE > 0
-
 /** \brief Default operating mode
 */
 #define	OPERATING_MODE_PRINT				1
 #define OPERATING_MODE_CNC					2
-#define	DEFAULT_OPERATING_MODE				OPERATING_MODE_CNC
+#define	DEFAULT_OPERATING_MODE				OPERATING_MODE_PRINT
+
+
+#if FEATURE_CNC_MODE > 0
 
 /** \brief This feature allows to move the milling bed upwards automatically until the miller is hit. The found position is taken over as Z=0 automatically.
            Be aware that mis-using of this functionality can ruin the tool (e.g. in case the tool is placed above the milling bed and not above the to-be-milled object).
@@ -1780,10 +1785,16 @@ Enabling of the following feature can be dangerous because it allows to manually
 
 #endif // FEATURE_FIND_Z_ORIGIN
 
-/** \brief There can not be less than the following amount of time between the hits of the z-min and z-max endstops.
+/** \brief We set the current "steps after endstop" to the following offset values in order to avoid to reach a "steps after endstop" value of 0 (e.g. because of the up and down moving z-compensation or because of manual z movements.
+           This initial value is set to a level which is above the steps which are possible in z-direction during the distance where the z-endstop is constantly pressed.
 */
-#define MINIMAL_Z_ENDSTOP_MIN_TO_MAX_STEPS			long(ZAXIS_STEPS_PER_MM * 1)						// [steps]
-#define MINIMAL_Z_ENDSTOP_MAX_TO_MIN_STEPS			long(-ZAXIS_STEPS_PER_MM * 1)						// [steps]
+#define Z_ENDSTOP_MIN_TO_MAX_INITIAL_STEPS			long(ZAXIS_STEPS_PER_MM * 10)						// [steps]
+#define Z_ENDSTOP_MAX_TO_MIN_INITIAL_STEPS			long(-ZAXIS_STEPS_PER_MM * 10)						// [steps]
+
+/** \brief There can not be less than the following amount of steps between the hits of the z-min and z-max endstops.
+*/
+#define MINIMAL_Z_ENDSTOP_MIN_TO_MAX_STEPS			long(ZAXIS_STEPS_PER_MM * 100)						// [steps]
+#define MINIMAL_Z_ENDSTOP_MAX_TO_MIN_STEPS			long(-ZAXIS_STEPS_PER_MM * 100)						// [steps]
 
 #define	ENDSTOP_NOT_HIT								0
 #define	ENDSTOP_IS_HIT								1
@@ -1796,6 +1807,7 @@ Enabling of the following feature can be dangerous because it allows to manually
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".51"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".53"
+
 
 #endif

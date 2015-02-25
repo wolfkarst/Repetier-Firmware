@@ -33,6 +33,7 @@
 #include <avr/pgmspace.h>
 #if CPU_ARCH==ARCH_AVR
 #include <avr/io.h>
+#define prog_char	char
 #else
 #define PROGMEM
 #define PGM_P const char *

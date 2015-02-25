@@ -354,7 +354,8 @@ FSTRINGVAR(tCreationFailed)
 FSTRINGVAR(tSDErrorCode)
 #endif // SDSUPPORT
 
-FSTRINGVAR(tOutputObject)
+FSTRINGVAR(tOutputObjectPrint)
+FSTRINGVAR(tOutputObjectMill)
 FSTRINGVAR(tUnmountFilament)
 FSTRINGVAR(tMountFilament)
 

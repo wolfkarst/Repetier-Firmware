@@ -432,9 +432,15 @@ public:
     }
     inline static void resetPathPlanner()
     {
-        linesCount = 0;
-        linesPos = linesWritePos;
+        linesCount	  = 0;
+        linesPos	  = 0;
+		linesWritePos = 0;
     }
+	inline static void resetLineBuffer()
+	{
+		cur = NULL;
+		memset( lines, 0, sizeof( PrintLine ) * MOVE_CACHE_SIZE );
+	}
     inline void updateAdvanceSteps(speed_t v,uint8_t max_loops,bool accelerate)
     {
 #ifdef USE_ADVANCE
@@ -581,6 +587,7 @@ public:
     inline float safeSpeed();
     void calculateMove(float axis_diff[],uint8_t pathOptimize);
     void logLine();
+    void logLine2();
     inline long getWaitTicks()
     {
         return timeInTicks;
@@ -630,6 +637,7 @@ public:
     static inline void computeMaxJunctionSpeed(PrintLine *previous,PrintLine *current);
     static long bresenhamStep();
     static void waitForXFreeLines(uint8_t b=1);
+	static bool checkForXFreeLines(uint8_t freeLines=1);
     static inline void forwardPlanner(uint8_t p);
     static inline void backwardPlanner(uint8_t p,uint8_t last);
     static void updateTrapezoids();

@@ -204,6 +204,7 @@ void GCode::pushCommand()
 {
     bufferWriteIndex = (bufferWriteIndex+1) % GCODE_BUFFER_SIZE;
     bufferLength++;
+    
 #ifndef ECHO_ON_EXECUTE
     echoCommand();
 #endif
@@ -331,9 +332,11 @@ void GCode::executeString(char *cmd)
     }
     while(c);
 }
-/** \brief Read from serial console or sdcard.
 
-This function is the main function to read the commands from serial console or from sdcard.
+
+/** \brief Read from serial console
+
+This function is the main function to read the commands from serial console.
 It must be called frequently to empty the incoming buffer.
 */
 void GCode::readFromSerial()
@@ -394,8 +397,13 @@ void GCode::readFromSerial()
             if(commandsReceivingWritePosition == binaryCommandSize)
             {
                 GCode *act = &commandsBuffered[bufferWriteIndex];
-                if(act->parseBinary(commandReceiving,true))   // Success
+                if(act->parseBinary(commandReceiving,true))
+             {
+               // Success
                     act->checkAndPushCommand();
+//                  Com::printF(PSTR("Current binary from serial: "));
+//                  act->printCommand();
+               }
                 else
                     requestResend();
                 commandsReceivingWritePosition = 0;
@@ -407,7 +415,10 @@ void GCode::readFromSerial()
             char ch = commandReceiving[commandsReceivingWritePosition-1];
             if(ch == 0 || ch == '\n' || ch == '\r' || (!commentDetected && ch == ':'))  // complete line read
             {
-                //Com::printF(PSTR("Parse ascii"));Com::print((char*)commandReceiving);Com::println();
+/*                Com::printF(PSTR("Parse serial ascii >>>"));
+				Com::print((char*)commandReceiving);
+				Com::printFLN(PSTR("<<<"));
+*/
                 commandReceiving[commandsReceivingWritePosition-1]=0;
                 commentDetected = false;
                 if(commandsReceivingWritePosition==1)   // empty line ignore
@@ -416,8 +427,13 @@ void GCode::readFromSerial()
                     continue;
                 }
                 GCode *act = &commandsBuffered[bufferWriteIndex];
-                if(act->parseAscii((char *)commandReceiving,true))   // Success
+                if(act->parseAscii((char *)commandReceiving,true))
+               {
+                 // Success
                     act->checkAndPushCommand();
+//                  Com::printF(PSTR("Current ASCII from serial: "));
+//                  act->printCommand();
+               }
                 else
                     requestResend();
                 commandsReceivingWritePosition = 0;
@@ -435,9 +451,28 @@ void GCode::readFromSerial()
             return;
         }
     }
+
+	readFromSD();
+}
+
+
+/** \brief Read from sdcard.
+
+This function is the main function to read the commands from sdcard.
+*/
+void GCode::readFromSD()
+{
 #if SDSUPPORT
-    if(!sd.sdmode || commandsReceivingWritePosition!=0)   // not reading or incoming serial command
+	if(!sd.sdmode || commandsReceivingWritePosition!=0)   // not reading or incoming serial command
         return;
+
+	if(!PrintLine::checkForXFreeLines(2))
+	{
+		// we do not read G-Codes from the SD card until the cache is full -
+		// when we leave a small space within the cache the PC is able to exchange commands faster (this effect is relevant only in case of G-Codes whose processing takes a noticeable amount of time, e.g. long and/or slow lines)
+		return;
+	}
+
     while( sd.filesize > sd.sdpos && commandsReceivingWritePosition < MAX_CMD_SIZE)    // consume data until no data or buffer full
     {
 #if FEATURE_WATCHDOG
@@ -476,7 +511,7 @@ void GCode::readFromSerial()
         commandReceiving[commandsReceivingWritePosition++] = (uint8_t)n;
 
         // first lets detect, if we got an old type ascii command
-        if(commandsReceivingWritePosition==1)
+        if(commandsReceivingWritePosition==1 && !commentDetected)
         {
             sendAsBinary = (commandReceiving[0] & 128)!=0;
         }
@@ -488,8 +523,13 @@ void GCode::readFromSerial()
             if(commandsReceivingWritePosition==binaryCommandSize)
             {
                 GCode *act = &commandsBuffered[bufferWriteIndex];
-                if(act->parseBinary(commandReceiving,false))   // Success, silently ignore illegal commands
-                    pushCommand();
+                if(act->parseBinary(commandReceiving,false))
+                {
+                  // Success, silently ignore illegal commands
+                  pushCommand();
+//                  Com::printF(PSTR("Current binary from SD: "));
+//                  act->printCommand();
+                }
                 commandsReceivingWritePosition = 0;
                 return;
             }
@@ -500,6 +540,10 @@ void GCode::readFromSerial()
             bool returnChar = ch == '\n' || ch == '\r';
             if(returnChar || sd.filesize == sd.sdpos || (!commentDetected && ch == ':') || commandsReceivingWritePosition >= (MAX_CMD_SIZE - 1) )  // complete line read
             {
+/*                Com::printF(PSTR("Parse SD ascii 1 >>>"));
+				Com::print((char*)commandReceiving);
+				Com::printFLN(PSTR("<<<"));
+*/
                 if(returnChar || ch == ':')
                     commandReceiving[commandsReceivingWritePosition-1]=0;
                 else
@@ -508,16 +552,32 @@ void GCode::readFromSerial()
                 if(commandsReceivingWritePosition==1)   // empty line ignore
                 {
                     commandsReceivingWritePosition = 0;
+					memset( commandReceiving, 0, sizeof( commandReceiving ) );
                     continue;
                 }
-                GCode *act = &commandsBuffered[bufferWriteIndex];
-                if(act->parseAscii((char *)commandReceiving,false))   // Success
+
+/*                Com::printF(PSTR("Parse SD ascii 2 >>>"));
+				Com::print((char*)commandReceiving);
+				Com::printFLN(PSTR("<<<"));
+*/
+				GCode *act = &commandsBuffered[bufferWriteIndex];
+                if(act->parseAscii((char *)commandReceiving,false))
+                {   
+                    // Success
                     pushCommand();
+//                  Com::printF(PSTR("Current ASCII from SD: "));
+//                  act->printCommand();
+                }
                 commandsReceivingWritePosition = 0;
+				memset( commandReceiving, 0, sizeof( commandReceiving ) );
                 return;
             }
             else
             {
+/*                Com::printF(PSTR("Parse SD ascii 3 >>>"));
+				Com::print((char*)commandReceiving);
+				Com::printFLN(PSTR("<<<"));
+*/
                 if(ch == ';') commentDetected = true; // ignore new data until lineend
                 if(commentDetected) commandsReceivingWritePosition--;
             }
@@ -530,8 +590,10 @@ void GCode::readFromSerial()
     Printer::setMenuMode(MENU_MODE_SD_PRINTING,false);
 
 	BEEP_STOP_PRINTING
-#endif
-}
+#endif // SDSUPPORT
+
+} // readFromSD
+
 
 /**
   Converts a binary uint8_tfield containing one GCode line into a GCode structure.
@@ -811,7 +873,10 @@ bool GCode::parseAscii(char *line,bool fromSerial)
     {
         formatErrors++;
         if(Printer::debugErrors())
+		{
             Com::printErrorFLN(Com::tFormatError);
+			printCommand();
+		}
         if(formatErrors<3) return false;
     }
     else formatErrors = 0;
@@ -892,5 +957,7 @@ void GCode::resetBuffer()
 	bufferLength	 = 0;
 	bufferWriteIndex = 0;
 	bufferReadIndex	 = 0;
+
+	memset( commandsBuffered, 0, sizeof( GCode ) * GCODE_BUFFER_SIZE );
 
 } // resetBuffer

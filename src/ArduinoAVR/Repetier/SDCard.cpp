@@ -133,6 +133,7 @@ void SDCard::startPrint()
     Printer::setMenuMode(MENU_MODE_SD_PRINTING,true);
     Printer::setMenuMode(MENU_MODE_SD_PAUSED,false);
 }
+/*
 void SDCard::pausePrint(bool intern)
 {
     if(!sd.sdactive) return;
@@ -162,6 +163,7 @@ void SDCard::continuePrint(bool intern)
 #endif
     sdmode = true;
 }
+*/
 void SDCard::abortPrint()
 {
     if( !sd.sdactive )
@@ -173,6 +175,14 @@ void SDCard::abortPrint()
 	HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
 
+	g_uStopTime = millis();
+
+	Printer::setMenuMode(MENU_MODE_SD_PRINTING,false);
+    Printer::setMenuMode(MENU_MODE_SD_PAUSED,false);
+    Com::printFLN(PSTR("SD print aborted."));
+
+	HAL::delayMilliseconds( 250 );
+
 	HAL::forbidInterrupts();
 
 	sdmode	 = false;
@@ -182,12 +192,11 @@ void SDCard::abortPrint()
     Com::printFLN(PSTR("G-Code buffer reset"));
 	GCode::resetBuffer();
 
-    Com::printFLN(PSTR("Line buffer reset"));
+    Com::printFLN(PSTR("Path planner reset"));
 	PrintLine::resetPathPlanner();
 
-    Printer::setMenuMode(MENU_MODE_SD_PRINTING,false);
-    Printer::setMenuMode(MENU_MODE_SD_PAUSED,false);
-    Com::printFLN(PSTR("SD print aborted."));
+    Com::printFLN(PSTR("Line buffer reset"));
+	PrintLine::resetLineBuffer();
 
 	HAL::allowInterrupts();
 
@@ -224,15 +233,22 @@ void SDCard::abortPrint()
 		Commands::checkForPeriodicalActions();
 	}
 
+    Com::printFLN(PSTR("Abort complete"));
+
 	HAL::forbidInterrupts();
     g_nMainDirectionX = 0;
     g_nMainDirectionY = 0;
     g_nMainDirectionZ = 0;
     g_nMainDirectionE = 0;
 
+	// we have to tell the firmware about its real current position
+    Printer::currentPositionSteps[X_AXIS] = Printer::nonCompensatedPositionStepsX;
+    Printer::currentPositionSteps[Y_AXIS] = Printer::nonCompensatedPositionStepsY;
+    Printer::currentPositionSteps[Z_AXIS] = Printer::nonCompensatedPositionStepsZ;
+	Printer::updateCurrentPosition();
+
 	HAL::allowInterrupts();
 
-	g_uStopTime = millis();
 }
 
 void SDCard::writeCommand(GCode *code)
@@ -462,6 +478,7 @@ void SDCard::printStatus()
         Com::printFLN(Com::tNotSDPrinting);
     }
 }
+
 void SDCard::startWrite(char *filename)
 {
     if(!sdactive) return;
@@ -491,7 +508,15 @@ void SDCard::finishWrite()
 void SDCard::deleteFile(char *filename)
 {
     if(!sdactive) return;
-    sdmode = false;
+
+	if(Printer::isMenuMode(MENU_MODE_SD_PRINTING))
+	{
+		// we do not allow to delete a file while we are printing/milling from the SD card
+		Com::printFLN(PSTR("It is not possible to delete a file from the SD card until the current processing has finished."));
+		return;
+	}
+
+	sdmode = false;
     file.close();
     if(fat.remove(filename))
     {

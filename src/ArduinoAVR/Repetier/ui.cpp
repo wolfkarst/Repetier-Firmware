@@ -989,7 +989,6 @@ UI_STRING(ui_text_off,UI_TEXT_OFF);
 UI_STRING(ui_text_na,UI_TEXT_NA);
 UI_STRING(ui_yes,UI_TEXT_YES);
 UI_STRING(ui_no,UI_TEXT_NO);
-UI_STRING(ui_print_pos,UI_TEXT_PRINT_POS);
 UI_STRING(ui_selected,UI_TEXT_SEL);
 UI_STRING(ui_unselected,UI_TEXT_NOSEL);
 UI_STRING(ui_action,UI_TEXT_STRING_ACTION);
@@ -1065,7 +1064,7 @@ void UIDisplay::parse(char *txt,bool ram)
 			if( Printer::operatingMode == OPERATING_MODE_CNC )
 			{
 				// we do not maintain temperatures in CNC mode
-				addStringP( PSTR( " n/a " ));
+				addStringP( PSTR( "   " ));
 				break;
 			}
 #endif // FEATURE_CNC_MODE > 0
@@ -1073,7 +1072,7 @@ void UIDisplay::parse(char *txt,bool ram)
             ivalue = UI_TEMP_PRECISION;
             if(Printer::flag0 & PRINTER_FLAG0_TEMPSENSOR_DEFECT)
             {
-                addStringP(PSTR(" def "));
+                addStringP(PSTR("def"));
                 break;
             }
             if(c2=='c') fvalue=Extruder::current->tempControl.currentTemperatureC;
@@ -1087,6 +1086,16 @@ void UIDisplay::parse(char *txt,bool ram)
             addFloat(fvalue,3,ivalue);
             break;
         case 'E': // Target extruder temperature
+
+#if FEATURE_CNC_MODE > 0
+			if( Printer::operatingMode == OPERATING_MODE_CNC )
+			{
+				// we do not maintain temperatures in CNC mode
+				addStringP( PSTR( "   " ));
+				break;
+			}
+#endif // FEATURE_CNC_MODE > 0
+
             if(c2=='c') fvalue=Extruder::current->tempControl.targetTemperatureC;
             else if(c2>='0' && c2<='9') fvalue=extruder[c2-'0'].tempControl.targetTemperatureC;
 #if HAVE_HEATED_BED
@@ -1133,7 +1142,19 @@ void UIDisplay::parse(char *txt,bool ram)
 #if SDSUPPORT
                 if(sd.sdactive && sd.sdmode)
                 {
+#if FEATURE_CNC_MODE
+					if( Printer::operatingMode == OPERATING_MODE_PRINT )
+					{
+	                    addStringP(PSTR(UI_TEXT_PRINT_POS));
+					}
+					else
+					{
+	                    addStringP(PSTR(UI_TEXT_CNC_POS));
+					}
+#else
                     addStringP(PSTR(UI_TEXT_PRINT_POS));
+#endif // FEATURE_CNC_MODE
+
                     unsigned long percent;
                     if(sd.filesize<20000000) percent=sd.sdpos*100/sd.filesize;
                     else percent = (sd.sdpos>>8)*100/(sd.filesize>>8);
@@ -2192,6 +2213,13 @@ void UIDisplay::okAction()
         case UI_ACTION_SD_DELETE:
             if(sd.sdactive)
             {
+				if(Printer::isMenuMode(MENU_MODE_SD_PRINTING))
+				{
+					// we do not allow to delete a file while we are printing/milling from the SD card
+					Com::printFLN(PSTR("It is not possible to delete a file from the SD card until the current processing has finished."));
+					break;
+				}
+
                 sd.sdmode = false;
                 sd.file.close();
                 if(sd.fat.remove(filename))
@@ -2919,7 +2947,7 @@ void UIDisplay::executeAction(int action)
 			}
             break;
         case UI_ACTION_DEBUG_ECHO:
-            if(Printer::debugEcho()) Printer::debugLevel-=1;
+			if(Printer::debugEcho()) Printer::debugLevel-=1;
             else Printer::debugLevel+=1;
             break;
         case UI_ACTION_DEBUG_INFO:
@@ -3123,10 +3151,12 @@ void UIDisplay::executeAction(int action)
             }
             break;
         case UI_ACTION_SD_PAUSE:
-            sd.pausePrint(true);
+            //sd.pausePrint(true);
+			pausePrint();
             break;
         case UI_ACTION_SD_CONTINUE:
-            sd.continuePrint();
+            //sd.continuePrint();
+			continuePrint();
             break;
         case UI_ACTION_SD_STOP:
             sd.abortPrint();

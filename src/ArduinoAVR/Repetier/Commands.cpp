@@ -847,12 +847,15 @@ void Commands::executeGCode(GCode *com)
             sd.startPrint();
             break;
         case 25: // M25 - Pause SD print
-            sd.pausePrint();
+            //sd.pausePrint();
+			pausePrint();
             break;
         case 26: // M26 - Set SD index
-            if(com->hasS())
+			Com::printFLN( PSTR( "M26: this command is not supported" ) );
+
+/*			if(com->hasS())
                 sd.setIndex(com->S);
-            break;
+*/            break;
         case 27: // M27 - Get SD status
             sd.printStatus();
             break;
@@ -902,153 +905,183 @@ void Commands::executeGCode(GCode *com)
             }
             break;
         case 104: // M104
+		{
+			if( isSupportedCommand( com->M, OPERATING_MODE_PRINT ) )
+			{
 #if NUM_EXTRUDER>0
-            if(reportTempsensorError()) break;
-            previousMillisCmd = HAL::timeInMilliseconds();
-            if(Printer::debugDryrun()) break;
+				if(reportTempsensorError()) break;
+				previousMillisCmd = HAL::timeInMilliseconds();
+				if(Printer::debugDryrun()) break;
 #ifdef EXACT_TEMPERATURE_TIMING
-            Commands::waitUntilEndOfAllMoves();
+	            Commands::waitUntilEndOfAllMoves();
 #else
-            if(com->hasP() || (com->hasS() && com->S == 0))
-                Commands::waitUntilEndOfAllMoves();
+					if(com->hasP() || (com->hasS() && com->S == 0))
+					Commands::waitUntilEndOfAllMoves();
 #endif
-            if (com->hasS())
-            {
-                if(com->hasT())
-                    Extruder::setTemperatureForExtruder(com->S,com->T,com->hasF() && com->F>0);
-                else
-                    Extruder::setTemperatureForExtruder(com->S,Extruder::current->id,com->hasF() && com->F>0);
-            }
+				if (com->hasS())
+				{
+					if(com->hasT())
+						Extruder::setTemperatureForExtruder(com->S,com->T,com->hasF() && com->F>0);
+					else
+						Extruder::setTemperatureForExtruder(com->S,Extruder::current->id,com->hasF() && com->F>0);
+				}
 #endif
+			}
             break;
+		}
         case 105: // M105 - get temperature. Always returns the current temperature, doesn't wait until move stopped
-            printTemperatures(com->hasX());
+		{
+			if( isSupportedCommand( com->M, OPERATING_MODE_PRINT, 0 ) )
+			{
+	            printTemperatures(com->hasX());
+			}
             break;
+		}
         case 140: // M140 - set bed temp
-            if(reportTempsensorError()) break;
-            previousMillisCmd = HAL::timeInMilliseconds();
-            if(Printer::debugDryrun()) break;
-            if (com->hasS()) Extruder::setHeatedBedTemperature(com->S,com->hasF() && com->F>0);
-            break;
-        case 109: // M109 - Wait for extruder heater to reach target.
-#if NUM_EXTRUDER>0
         {
-            if(reportTempsensorError()) break;
-            previousMillisCmd = HAL::timeInMilliseconds();
-            if(Printer::debugDryrun()) break;
-            UI_STATUS_UPD(UI_TEXT_HEATING_EXTRUDER);
-            Commands::waitUntilEndOfAllMoves();
-            Extruder *actExtruder = Extruder::current;
-            if(com->hasT() && com->T<NUM_EXTRUDER) actExtruder = &extruder[com->T];
-            if (com->hasS()) Extruder::setTemperatureForExtruder(com->S,actExtruder->id,com->hasF() && com->F>0);
-#if defined(SKIP_M109_IF_WITHIN) && SKIP_M109_IF_WITHIN>0
-            if(abs(actExtruder->tempControl.currentTemperatureC - actExtruder->tempControl.targetTemperatureC)<(SKIP_M109_IF_WITHIN)) break; // Already in range
-#endif
-            bool dirRising = actExtruder->tempControl.targetTemperature > actExtruder->tempControl.currentTemperature;
-            millis_t printedTime = HAL::timeInMilliseconds();
-            millis_t waituntil = 0;
-#if RETRACT_DURING_HEATUP
-            uint8_t retracted = 0;
-#endif
-            millis_t currentTime;
-            do
-            {
-#if FEATURE_WATCHDOG
-				HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
-				currentTime = HAL::timeInMilliseconds();
-                if( (currentTime - printedTime) > 1000 )   //Print Temp Reading every 1 second while heating up.
-                {
-                    printTemperatures();
-                    printedTime = currentTime;
-                }
-                Commands::checkForPeriodicalActions();
-                //GCode::readFromSerial();
-#if RETRACT_DURING_HEATUP
-                if (actExtruder == Extruder::current && actExtruder->waitRetractUnits > 0 && !retracted && dirRising && actExtruder->tempControl.currentTemperatureC > actExtruder->waitRetractTemperature)
-                {
-                    PrintLine::moveRelativeDistanceInSteps(0,0,0,-actExtruder->waitRetractUnits * Printer::axisStepsPerMM[E_AXIS],actExtruder->maxFeedrate,false,false);
-                    retracted = 1;
-                }
-#endif
-                if((waituntil == 0 &&
-                    (dirRising ? actExtruder->tempControl.currentTemperatureC >= actExtruder->tempControl.targetTemperatureC - 1 : actExtruder->tempControl.currentTemperatureC <= actExtruder->tempControl.targetTemperatureC+1))
-#if defined(TEMP_HYSTERESIS) && TEMP_HYSTERESIS>=1
-                        || (waituntil!=0 && (abs(actExtruder->tempControl.currentTemperatureC - actExtruder->tempControl.targetTemperatureC))>TEMP_HYSTERESIS)
-#endif
-                  )
-                {
-                    waituntil = currentTime+1000UL*(millis_t)actExtruder->watchPeriod; // now wait for temp. to stabalize
-                }
-            }
-            while(waituntil==0 || (waituntil!=0 && (millis_t)(waituntil-currentTime)<2000000000UL));
-#if RETRACT_DURING_HEATUP
-            if (retracted && actExtruder==Extruder::current)
-            {
-                PrintLine::moveRelativeDistanceInSteps(0,0,0,actExtruder->waitRetractUnits * Printer::axisStepsPerMM[E_AXIS],actExtruder->maxFeedrate,false,false);
-            }
-#endif
-        }
-        UI_CLEAR_STATUS;
-#endif
-        previousMillisCmd = HAL::timeInMilliseconds();
-        break;
-        case 190: // M190 - Wait bed for heater to reach target.
-#if HAVE_HEATED_BED
-            if(Printer::debugDryrun()) break;
-            UI_STATUS_UPD(UI_TEXT_HEATING_BED);
-            Commands::waitUntilEndOfAllMoves();
-#if HAVE_HEATED_BED
-            if (com->hasS()) Extruder::setHeatedBedTemperature(com->S,com->hasF() && com->F>0);
-#if defined(SKIP_M190_IF_WITHIN) && SKIP_M190_IF_WITHIN>0
-            if(abs(heatedBedController.currentTemperatureC-heatedBedController.targetTemperatureC)<SKIP_M190_IF_WITHIN) break;
-#endif
-            codenum = HAL::timeInMilliseconds();
-            while(heatedBedController.currentTemperatureC+0.5<heatedBedController.targetTemperatureC)
-            {
-#if FEATURE_WATCHDOG
-				HAL::pingWatchdog();
-#endif // FEATURE_WATCHDOG
-
-				if( (HAL::timeInMilliseconds()-codenum) > 1000 )   //Print Temp Reading every 1 second while heating up.
-                {
-                    printTemperatures();
-                    codenum = HAL::timeInMilliseconds();
-                }
-                Commands::checkForPeriodicalActions();
-            }
-#endif
-#endif
-            UI_CLEAR_STATUS;
-            previousMillisCmd = HAL::timeInMilliseconds();
+			if( isSupportedCommand( com->M, OPERATING_MODE_PRINT ) )
+			{
+				if(reportTempsensorError()) break;
+				previousMillisCmd = HAL::timeInMilliseconds();
+				if(Printer::debugDryrun()) break;
+				if (com->hasS()) Extruder::setHeatedBedTemperature(com->S,com->hasF() && com->F>0);
+			}
             break;
-        case 116: // M116 - Wait for temperatures to reach target temperature
-            if(Printer::debugDryrun()) break;
-            {
-                bool allReached = false;
-                codenum = HAL::timeInMilliseconds();
-                while(!allReached)
+		}
+        case 109: // M109 - Wait for extruder heater to reach target.
+        {
+			if( isSupportedCommand( com->M, OPERATING_MODE_PRINT ) )
+			{
+#if NUM_EXTRUDER>0
+				if(reportTempsensorError()) break;
+				previousMillisCmd = HAL::timeInMilliseconds();
+				if(Printer::debugDryrun()) break;
+				UI_STATUS_UPD(UI_TEXT_HEATING_EXTRUDER);
+				Commands::waitUntilEndOfAllMoves();
+				Extruder *actExtruder = Extruder::current;
+				if(com->hasT() && com->T<NUM_EXTRUDER) actExtruder = &extruder[com->T];
+				if (com->hasS()) Extruder::setTemperatureForExtruder(com->S,actExtruder->id,com->hasF() && com->F>0);
+#if defined(SKIP_M109_IF_WITHIN) && SKIP_M109_IF_WITHIN>0
+	            if(abs(actExtruder->tempControl.currentTemperatureC - actExtruder->tempControl.targetTemperatureC)<(SKIP_M109_IF_WITHIN)) break; // Already in range
+#endif
+				bool dirRising = actExtruder->tempControl.targetTemperature > actExtruder->tempControl.currentTemperature;
+				millis_t printedTime = HAL::timeInMilliseconds();
+				millis_t waituntil = 0;
+#if RETRACT_DURING_HEATUP
+				uint8_t retracted = 0;
+#endif // RETRACT_DURING_HEATUP
+				millis_t currentTime;
+				do
 				{
 #if FEATURE_WATCHDOG
 					HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
 
-					allReached = true;
-                    if( (HAL::timeInMilliseconds()-codenum) > 1000 )   //Print Temp Reading every 1 second while heating up.
-                    {
-                        printTemperatures();
-                        codenum = HAL::timeInMilliseconds();
-                    }
-                    Commands::checkForPeriodicalActions();
-                    for(uint8_t h=0;h<NUM_TEMPERATURE_LOOPS;h++) {
-                        TemperatureController *act = tempController[h];
-                        if(act->targetTemperatureC>30 && fabs(act->targetTemperatureC-act->currentTemperatureC)>1)
-                            allReached = false;
-                    }
-                }
-            }
+					currentTime = HAL::timeInMilliseconds();
+					if( (currentTime - printedTime) > 1000 )   //Print Temp Reading every 1 second while heating up.
+					{
+						printTemperatures();
+						printedTime = currentTime;
+					}
+					Commands::checkForPeriodicalActions();
+					//GCode::readFromSerial();
+#if RETRACT_DURING_HEATUP
+					if (actExtruder == Extruder::current && actExtruder->waitRetractUnits > 0 && !retracted && dirRising && actExtruder->tempControl.currentTemperatureC > actExtruder->waitRetractTemperature)
+					{
+						PrintLine::moveRelativeDistanceInSteps(0,0,0,-actExtruder->waitRetractUnits * Printer::axisStepsPerMM[E_AXIS],actExtruder->maxFeedrate,false,false);
+						retracted = 1;
+					}
+#endif // RETRACT_DURING_HEATUP
+					if((waituntil == 0 &&
+						(dirRising ? actExtruder->tempControl.currentTemperatureC >= actExtruder->tempControl.targetTemperatureC - 1 : actExtruder->tempControl.currentTemperatureC <= actExtruder->tempControl.targetTemperatureC+1))
+#if defined(TEMP_HYSTERESIS) && TEMP_HYSTERESIS>=1
+						 || (waituntil!=0 && (abs(actExtruder->tempControl.currentTemperatureC - actExtruder->tempControl.targetTemperatureC))>TEMP_HYSTERESIS)
+#endif
+					  )
+					{
+						waituntil = currentTime+1000UL*(millis_t)actExtruder->watchPeriod; // now wait for temp. to stabalize
+					}
+				}
+				while(waituntil==0 || (waituntil!=0 && (millis_t)(waituntil-currentTime)<2000000000UL));
+#if RETRACT_DURING_HEATUP
+				if (retracted && actExtruder==Extruder::current)
+				{
+					PrintLine::moveRelativeDistanceInSteps(0,0,0,actExtruder->waitRetractUnits * Printer::axisStepsPerMM[E_AXIS],actExtruder->maxFeedrate,false,false);
+				}
+#endif // RETRACT_DURING_HEATUP
+#endif // NUM_EXTRUDER>0
+			}
+
+			UI_CLEAR_STATUS;
+			previousMillisCmd = HAL::timeInMilliseconds();
+			break;
+        }
+        case 190: // M190 - Wait bed for heater to reach target.
+        {
+			if( isSupportedCommand( com->M, OPERATING_MODE_PRINT ) )
+			{
+#if HAVE_HEATED_BED
+				if(Printer::debugDryrun()) break;
+				UI_STATUS_UPD(UI_TEXT_HEATING_BED);
+				Commands::waitUntilEndOfAllMoves();
+#if HAVE_HEATED_BED
+            if (com->hasS()) Extruder::setHeatedBedTemperature(com->S,com->hasF() && com->F>0);
+#if defined(SKIP_M190_IF_WITHIN) && SKIP_M190_IF_WITHIN>0
+            if(abs(heatedBedController.currentTemperatureC-heatedBedController.targetTemperatureC)<SKIP_M190_IF_WITHIN) break;
+#endif
+				codenum = HAL::timeInMilliseconds();
+				while(heatedBedController.currentTemperatureC+0.5<heatedBedController.targetTemperatureC)
+				{
+#if FEATURE_WATCHDOG
+					HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+					if( (HAL::timeInMilliseconds()-codenum) > 1000 )   //Print Temp Reading every 1 second while heating up.
+					{
+						printTemperatures();
+						codenum = HAL::timeInMilliseconds();
+					}
+					Commands::checkForPeriodicalActions();
+				}
+#endif
+#endif
+			}
+
+			UI_CLEAR_STATUS;
+			previousMillisCmd = HAL::timeInMilliseconds();
+			break;
+		}
+        case 116: // M116 - Wait for temperatures to reach target temperature
+        {
+			if( isSupportedCommand( com->M, OPERATING_MODE_PRINT ) )
+			{
+				if(Printer::debugDryrun()) break;
+				{
+					bool allReached = false;
+					codenum = HAL::timeInMilliseconds();
+					while(!allReached)
+					{
+#if FEATURE_WATCHDOG
+						HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+						allReached = true;
+						if( (HAL::timeInMilliseconds()-codenum) > 1000 )   //Print Temp Reading every 1 second while heating up.
+						{
+							printTemperatures();
+							codenum = HAL::timeInMilliseconds();
+						}
+						Commands::checkForPeriodicalActions();
+						for(uint8_t h=0;h<NUM_TEMPERATURE_LOOPS;h++) {
+							TemperatureController *act = tempController[h];
+							if(act->targetTemperatureC>30 && fabs(act->targetTemperatureC-act->currentTemperatureC)>1)
+								allReached = false;
+						}
+					}
+				}
+			}
             break;
+		}
 #if FEATURE_DITTO_PRINTING
         case 280:	// M280
             if(com->hasS())   // Set ditto mode S: 0 = off, 1 = on
@@ -1073,16 +1106,19 @@ void Commands::executeGCode(GCode *com)
 #endif
         case 303:	// M303
         {
+			if( isSupportedCommand( com->M, OPERATING_MODE_PRINT ) )
+			{
 #if defined(TEMP_PID) && NUM_TEMPERATURE_LOOPS>0
-            int temp = 150;
-            int cont = 0;
-            if(com->hasS()) temp = com->S;
-            if(com->hasP()) cont = com->P;
-            if(cont>=NUM_TEMPERATURE_LOOPS) cont = NUM_TEMPERATURE_LOOPS;
-            tempController[cont]->autotunePID(temp,cont,com->hasX());
+				int temp = 150;
+				int cont = 0;
+				if(com->hasS()) temp = com->S;
+				if(com->hasP()) cont = com->P;
+				if(cont>=NUM_TEMPERATURE_LOOPS) cont = NUM_TEMPERATURE_LOOPS;
+				tempController[cont]->autotunePID(temp,cont,com->hasX());
 #endif
-        }
-        break;
+			}
+			break;
+		}
 #if FAN_PIN>-1 && FEATURE_FAN_CONTROL
         case 106:	// M106 - Fan On
             setFanSpeed(com->hasS()?com->S:255,com->hasP());
@@ -1130,7 +1166,9 @@ void Commands::executeGCode(GCode *com)
                 maxInactiveTime = 0;
             break;
         case 92:	// M92
-            if(com->hasX()) Printer::axisStepsPerMM[0] = com->X;
+			Com::printFLN( PSTR( "M92: this command is not supported" ) );
+
+/*			if(com->hasX()) Printer::axisStepsPerMM[0] = com->X;
             if(com->hasY()) Printer::axisStepsPerMM[1] = com->Y;
             if(com->hasZ()) Printer::axisStepsPerMM[2] = com->Z;
             Printer::updateDerivedParameter();
@@ -1139,7 +1177,7 @@ void Commands::executeGCode(GCode *com)
                 Extruder::current->stepsPerMM = com->E;
                 Extruder::selectExtruderById(Extruder::current->id);
             }
-            break;
+*/			break;
         case 99:	// M99 S<time>
             {
                 millis_t wait = 10000;
@@ -1172,7 +1210,10 @@ void Commands::executeGCode(GCode *com)
             }
             break;
         case 111:	// M111
-            if(com->hasS()) Printer::debugLevel = com->S;
+            if(com->hasS())
+			{
+				Printer::debugLevel = com->S;
+			}
             if(Printer::debugDryrun())   // simulate movements without printing
             {
                 Extruder::setTemperatureForExtruder(0,0);
@@ -1278,33 +1319,41 @@ void Commands::executeGCode(GCode *com)
             break;
 #endif
         case 203:	// M203 - Temperature monitor
-            if(com->hasS())
-            {
-                if(com->S<NUM_EXTRUDER) manageMonitor = com->S;
+        {
+			if( isSupportedCommand( com->M, OPERATING_MODE_PRINT ) )
+			{
+				if(com->hasS())
+				{
+					if(com->S<NUM_EXTRUDER) manageMonitor = com->S;
 #if HAVE_HEATED_BED
-                else manageMonitor=NUM_EXTRUDER; // Set 100 to heated bed
+					else manageMonitor=NUM_EXTRUDER; // Set 100 to heated bed
 #endif
-            }
+				}
+			}
             break;
+		}
         case 204:	// M204
         {
-            TemperatureController *temp = &Extruder::current->tempControl;
-            if(com->hasS())
-            {
-                if(com->S<0) break;
-                if(com->S<NUM_EXTRUDER) temp = &extruder[com->S].tempControl;
+			if( isSupportedCommand( com->M, OPERATING_MODE_PRINT ) )
+			{
+				TemperatureController *temp = &Extruder::current->tempControl;
+				if(com->hasS())
+				{
+					if(com->S<0) break;
+					if(com->S<NUM_EXTRUDER) temp = &extruder[com->S].tempControl;
 #if HAVE_HEATED_BED
-                else temp = &heatedBedController;
+					else temp = &heatedBedController;
 #else
-                else break;
+					else break;
 #endif
-            }
-            if(com->hasX()) temp->pidPGain = com->X;
-            if(com->hasY()) temp->pidIGain = com->Y;
-            if(com->hasZ()) temp->pidDGain = com->Z;
-            temp->updateTempControlVars();
-        }
-        break;
+				}
+				if(com->hasX()) temp->pidPGain = com->X;
+				if(com->hasY()) temp->pidIGain = com->Y;
+				if(com->hasZ()) temp->pidDGain = com->Z;
+				temp->updateTempControlVars();
+			}
+			break;
+		}
         case 503:	// M503
         case 205:	// M205 - Show EEPROM settings
             EEPROM::writeSettings();
@@ -1475,6 +1524,8 @@ void Commands::executeGCode(GCode *com)
 
         case 251:	// M251
 		{
+			Com::printFLN( PSTR( "M251: this command is not supported" ) );
+/*
 			char	nProcess = 0;
 
 
@@ -1497,7 +1548,7 @@ void Commands::executeGCode(GCode *com)
 			{
 				setZOrigin();
 			}
-		    break;
+*/		    break;
 		}
 
 #ifdef DEBUG_QUEUE_MOVE

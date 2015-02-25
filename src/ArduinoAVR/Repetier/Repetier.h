@@ -261,7 +261,8 @@ usage or for seraching for memory induced errors. Switch it off for production, 
 #define MENU_MODE_SD_PAUSED		 4
 #define MENU_MODE_FAN_RUNNING	 8
 #define MENU_MODE_PRINTING		16
-#define MENU_MODE_PRINTER		32	// we have to show either the printer or the miller menu
+#define MENU_MODE_PRINTER		32	// we have to show the printer menu
+#define	MENU_MODE_MILLER		64	// we have to show the miller menu
 
 #include "HAL.h"
 #include "gcode.h"
@@ -437,8 +438,8 @@ public:
   void mount();
   void unmount();
   void startPrint();
-  void pausePrint(bool intern = false);
-  void continuePrint(bool intern=false);
+//  void pausePrint(bool intern = false);
+//  void continuePrint(bool intern=false);
   void abortPrint();
   inline void setIndex(uint32_t  newpos) { if(!sdactive) return; sdpos = newpos;file.seekSet(sdpos);}
   void printStatus();

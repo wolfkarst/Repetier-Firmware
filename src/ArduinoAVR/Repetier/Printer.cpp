@@ -1399,7 +1399,7 @@ void Printer::homeZAxis()
         g_nZScanZPosition			 = 0;
         nonCompensatedPositionStepsZ = currentPositionSteps[Z_AXIS];
 
-        PrintLine::queueTask( TASK_INIT_Z_COMPENSATION );
+        queueTask( TASK_INIT_Z_COMPENSATION );
 #endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
 
 #if FEATURE_FIND_Z_ORIGIN
