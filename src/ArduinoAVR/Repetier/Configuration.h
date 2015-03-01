@@ -58,7 +58,7 @@ To override EEPROM settings with config settings, set EEPROM_MODE 0
 /** Define whether the CNC functionality shall be allowed.
 0 = do not support the CNC mode
 1 = experimental, do not use this value (support the CNC mode, only the endstop at z-min is present)
-2 = support the CNC mode, the endstops at z-min and z-max are in one circle
+2 = support the CNC mode, the endstops at z-min and z-max are in one circuit
 */
 #define	FEATURE_CNC_MODE		2
 
