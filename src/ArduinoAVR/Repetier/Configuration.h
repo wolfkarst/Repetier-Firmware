@@ -60,7 +60,7 @@ To override EEPROM settings with config settings, set EEPROM_MODE 0
 1 = experimental, do not use this value (support the CNC mode, only the endstop at z-min is present)
 2 = support the CNC mode, the endstops at z-min and z-max are in one circuit
 */
-#define	FEATURE_CNC_MODE		2
+#define	FEATURE_CNC_MODE		0
 
 /** Define the type of the present extruders */
 #define EXT0_HOTEND_TYPE		HOTEND_TYPE_2
@@ -1781,7 +1781,7 @@ Enabling of the following feature can be dangerous because it allows to manually
 
 /** \brief Enables debug outputs from the search of the z-origin
 */
-#define DEBUG_FIND_Z_ORIGIN					0													// 1 = on, 0 = off
+#define DEBUG_FIND_Z_ORIGIN							0													// 1 = on, 0 = off
 
 #endif // FEATURE_FIND_Z_ORIGIN
 
@@ -1803,11 +1803,14 @@ Enabling of the following feature can be dangerous because it allows to manually
 #endif // FEATURE_CNC_MODE > 0
 
 
+#define	DEBUG_COMMAND_PEEK							0
+
+
 /** \brief Printer name and firmware version
 */
 #define UI_PRINTER_NAME "RF1000"
 #define UI_PRINTER_COMPANY "Conrad SE"
-#define UI_VERSION_STRING "V " REPETIER_VERSION ".53"
+#define UI_VERSION_STRING "V " REPETIER_VERSION ".55"
 
 
 #endif

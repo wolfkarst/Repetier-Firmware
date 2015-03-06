@@ -5,19 +5,16 @@ Based on Repetier-Firmware - the fast and user friendly firmware.
 
 The firmware is compiled and downloaded with Arduino V 1.0.5 or later.
 
-## Version 0.91.53 (2015-02-25)
+## Version 0.91.55 (2015-03-06)
 
 * This is the development branch on base of the V 0.91.52 stable release.
 * It may contain more features than the master branch but it also can be less stable.
 
 ## Printing and milling
 
-This version of the firmware can be used as pure printer firmware or as firmware that can be switched between the operating modes "print" and "mill" (= the current default).
-In order to disable the support for milling, FEATURE_CNC_MODE must be set to "0".
+This version of the firmware can be used as pure printer firmware or as firmware that can be switched between the operating modes "print" (= the current default) and "mill".
+In order to enable the support for milling, FEATURE_CNC_MODE must be set to "2".
 The default operating mode can be configured via DEFAULT_OPERATING_MODE.
-The value of the MILLER_TYPE within Configuration.h must be configured to your hardware configuration:
-* Set this value to MILLER_TYPE_1 in case your hardware uses 1 track in x- and y-direction.
-* Set this value to MILLER_TYPE_2 in case your hardware uses 2 tracks in x- and y-direction.
 
 ## Documentation
 

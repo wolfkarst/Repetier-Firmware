@@ -72,7 +72,7 @@ void Extruder::manageTemperatures()
 		// we do not check temperatures in case we are not in operating mode print
 		return;
 	}
-#endif FEATURE_CNC_MODE > 0
+#endif // FEATURE_CNC_MODE > 0
 
     uint8_t errorDetected = 0;
     for(uint8_t controller=0; controller<NUM_TEMPERATURE_LOOPS; controller++)

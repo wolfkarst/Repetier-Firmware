@@ -1368,6 +1368,17 @@ void Printer::homeZAxis()
 	{
         UI_STATUS_UPD(UI_TEXT_HOME_Z);
 
+#if FEATURE_FIND_Z_ORIGIN
+		g_nZOriginXPosition = 0;
+		g_nZOriginYPosition = 0;
+		g_nZOriginZPosition = 0;
+#endif // FEATURE_FIND_Z_ORIGIN
+
+#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
+        targetPositionStepsZ  = 0;
+        currentPositionStepsZ = 0;
+#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
+
 		steps = (zMaxSteps - zMinSteps) * nHomeDir;
         currentPositionSteps[Z_AXIS] = -steps;
         PrintLine::moveRelativeDistanceInSteps(0,0,2*steps,0,homingFeedrate[2],true,true);
@@ -1401,17 +1412,6 @@ void Printer::homeZAxis()
 
         queueTask( TASK_INIT_Z_COMPENSATION );
 #endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
-
-#if FEATURE_FIND_Z_ORIGIN
-		g_nZOriginXPosition = 0;
-		g_nZOriginYPosition = 0;
-		g_nZOriginZPosition = 0;
-#endif // FEATURE_FIND_Z_ORIGIN
-
-#if FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
-        targetPositionStepsZ  = 0;
-        currentPositionStepsZ = 0;
-#endif // FEATURE_EXTENDED_BUTTONS || FEATURE_PAUSE_PRINTING
 
 		// show that we are active
 		previousMillisCmd = HAL::timeInMilliseconds();

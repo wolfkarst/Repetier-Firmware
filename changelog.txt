@@ -1,3 +1,17 @@
+V 0.91.55 (2015-03-06)
+- While a heat bed scan, work part scan or the finding of the origin is in progress, the following commands are ignored (except of an according log entry):
+  - G0
+  - G1
+  - G2
+  - G3
+  - G28
+- Sending of these commands could have a serious impact onto the ongoing scan/search because they could interfere with the movements from the scan/search.
+- The ongoing heat bed scan / work part scan can be aborted faster now (e.g. through M3010).
+- Fixing of a compiler error in case FEATURE_WORK_PART_Z_COMPENSATION was not enabled.
+- The default value for FEATURE_CNC_MODE has been changed to 0 (= the CNC mode is not supported).
+  - This change is a security measure because it is not known yet why the z-min endstops of multiple users were destroyed through after the upgrade to V 0.91.53.
+  - For users which want to use the milling functionality of the RF1000 it is still possible to switch FEATURE_CNC_MODE back to 2.
+
 V 0.91.53 (2015-02-25)
 - Redefinition of prog_char in order to allow to compile the sources also with Arduino V 1.6.0.
   - This version of Arduino outputs a warning about "Low memory available" available memory, but this warning is misguided and can be ignored.

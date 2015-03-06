@@ -755,7 +755,15 @@ public:
     }
     static inline bool isAnyTempsensorDefect()
     {
-        return (flag0 & PRINTER_FLAG0_TEMPSENSOR_DEFECT);
+#if FEATURE_CNC_MODE > 0
+		if( Printer::operatingMode != OPERATING_MODE_PRINT )
+		{
+			// we do not support temperature sensors in case we are not in operating mode print
+			return 0;
+		}
+#endif // FEATURE_CNC_MODE > 0
+
+		return (flag0 & PRINTER_FLAG0_TEMPSENSOR_DEFECT);
     }
     static inline bool isManualMoveMode()
     {

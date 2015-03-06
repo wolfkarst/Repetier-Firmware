@@ -34,11 +34,15 @@ void Commands::commandLoop()
 #endif
 
         GCode::readFromSerial();
-        GCode *code = GCode::peekCurrentCommand();
+		GCode *code = GCode::peekCurrentCommand();
         //UI_SLOW; // do longer timed user interface action
         UI_MEDIUM; // do check encoder
         if(code)
         {
+#if DEBUG_COMMAND_PEEK
+			Com::printFLN( PSTR( "commandLoop(): peek" ) );
+#endif // DEBUG_COMMAND_PEEK
+
 #if SDSUPPORT
             if(sd.savetosd)
             {
@@ -135,6 +139,10 @@ void Commands::waitUntilEndOfAllBuffers()
         UI_MEDIUM; // do check encoder
         if(code)
         {
+#if DEBUG_COMMAND_PEEK
+			Com::printFLN( PSTR( "waitUntilEndOfAllBuffers(): peek" ) );
+#endif // DEBUG_COMMAND_PEEK
+
 #if SDSUPPORT
             if(sd.savetosd)
             {
@@ -417,7 +425,20 @@ void Commands::executeGCode(GCode *com)
         switch(com->G)
         {
         case 0: // G0 -> G1
+		{
+			if(!isMovingAllowed(PSTR("G0")))
+			{
+				break;
+			}
+			
+			// fall through
+		}
         case 1: // G1
+			if(!isMovingAllowed(PSTR("G1")))
+			{
+				break;
+			}
+
             if(com->hasS())
                 Printer::setNoDestinationCheck(com->S!=0);
             if(Printer::setDestinationStepsFromGCode(com)) // For X Y Z E F
@@ -429,8 +450,21 @@ void Commands::executeGCode(GCode *com)
             break;
 #if ARC_SUPPORT
         case 2: // G2 - CW Arc
+		{
+			if(!isMovingAllowed(PSTR("G2")))
+			{
+				break;
+			}
+			
+			// fall through
+		}
         case 3: // G3 - CCW Arc MOTION_MODE_CW_ARC: case MOTION_MODE_CCW_ARC:
         {
+			if(!isMovingAllowed(PSTR("G3")))
+			{
+				break;
+			}
+
             float position[3];
             Printer::realPosition(position[X_AXIS],position[Y_AXIS],position[Z_AXIS]);
             if(!Printer::setDestinationStepsFromGCode(com)) break; // For X Y Z E F
@@ -574,6 +608,11 @@ void Commands::executeGCode(GCode *com)
             break;
         case 28:  //G28 - Home all Axis one at a time
         {
+			if(!isMovingAllowed(PSTR("G28")))
+			{
+				break;
+			}
+
             uint8_t home_all_axis = (com->hasNoXYZ() && !com->hasE());
             if(com->hasE())
             {

@@ -284,13 +284,10 @@ void scanHeatBed( void )
 	if( g_abortZScan )
 	{
 		// the scan has been aborted
-		g_abortZScan		  = 0;
-		g_nHeatBedScanStatus  = 0;
-		g_nZScanZPosition	  = 0;
-		g_nLastZScanZPosition = 0;
+		g_abortZScan = 0;
 
 		// avoid to crash the extruder against the heat bed during the following homing
-		g_nZScanZPosition += moveZ( ZAXIS_STEPS_PER_MM *2 );
+		g_nZScanZPosition += moveZ( ZAXIS_STEPS_PER_MM *5 );
 
 		// start at the home position
 		Printer::homeAxis( true, true, true );
@@ -318,6 +315,10 @@ void scanHeatBed( void )
 			// there is no valid compensation matrix available
 			initCompensationMatrix();
 		}
+
+		g_nHeatBedScanStatus  = 0;
+		g_nZScanZPosition	  = 0;
+		g_nLastZScanZPosition = 0;
 		return;
 	}
 
@@ -682,7 +683,7 @@ void scanHeatBed( void )
 			case 60:
 			{
 				// avoid to crash the extruder against the heat bed during the following homing
-				g_nZScanZPosition += moveZ( ZAXIS_STEPS_PER_MM *2 );
+				g_nZScanZPosition += moveZ( ZAXIS_STEPS_PER_MM *5 );
 
 				// move back to the home position
 				Printer::homeAxis( true, true, true);
@@ -1087,10 +1088,7 @@ void scanWorkPart( void )
 	if( g_abortZScan )
 	{
 		// the scan has been aborted
-		g_abortZScan		  = 0;
-		g_nWorkPartScanStatus = 0;
-		g_nZScanZPosition	  = 0;
-		g_nLastZScanZPosition = 0;
+		g_abortZScan = 0;
 
 		// start at the home position
 		if( g_nWorkPartScanMode )
@@ -1124,6 +1122,10 @@ void scanWorkPart( void )
 			// there is no valid compensation matrix available
 			initCompensationMatrix();
 		}
+
+		g_nWorkPartScanStatus = 0;
+		g_nZScanZPosition	  = 0;
+		g_nLastZScanZPosition = 0;
 		return;
 	}
 
@@ -1301,6 +1303,11 @@ void scanWorkPart( void )
 						// do not stay within this loop forever
 						return;
 					}
+
+					if( g_abortZScan )
+					{
+						break;
+					}
 				}
 
 				// we should never end up here
@@ -1360,6 +1367,11 @@ void scanWorkPart( void )
 					{
 						// do not stay within this loop forever
 						return;
+					}
+
+					if( g_abortZScan )
+					{
+						break;
 					}
 				}
 
@@ -2409,6 +2421,8 @@ int moveZ( int nSteps )
 {
 	int		i;
 	int		nMaxLoops;
+	char	bBreak;
+	char	nRun = 1;
 	
 
 	// Warning: this function does not check any end stops
@@ -2449,6 +2463,38 @@ int moveZ( int nSteps )
 	// perform the steps
 	for( i=0; i<nMaxLoops; i++ )
 	{
+		bBreak = 0;
+		nRun   --;
+
+		if( !nRun )
+		{
+			// process the standard commands from time to time also while the moving in z-direction is in progress
+			runStandardTasks();
+			nRun = 10;
+		}
+
+#if FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
+		if( g_abortZScan )
+		{
+			bBreak = 1;
+		}
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION || FEATURE_WORK_PART_Z_COMPENSATION
+		
+#if FEATURE_FIND_Z_ORIGIN
+		if( g_abortSearch )
+		{
+			bBreak = 1;
+		}
+#endif // FEATURE_FIND_Z_ORIGIN
+
+		if( bBreak )
+		{
+			// do not continue here in case the current operation has been cancelled
+			if( nSteps > 0 )	nSteps = nMaxLoops;
+			else				nSteps = -nMaxLoops;
+			break;
+		}
+
 #if FEATURE_WATCHDOG
 		HAL::pingWatchdog();
 #endif // FEATURE_WATCHDOG
@@ -3130,10 +3176,15 @@ char loadCompensationMatrix( unsigned int uAddress )
 #endif // FEATURE_CNC_MODE == 2
 	}
 
-	if( Printer::debugErrors() )
+#if FEATURE_WORK_PART_Z_COMPENSATION && FEATURE_CNC_MODE == 2
+	if( Printer::operatingMode == OPERATING_MODE_CNC )
 	{
-		Com::printFLN( PSTR( "loadCompensationMatrix(): active work part: " ), (int)g_nActiveWorkPart );
+		if( Printer::debugErrors() )
+		{
+			Com::printFLN( PSTR( "loadCompensationMatrix(): active work part: " ), (int)g_nActiveWorkPart );
+		}
 	}
+#endif // FEATURE_WORK_PART_Z_COMPENSATION && FEATURE_CNC_MODE == 2
 
 	// check the stored sector format
 	uTemp = readWord24C256( I2C_ADDRESS_EXTERNAL_EEPROM, uAddress + EEPROM_OFFSET_SECTOR_FORMAT );
@@ -6203,7 +6254,12 @@ void runStandardTasks( void )
 	pCode = GCode::peekCurrentCommand();
 	if( pCode )
 	{
+#if DEBUG_COMMAND_PEEK
+		Com::printFLN( PSTR( "runStandardTasks(): peek" ) );
+#endif // DEBUG_COMMAND_PEEK
+
 		Commands::executeGCode( pCode );
+		pCode->popCurrentCommand();
 	}
     Commands::checkForPeriodicalActions(); 
 	return;
@@ -7195,6 +7251,11 @@ void findZOrigin( void )
 						// do not stay within this loop forever
 						return;
 					}
+
+					if( g_abortSearch )
+					{
+						break;
+					}
 				}
 
 				// we should never end up here
@@ -7241,6 +7302,11 @@ void findZOrigin( void )
 					{
 						// do not stay within this loop forever
 						return;
+					}
+
+					if( g_abortSearch )
+					{
+						break;
 					}
 				}
 
@@ -7655,6 +7721,53 @@ unsigned char isSupportedCommand( unsigned int currentMCode, char neededMode, ch
 	return 0;
 
 } // isSupportedCommand
+
+
+unsigned char isMovingAllowed( const char* pszCommand, char outputLog )
+{
+#if FEATURE_HEAT_BED_Z_COMPENSATION
+	if( g_nHeatBedScanStatus )
+	{
+		// do not allow manual movements while the heat bed scan is in progress
+		if( Printer::debugErrors() && outputLog )
+		{
+			Com::printF( pszCommand );
+			Com::printFLN( PSTR( ": this command can not be used while the heat bed scan is in progress" ) );
+		}
+		return 0;
+	}
+#endif // FEATURE_HEAT_BED_Z_COMPENSATION
+		
+#if FEATURE_WORK_PART_Z_COMPENSATION
+	if( g_nWorkPartScanStatus )
+	{
+		// do not allow manual movements while the work part scan is in progress
+		if( Printer::debugErrors() && outputLog )
+		{
+			Com::printF( pszCommand );
+			Com::printFLN( PSTR( ": this command can not be used while the work part scan is in progress" ) );
+		}
+		return 0;
+	}
+#endif // FEATURE_WORK_PART_Z_COMPENSATION
+		
+#if FEATURE_FIND_Z_ORIGIN
+	if( g_nFindZOriginStatus )
+	{
+		// do not allow manual movements while the z-origin is searched
+		if( Printer::debugErrors() && outputLog )
+		{
+			Com::printF( pszCommand );
+			Com::printFLN( PSTR( ": this command can not be used while the z-origin is searched" ) );
+		}
+		return 0;
+	}
+#endif // FEATURE_FIND_Z_ORIGIN
+
+	// we allow the manual movements at the moment
+	return 1;
+
+} // isMovingAllowed
 
 
 void showInvalidSyntax( unsigned int currentMCode )

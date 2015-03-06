@@ -552,5 +552,8 @@ extern void resetZCompensation( void );
 // isSupportedCommand()
 extern unsigned char isSupportedCommand( unsigned int currentMCode, char neededMode, char outputLog = 1 );
 
+// isMovingAllowed()
+extern unsigned char isMovingAllowed( const char* pszCommand, char outputLog = 1 );
+
 // showInvalidSyntax()
 extern void showInvalidSyntax( unsigned int currentMCode );
