@@ -1142,7 +1142,7 @@ is always running and is not hung up for some unknown reason. */
 
 /* Define a pin to turn the case fan on/off */
 #define	CASE_FAN_PIN				 9	// PINH.6, 18, HZ2
-#define	CASE_FAN_ON_TEMPERATURE		50	// °C
+#define	CASE_FAN_ON_TEMPERATURE		50	// ï¿½C
 #define	CASE_FAN_OFF_DELAY		 60000	// [ms]
 
 /* Enable the following define for applications where the case fan shall always be on */
@@ -1298,7 +1298,7 @@ Values must be in range 1..255
 #define FEATURE_EXTENDED_BUTTONS			1													// 1 = on, 0 = off
 #define EXTENDED_BUTTONS_COUNTER_NORMAL		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
 #define EXTENDED_BUTTONS_COUNTER_FAST		4													// 39 ~ run 100 times per second, 4 ~ run 1000 times per second
-#define	EXTENDED_BUTTONS_STEPPER_DELAY		1													// [µs]
+#define	EXTENDED_BUTTONS_STEPPER_DELAY		1													// [ï¿½s]
 
 #define	EXTENDED_BUTTONS_Z_MIN				-(ZAXIS_STEPS_PER_MM *2)							// [steps]
 #define	EXTENDED_BUTTONS_Z_MAX				long(ZAXIS_STEPS_PER_MM * (Z_MAX_LENGTH -2))		// [steps]
@@ -1390,13 +1390,13 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Enables/disables the park feature
 */
-#define FEATURE_PARK						0													// 1 = on, 0 = off
+#define FEATURE_PARK						1													// 1 = on, 0 = off
 
 /** \brief Specifies the park position, in [mm]
 */
 #if FEATURE_PARK
-#define PARK_POSITION_X						0
-#define	PARK_POSITION_Y						120
+#define PARK_POSITION_X						125
+#define	PARK_POSITION_Y						140
 #define	PARK_POSITION_Z						175
 #endif // FEATURE_PARK
 
