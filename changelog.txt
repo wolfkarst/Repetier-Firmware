@@ -1,6 +1,6 @@
 V 0.91.48-wkd (2015-05-07 ff..)
 - Feature Parkposition in Mitte von Heatbeat für Wartungszwecke aktiviert
-
+- Anzeige Datum und Uhrzeit der letzten Compilierung beim Einschalten
 
 
 V 0.91.48 (2014-11-24)

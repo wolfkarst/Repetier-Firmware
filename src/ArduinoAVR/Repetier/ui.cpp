@@ -814,9 +814,14 @@ void UIDisplay::initialize()
 #endif
         for(uint8_t y=0; y<UI_ROWS; y++) displayCache[y][0] = 0;
         printRowP(0, versionString);
-        printRowP(1, PSTR(UI_PRINTER_NAME));
+        printRowP(1, PSTR(__DATE__));
 #if UI_ROWS>2
-        printRowP(UI_ROWS-1, PSTR(UI_PRINTER_COMPANY));
+        printRowP(2, PSTR(__TIME__));
+//        printRowP(2, PSTR(UI_PRINTER_NAME));
+#endif
+#if UI_ROWS>3
+        printRowP(3, PSTR(UI_PRINTER_NAME));
+//        printRowP(3, PSTR(UI_PRINTER_COMPANY));
 #endif
 #if UI_DISPLAY_TYPE == 5
     }
