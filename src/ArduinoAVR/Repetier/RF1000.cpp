@@ -96,6 +96,7 @@ long			g_nContinueStepsExtruder	= 0;
 char			g_pausePrint				= 0;
 char			g_printingPaused			= 0;
 unsigned long	g_uPauseTime				= 0;
+unsigned long	g_uEmergPauseTime		= 0;
 char			g_pauseBeepDone				= 0;
 #endif // FEATURE_PAUSE_PRINTING
 
@@ -2039,7 +2040,7 @@ void loopRF1000( void )
 #endif // FEATURE_Z_COMPENSATION
 
 #if FEATURE_PAUSE_PRINTING
-	if( g_uPauseTime )
+	if( g_uPauseTime || g_uEmergPauseTime)
 	{
 		if( !g_pauseBeepDone )
 		{
@@ -2050,7 +2051,7 @@ void loopRF1000( void )
 		if( g_pausePrint )
 		{
 #if EXTRUDER_CURRENT_PAUSE_DELAY
-			if( (uTime - g_uPauseTime) > EXTRUDER_CURRENT_PAUSE_DELAY )
+			if( g_uPauseTime && (uTime - g_uPauseTime) > EXTRUDER_CURRENT_PAUSE_DELAY )
 			{
 				// we have paused a few moments ago - reduce the current of the extruder motor in order to avoid unwanted heating of the filament for use cases where the printing is paused for several minutes
 /*				Com::printF( PSTR( "loopRF1000(): PauseTime = " ), g_uPauseTime );
@@ -2058,19 +2059,22 @@ void loopRF1000( void )
 				Com::printFLN( PSTR( ", Diff = " ), uTime - g_uPauseTime );
 */
 				setExtruderCurrent( EXTRUDER_CURRENT_PAUSED );
-//				g_uPauseTime = 0;
+				g_uPauseTime = 0;
 			}
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
-                        if( ((uTime - g_uPauseTime) > 3000.0) &&
-                        {
-                            g_uPauseTime=uTime;
-                            g_pauseBeepDone=0;
+#if EMERGENCY_PAUSE_BEEPS
+                       if( g_uEmergPauseTime && (uTime - g_uEmergPauseTime) > EMERGENCY_PAUSE_BEEPS)
+                       {
+                           g_uEmergPauseTime=uTime;
+                           g_pauseBeepDone=0;
                         }
+#endif // EMERGENCY_PAUSE_BEEPS
 		}
 		else
 		{
 			// we are not paused any more
 			g_uPauseTime = 0;
+                        g_uEmergPauseTime=0;
 		}
 	}
 #endif // FEATURE_PAUSE_PRINTING
@@ -2108,6 +2112,7 @@ void loopRF1000( void )
 
 					pausePrint();
 					pausePrint();
+                                        g_uEmergPauseTime=uTime;
 				}
 			}
 		}

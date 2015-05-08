@@ -1442,7 +1442,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Repeating Pause Beep
 */
-#define    EMERGENCY_PAUSE_BEEPS				5000
+#define    EMERGENCY_PAUSE_BEEPS				2000
 
 /** \brief Specifies the time interval after the pausing of the print at which the extruder current is reduced
 */
