@@ -2110,9 +2110,9 @@ void loopRF1000( void )
 						Com::printFLN( PSTR( " / " ), PrintLine::linesCount );
 					}
 
-					pausePrint();
-					pausePrint();
                                         g_uEmergPauseTime=uTime;
+					pausePrint();
+					pausePrint();
 				}
 			}
 		}
@@ -2470,7 +2470,11 @@ void pausePrint( void )
 			{
 				Com::printFLN( PSTR( "pausePrint(): the printing has been paused" ) );
 			}
-		    UI_STATUS(UI_TEXT_PAUSED);
+                        if( g_uEmergPauseTime ) {
+                                UI_STATUS(UI_TEXT_CHECKFILAMENT);
+                        } else {
+                		UI_STATUS(UI_TEXT_PAUSED);
+                        }
 
 			g_nContinueStepsX = 0;
 			g_nContinueStepsY = 0;
