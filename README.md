@@ -33,6 +33,20 @@ The main differences to the standard Repetier-firmware are:
 * Additional M-codes have been defined in order to control the RF1000-specific functionality.
 * There is no support for the ArduinoDUE.
 
+## Status of WKD-Modifications:
+DONE :
+- Schnelle Fahrt in die Heizbettmitte für Wartung und HBS -> Park-Funktion ===> Erledigt
+- Anzeige Datum/Uhrzeit der letzten Compilierung beim Start ===> Erledigt
+- Erkennung Filamentbruch/verstopfte Düse über Drucksensor -> Auto-Pause ===> Erledigt
+- Bei Filamentbruch/verstopfter Düse Gerät andauernd Piepen lassen und passende Anzeige im Display ===> Erledigt
+- Nach doppelter Pause kein Vorschub bei Widerstart, wenn in der Pause der manuelle Vorschub am Gerät betätigt wurde. ===> Erledigt
+IN WORK :
+- Bei doppelter Pause Positionierung auf absolut Fixer Position von X/Y vor dem HB um Filamentwechsel und Düsenwechsel zu erleichtern.
+- Manuelle Korrekturwerte am Display für X-Y-Z (inkl. Abspeichern und je nach Extruder) 
+IN CONCEPT :
+- Änderungen Dual-Betrieb
+- Lifteransteuerung
+
 ## Changelog
 
 See changelog.txt
