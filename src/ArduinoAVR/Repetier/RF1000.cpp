@@ -2102,6 +2102,7 @@ void loopRF1000( void )
 					}
 
 					pausePrint();
+					pausePrint();
 				}
 			}
 		}

@@ -1397,7 +1397,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 #if FEATURE_PARK
 #define PARK_POSITION_X						125
 #define	PARK_POSITION_Y						140
-#define	PARK_POSITION_Z						175
+#define	PARK_POSITION_Z						200
 #endif // FEATURE_PARK
 
 /** \brief Enables/disables the reset via the printer menu
@@ -1429,8 +1429,8 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Specifies the pressure at which the emergency pause shall be performed, in [digits]
 */
-#define EMERGENCY_PAUSE_DIGITS_MIN			-15000
-#define EMERGENCY_PAUSE_DIGITS_MAX			15000
+#define EMERGENCY_PAUSE_DIGITS_MIN			200
+#define EMERGENCY_PAUSE_DIGITS_MAX			5000
 
 /** \brief Specifies the interval at which the pressure check shall be performed, in [ms]
 */
