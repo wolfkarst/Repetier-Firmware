@@ -4109,6 +4109,10 @@ extern void processButton( int nAction )
 			Extruder::enable();
 			Printer::targetPositionStepsE -= g_nManualExtruderSteps;
 
+                        if ( g_pausePrint) {
+                                g_nContinueStepsExtruder=0;
+                        }
+                        
 			if( Printer::debugInfo() )
 			{
 				Com::printF( PSTR( "processButton(): current manual E steps: " ), (int)Printer::targetPositionStepsE );
