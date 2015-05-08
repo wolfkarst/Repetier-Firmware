@@ -1430,7 +1430,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 /** \brief Specifies the pressure at which the emergency pause shall be performed, in [digits]
 */
 #define EMERGENCY_PAUSE_DIGITS_MIN			200
-#define EMERGENCY_PAUSE_DIGITS_MAX			5000
+#define EMERGENCY_PAUSE_DIGITS_MAX			6000
 
 /** \brief Specifies the interval at which the pressure check shall be performed, in [ms]
 */
