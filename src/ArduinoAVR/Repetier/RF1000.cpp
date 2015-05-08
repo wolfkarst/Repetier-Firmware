@@ -4116,6 +4116,7 @@ extern void processButton( int nAction )
                         if ( g_pausePrint) {
                                 g_nContinueStepsExtruder=0;
                         }
+                        g_uEmergPauseTime=0;
                         
 			if( Printer::debugInfo() )
 			{
@@ -4144,6 +4145,8 @@ extern void processButton( int nAction )
 
 			Extruder::enable();
 			Printer::targetPositionStepsE += g_nManualExtruderSteps;
+
+                        g_uEmergPauseTime=0;
 
 			if( Printer::debugInfo() )
 			{
