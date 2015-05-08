@@ -1440,9 +1440,13 @@ the Cura PC application may fall over the debug outputs of the firmware.
 */
 #define	EMERGENCY_PAUSE_CHECKS				10
 
+/** \brief Repeating Pause Beep
+*/
+#define    EMERGENCY_PAUSE_BEEPS				5000
+
 /** \brief Specifies the time interval after the pausing of the print at which the extruder current is reduced
 */
-#define EXTRUDER_CURRENT_PAUSE_DELAY	  5000	// [ms] or 0, in order to disable the lowering of the extruder current
+#define EXTRUDER_CURRENT_PAUSE_DELAY	  2000	// [ms] or 0, in order to disable the lowering of the extruder current
 
 /** \brief Specifies the extruder current which shall be use after pausing of the print and before continuing of the print
 */

@@ -2058,9 +2058,14 @@ void loopRF1000( void )
 				Com::printFLN( PSTR( ", Diff = " ), uTime - g_uPauseTime );
 */
 				setExtruderCurrent( EXTRUDER_CURRENT_PAUSED );
-				g_uPauseTime = 0;
+//				g_uPauseTime = 0;
 			}
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
+                        if( ((uTime - g_uPauseTime) > 3000.0) &&
+                        {
+                            g_uPauseTime=uTime;
+                            g_pauseBeepDone=0;
+                        }
 		}
 		else
 		{
