@@ -92,6 +92,7 @@
 #define UI_TEXT_PRINT_POS        "Printing..."
 #define UI_TEXT_PRINTING         "Printing"
 #define UI_TEXT_PAUSED		     "Paused"
+#define UI_TEXT_CHECKFILAMENT   "Check Filament/Nozzle"
 #define UI_TEXT_IDLE             "Idle"
 #define UI_TEXT_NOSDCARD         "No SD Card"
 #define UI_TEXT_ERROR            "**** ERROR ****"

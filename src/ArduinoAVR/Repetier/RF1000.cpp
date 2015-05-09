@@ -85,6 +85,9 @@ unsigned long	g_nManualZSteps				= DEFAULT_MANUAL_Z_STEPS;
 unsigned long	g_nManualExtruderSteps		= DEFAULT_MANUAL_EXTRUDER_STEPS;
 
 #if FEATURE_PAUSE_PRINTING
+long			g_nPauseAbsStepsX				= DEFAULT_PAUSE_ABSOLUT_STEPS_X;
+long			g_nPauseAbsStepsY				= DEFAULT_PAUSE_ABSOLUT_STEPS_Y;
+long			g_nPauseAbsStepsZ				= DEFAULT_PAUSE_ABSOLUT_STEPS_Z;
 long			g_nPauseStepsX				= DEFAULT_PAUSE_STEPS_X;
 long			g_nPauseStepsY				= DEFAULT_PAUSE_STEPS_Y;
 long			g_nPauseStepsZ				= DEFAULT_PAUSE_STEPS_Z;
@@ -2110,9 +2113,9 @@ void loopRF1000( void )
 						Com::printFLN( PSTR( " / " ), PrintLine::linesCount );
 					}
 
-					pausePrint();
-					pausePrint();
                                         g_uEmergPauseTime=uTime;
+					pausePrint();
+					pausePrint();
 				}
 			}
 		}
@@ -2470,7 +2473,11 @@ void pausePrint( void )
 			{
 				Com::printFLN( PSTR( "pausePrint(): the printing has been paused" ) );
 			}
-		    UI_STATUS(UI_TEXT_PAUSED);
+                        if( g_uEmergPauseTime ) {
+                                UI_STATUS(UI_TEXT_CHECKFILAMENT);
+                        } else {
+                		UI_STATUS(UI_TEXT_PAUSED);
+                        }
 
 			g_nContinueStepsX = 0;
 			g_nContinueStepsY = 0;
@@ -2696,9 +2703,23 @@ void determinePausePosition( void )
 
 	long	Temp;
 
-
 	if( g_nPauseStepsZ )
     {
+#if DEFAULT_PAUSE_ABSOLUT>1
+		Temp = g_nPauseAbsStepsZ;
+
+#if FEATURE_Z_COMPENSATION
+		Temp -= Printer::nonCompensatedPositionStepsZ;
+		Temp -= Printer::currentCompensationZ;
+#endif // FEATURE_Z_COMPENSATION
+
+		Temp -= Printer::targetPositionStepsZ;
+                  
+                  g_nContinueStepsZ = -Temp;
+                  Printer::targetPositionStepsZ = Temp;
+
+                  calculateAllowedZStepsAfterEndStop();
+#else // DEFAULT_PAUSE_ABSOLUT >1
 		Temp = g_nPauseStepsZ;
 
 #if FEATURE_Z_COMPENSATION
@@ -2728,9 +2749,23 @@ void determinePausePosition( void )
 			Printer::targetPositionStepsZ += Temp;
             g_nContinueStepsZ			  =  -Temp;
 		}
+#endif // DEFAULT_PAUSE_ABSOLUT >1
     }
     if( g_nPauseStepsX )
     {
+#if DEFAULT_PAUSE_ABSOLUT
+		Temp = g_nPauseAbsStepsX;
+
+#if FEATURE_Z_COMPENSATION
+		Temp -= Printer::nonCompensatedPositionStepsX;
+#endif // FEATURE_Z_COMPENSATION
+
+		Temp -= Printer::targetPositionStepsX;
+                  
+                  g_nContinueStepsX = -Temp;
+                  Printer::targetPositionStepsX = Temp;
+#else // DEFAULT_PAUSE_ABSOLUT
+
 		Temp = g_nPauseStepsX;
 
 #if FEATURE_Z_COMPENSATION
@@ -2779,9 +2814,22 @@ void determinePausePosition( void )
 				g_nContinueStepsX			  =  -g_nPauseStepsX;
 			}
 		}
+#endif // DEFAULT_PAUSE_ABSOLUT
     }
     if( g_nPauseStepsY )
     {
+#if DEFAULT_PAUSE_ABSOLUT
+		Temp = g_nPauseAbsStepsY;
+
+#if FEATURE_Z_COMPENSATION
+		Temp -= Printer::nonCompensatedPositionStepsY;
+#endif // FEATURE_Z_COMPENSATION
+
+		Temp -= Printer::targetPositionStepsY;
+                  
+                  g_nContinueStepsY = -Temp;
+                  Printer::targetPositionStepsY = Temp;
+#else // DEFAULT_PAUSE_ABSOLUT
 		Temp = g_nPauseStepsY;
 
 #if FEATURE_Z_COMPENSATION
@@ -2830,6 +2878,7 @@ void determinePausePosition( void )
 				g_nContinueStepsY			  =  -g_nPauseStepsY;
 			}
 		}
+#endif // DEFAULT_PAUSE_ABSOLUT
     }
 #endif // FEATURE_PAUSE_PRINTING
 
@@ -4109,6 +4158,11 @@ extern void processButton( int nAction )
 			Extruder::enable();
 			Printer::targetPositionStepsE -= g_nManualExtruderSteps;
 
+                        if ( g_pausePrint) {
+                                g_nContinueStepsExtruder=0;
+                        }
+                        g_uEmergPauseTime=0;
+                        
 			if( Printer::debugInfo() )
 			{
 				Com::printF( PSTR( "processButton(): current manual E steps: " ), (int)Printer::targetPositionStepsE );
@@ -4136,6 +4190,8 @@ extern void processButton( int nAction )
 
 			Extruder::enable();
 			Printer::targetPositionStepsE += g_nManualExtruderSteps;
+
+                        g_uEmergPauseTime=0;
 
 			if( Printer::debugInfo() )
 			{
