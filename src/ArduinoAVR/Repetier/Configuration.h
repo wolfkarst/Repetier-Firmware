@@ -1553,10 +1553,14 @@ Enabling of the following feature can be dangerous because it allows to manually
 
 /** \brief Configuration of the pause steps
 */
+#define    DEFAULT_PAUSE_ABSOLUT              1                              // 0=classic relative movement , 1=new absolute movement for XY , 2 = new absolute movement for XYZ
+#define	DEFAULT_PAUSE_ABSOLUT_STEPS_X	(XAXIS_STEPS_PER_MM *50)
+#define	DEFAULT_PAUSE_ABSOLUT_STEPS_Y	(YAXIS_STEPS_PER_MM *5)
+#define    DEFAULT_PAUSE_ABSOLUT_STEPS_Z	(ZAXIS_STEPS_PER_MM *200)
 #define	DEFAULT_PAUSE_STEPS_X			(XAXIS_STEPS_PER_MM *50)
 #define	DEFAULT_PAUSE_STEPS_Y			(YAXIS_STEPS_PER_MM *50)
-#define DEFAULT_PAUSE_STEPS_Z			(ZAXIS_STEPS_PER_MM *2)
-#define	DEFAULT_PAUSE_STEPS_EXTRUDER	(EXT0_STEPS_PER_MM *10)
+#define    DEFAULT_PAUSE_STEPS_Z			(ZAXIS_STEPS_PER_MM *2)
+#define	DEFAULT_PAUSE_STEPS_EXTRUDER	(EXT0_STEPS_PER_MM *5)
 
 #define	PAUSE_X_MIN						(XAXIS_STEPS_PER_MM *5)
 #define	PAUSE_Y_MIN						(YAXIS_STEPS_PER_MM *5)

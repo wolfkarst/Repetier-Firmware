@@ -40,9 +40,11 @@ DONE :
 - Erkennung Filamentbruch/verstopfte Düse über Drucksensor -> Auto-Pause ===> Erledigt
 - Bei Filamentbruch/verstopfter Düse Gerät andauernd Piepen lassen und passende Anzeige im Display ===> Erledigt
 - Nach doppelter Pause kein Vorschub bei Widerstart, wenn in der Pause der manuelle Vorschub am Gerät betätigt wurde. ===> Erledigt
+- Bei doppelter Pause Positionierung auf absolut Fixer Position von X/Y vor dem HB um Filamentwechsel und Düsenwechsel zu erleichtern. ===> Erledigt
+
 IN WORK :
-- Bei doppelter Pause Positionierung auf absolut Fixer Position von X/Y vor dem HB um Filamentwechsel und Düsenwechsel zu erleichtern.
 - Manuelle Korrekturwerte am Display für X-Y-Z (inkl. Abspeichern und je nach Extruder) 
+
 IN CONCEPT :
 - Änderungen Dual-Betrieb
 - Lifteransteuerung

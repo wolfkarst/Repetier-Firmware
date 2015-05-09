@@ -2,6 +2,7 @@ V 0.91.48-wkd (2015-05-07 ff..)
 - Feature Parkposition in Mitte von Heatbeat für Wartungszwecke aktiviert
 - Anzeige Datum und Uhrzeit der letzten Compilierung beim Einschalten
 - Feature Autopause bei Druck < 200 (Filamentbruch) oder > 5000 (Duese verstopft) aktiviert. Doppelte Pause, damit Kopf von Druck wegfaehrt
+- Absolute Pausenposition un Configuration.h einstellbar. 1=nur XY und 2=XYZ
 
 
 V 0.91.48 (2014-11-24)
