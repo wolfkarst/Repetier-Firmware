@@ -91,12 +91,12 @@
 #define	EEPROM_OFFSET_MICRO_STEPS		6
 #define EEPROM_OFFSET_Z_START			8
 #define EEPROM_DELAY					10																// [ms]
-#define XYZ_DIRECTION_CHANGE_DELAY		250																// [µs]
-#define XYZ_STEPPER_HIGH_DELAY			250																// [µs]
-#define XYZ_STEPPER_LOW_DELAY			250																// [µs]
-#define EXTRUDER_DIRECTION_CHANGE_DELAY	250																// [µs]
-#define EXTRUDER_STEPPER_HIGH_DELAY		40000															// [µs]
-#define EXTRUDER_STEPPER_LOW_DELAY		250																// [µs]
+#define XYZ_DIRECTION_CHANGE_DELAY		250																// [ï¿½s]
+#define XYZ_STEPPER_HIGH_DELAY			250																// [ï¿½s]
+#define XYZ_STEPPER_LOW_DELAY			250																// [ï¿½s]
+#define EXTRUDER_DIRECTION_CHANGE_DELAY	250																// [ï¿½s]
+#define EXTRUDER_STEPPER_HIGH_DELAY		40000															// [ï¿½s]
+#define EXTRUDER_STEPPER_LOW_DELAY		250																// [ï¿½s]
 #define	LOOP_INTERVAL					1000															// [ms]
 #define	SCAN_DELAY						1000															// [ms]
 
@@ -275,6 +275,9 @@ extern void pausePrint( void );
 
 // continuePrint()
 extern void continuePrint( void );
+
+// determinePausePositionZ()
+extern void determinePausePositionZ( void );
 
 // determinePausePosition()
 extern void determinePausePosition( void );

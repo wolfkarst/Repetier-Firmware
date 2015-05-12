@@ -2488,6 +2488,23 @@ void pausePrint( void )
 				Printer::targetPositionStepsE += g_nPauseStepsExtruder;
 				g_nContinueStepsExtruder	  =  g_nPauseStepsExtruder;
 			}
+
+                	determinePausePositionZ();
+		while( (Printer::targetPositionStepsZ != Printer::currentPositionStepsZ) ||
+			   (Printer::targetPositionStepsE != Printer::currentPositionStepsE) )
+		{
+#if FEATURE_WATCHDOG
+			HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+			HAL::delayMilliseconds( 1 );
+			loopRF1000();
+			Commands::checkForPeriodicalActions();
+
+			// NOTE: do not run runStandardTasks() within this loop
+			//runStandardTasks();
+		}
+
 		}
 		else
 		{
@@ -2595,10 +2612,7 @@ void continuePrint( void )
 
 			if( g_nContinueStepsY )			Printer::targetPositionStepsY += g_nContinueStepsY;
 			if( g_nContinueStepsX )			Printer::targetPositionStepsX += g_nContinueStepsX;
-			if( g_nContinueStepsZ )			Printer::targetPositionStepsZ += g_nContinueStepsZ;
-			if( g_nContinueStepsExtruder )	Printer::targetPositionStepsE -= g_nContinueStepsExtruder;
 
-			calculateAllowedZStepsAfterEndStop();
 
 			// wait until the continue position has been reached
 			if( Printer::debugInfo() )
@@ -2607,8 +2621,31 @@ void continuePrint( void )
 			}
 
 			while( (Printer::targetPositionStepsX != Printer::currentPositionStepsX) ||
-				   (Printer::targetPositionStepsY != Printer::currentPositionStepsY) ||
-				   (Printer::targetPositionStepsZ != Printer::currentPositionStepsZ) ||
+				   (Printer::targetPositionStepsY != Printer::currentPositionStepsY) )
+			{
+#if FEATURE_WATCHDOG
+				HAL::pingWatchdog();
+#endif // FEATURE_WATCHDOG
+
+				HAL::delayMilliseconds( 1 );
+				loopRF1000();
+				Commands::checkForPeriodicalActions();
+
+				// NOTE: do not run runStandardTasks() within this loop
+				//runStandardTasks();
+			}
+
+			if( g_nContinueStepsExtruder )	Printer::targetPositionStepsE -= g_nContinueStepsExtruder;
+			if( g_nContinueStepsZ )			Printer::targetPositionStepsZ += g_nContinueStepsZ;
+			calculateAllowedZStepsAfterEndStop();
+
+			// wait until the continue position has been reached
+			if( Printer::debugInfo() )
+			{
+				Com::printFLN( PSTR( "continuePrint(): waiting for the continue position" ) );
+			}
+
+			while( (Printer::targetPositionStepsZ != Printer::currentPositionStepsZ) ||
 				   (Printer::targetPositionStepsE != Printer::currentPositionStepsE) )
 			{
 #if FEATURE_WATCHDOG
@@ -2630,6 +2667,8 @@ void continuePrint( void )
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
 
 			if( g_nContinueStepsExtruder )	Printer::targetPositionStepsE -= g_nContinueStepsExtruder;
+			if( g_nContinueStepsZ )			Printer::targetPositionStepsZ += g_nContinueStepsZ;
+			calculateAllowedZStepsAfterEndStop();
 
 			// wait until the continue position has been reached
 			if( Printer::debugInfo() )
@@ -2637,7 +2676,8 @@ void continuePrint( void )
 				Com::printFLN( PSTR( "continuePrint(): waiting for the continue position" ) );
 			}
 
-			while( Printer::targetPositionStepsE != Printer::currentPositionStepsE )
+			while( (Printer::targetPositionStepsZ != Printer::currentPositionStepsZ) ||
+                                   (Printer::targetPositionStepsE != Printer::currentPositionStepsE ) )
 			{
 #if FEATURE_WATCHDOG
 				HAL::pingWatchdog();
@@ -2697,7 +2737,7 @@ void continuePrint( void )
 } // continuePrint
 
 
-void determinePausePosition( void )
+void determinePausePositionZ( void )
 {
 #if FEATURE_PAUSE_PRINTING
 
@@ -2751,6 +2791,16 @@ void determinePausePosition( void )
 		}
 #endif // DEFAULT_PAUSE_ABSOLUT >1
     }
+#endif // FEATURE_PAUSE_PRINTING
+
+} // determinePausePositionZ
+
+void determinePausePosition( void )
+{
+#if FEATURE_PAUSE_PRINTING
+
+	long	Temp;
+
     if( g_nPauseStepsX )
     {
 #if DEFAULT_PAUSE_ABSOLUT

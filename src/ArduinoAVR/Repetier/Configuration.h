@@ -1386,7 +1386,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief The following script allows to configure the exact behavior of the automatic object output
 */
-#define	OUTPUT_OBJECT_SCRIPT				"G21\nG91\nG1 E-10\nG1 Z210 F5000\nG1 X0 Y220 F7500\n"
+#define	OUTPUT_OBJECT_SCRIPT				"G21\nG91\nG1 E-10\nG1 Z200 F5000\nG1 X0 Y220 F7500\n"
 
 /** \brief Enables/disables the park feature
 */
@@ -1555,12 +1555,12 @@ Enabling of the following feature can be dangerous because it allows to manually
 */
 #define    DEFAULT_PAUSE_ABSOLUT              1                              // 0=classic relative movement , 1=new absolute movement for XY , 2 = new absolute movement for XYZ
 #define	DEFAULT_PAUSE_ABSOLUT_STEPS_X	(XAXIS_STEPS_PER_MM *50)
-#define	DEFAULT_PAUSE_ABSOLUT_STEPS_Y	(YAXIS_STEPS_PER_MM *5)
-#define    DEFAULT_PAUSE_ABSOLUT_STEPS_Z	(ZAXIS_STEPS_PER_MM *200)
+#define	DEFAULT_PAUSE_ABSOLUT_STEPS_Y	(YAXIS_STEPS_PER_MM *1)
+#define    DEFAULT_PAUSE_ABSOLUT_STEPS_Z	(ZAXIS_STEPS_PER_MM *190)
 #define	DEFAULT_PAUSE_STEPS_X			(XAXIS_STEPS_PER_MM *50)
 #define	DEFAULT_PAUSE_STEPS_Y			(YAXIS_STEPS_PER_MM *50)
 #define    DEFAULT_PAUSE_STEPS_Z			(ZAXIS_STEPS_PER_MM *2)
-#define	DEFAULT_PAUSE_STEPS_EXTRUDER	(EXT0_STEPS_PER_MM *5)
+#define	DEFAULT_PAUSE_STEPS_EXTRUDER	(EXT0_STEPS_PER_MM *10)
 
 #define	PAUSE_X_MIN						(XAXIS_STEPS_PER_MM *5)
 #define	PAUSE_Y_MIN						(YAXIS_STEPS_PER_MM *5)
