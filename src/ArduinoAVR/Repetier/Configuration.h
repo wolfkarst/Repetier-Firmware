@@ -692,8 +692,8 @@ on this endstop.
 // For delta robot Z_MAX_LENGTH is the maximum travel of the towers and should be set to the distance between the hotend
 // and the platform when the printer is at its home position.
 // If EEPROM is enabled these values will be overidden with the values in the EEPROM
-#define X_MAX_LENGTH	(long)245
-#define Y_MAX_LENGTH	(long)245
+#define X_MAX_LENGTH	(long)228
+#define Y_MAX_LENGTH	(long)248
 #define Z_MAX_LENGTH	(long)200
 
 // Coordinates for the minimum axis. Can also be negative if you want to have the bed start at 0 and the printer can go to the left side
@@ -1043,7 +1043,7 @@ matches, the stored values are used to overwrite the settings.
 IMPORTANT: With mode <>0 some changes in Configuration.h are not set any more, as they are
            taken from the EEPROM.
 */
-#define EEPROM_MODE 1
+#define EEPROM_MODE 2
 
 
 /**************** duplicate motor driver ***************
@@ -1429,7 +1429,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Specifies the pressure at which the emergency pause shall be performed, in [digits]
 */
-#define EMERGENCY_PAUSE_DIGITS_MIN			200
+#define EMERGENCY_PAUSE_DIGITS_MIN			-150
 #define EMERGENCY_PAUSE_DIGITS_MAX			6000
 
 /** \brief Specifies the interval at which the pressure check shall be performed, in [ms]
@@ -1438,7 +1438,7 @@ the Cura PC application may fall over the debug outputs of the firmware.
 
 /** \brief Specifies the number of pressure values which shall be averaged. The emergency pause can be detected each EMERGENCY_PAUSE_INTERVAL * EMERGENCY_PAUSE_CHECKS [ms]
 */
-#define	EMERGENCY_PAUSE_CHECKS				10
+#define	EMERGENCY_PAUSE_CHECKS				20
 
 /** \brief Repeating Pause Beep
 */
@@ -1508,19 +1508,19 @@ Enabling of the following feature can be dangerous because it allows to manually
 
 /** \brief Configuration of the heat bed scan
 */
-#define SCAN_X_START_MM					15																// [mm]
+#define SCAN_X_START_MM					10																// [mm]
 #define SCAN_X_START_STEPS				long(XAXIS_STEPS_PER_MM * SCAN_X_START_MM)						// [steps]
-#define SCAN_X_END_MM					5																// [mm]
+#define SCAN_X_END_MM					0																// [mm]
 #define SCAN_X_END_STEPS				long(XAXIS_STEPS_PER_MM * SCAN_X_END_MM)						// [steps]
-#define SCAN_X_STEP_SIZE_MM				20																// [mm]
+#define SCAN_X_STEP_SIZE_MM				21																// [mm]
 #define SCAN_X_STEP_SIZE_STEPS			long(XAXIS_STEPS_PER_MM * SCAN_X_STEP_SIZE_MM)					// [steps]
 #define SCAN_X_MAX_POSITION_STEPS		long(X_MAX_LENGTH * XAXIS_STEPS_PER_MM - SCAN_X_END_STEPS)		// [steps]
 
 #define	SCAN_Y_START_MM					30																// [mm]
 #define	SCAN_Y_START_STEPS				long(YAXIS_STEPS_PER_MM * SCAN_Y_START_MM)						// [steps]
-#define	SCAN_Y_END_MM					5																// [mm]
+#define	SCAN_Y_END_MM			        	5															// [mm]
 #define	SCAN_Y_END_STEPS				long(YAXIS_STEPS_PER_MM * SCAN_Y_END_MM)						// [steps]
-#define SCAN_Y_STEP_SIZE_MM				20																// [mm]
+#define SCAN_Y_STEP_SIZE_MM				21																// [mm]
 #define	SCAN_Y_STEP_SIZE_STEPS			long(YAXIS_STEPS_PER_MM * SCAN_Y_STEP_SIZE_MM)					// [steps]
 #define SCAN_Y_MAX_POSITION_STEPS		long(Y_MAX_LENGTH * YAXIS_STEPS_PER_MM - SCAN_Y_END_STEPS)		// [steps]
 

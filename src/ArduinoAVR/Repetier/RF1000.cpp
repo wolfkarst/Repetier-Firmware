@@ -2483,13 +2483,14 @@ void pausePrint( void )
 			g_nContinueStepsY = 0;
 			g_nContinueStepsZ = 0;
 
+                	determinePausePositionZ();
+
 			if( g_nPauseStepsExtruder )
 			{
 				Printer::targetPositionStepsE += g_nPauseStepsExtruder;
 				g_nContinueStepsExtruder	  =  g_nPauseStepsExtruder;
 			}
 
-                	determinePausePositionZ();
 		while( (Printer::targetPositionStepsZ != Printer::currentPositionStepsZ) ||
 			   (Printer::targetPositionStepsE != Printer::currentPositionStepsE) )
 		{
@@ -2635,9 +2636,9 @@ void continuePrint( void )
 				//runStandardTasks();
 			}
 
-			if( g_nContinueStepsExtruder )	Printer::targetPositionStepsE -= g_nContinueStepsExtruder;
 			if( g_nContinueStepsZ )			Printer::targetPositionStepsZ += g_nContinueStepsZ;
 			calculateAllowedZStepsAfterEndStop();
+			if( g_nContinueStepsExtruder )	Printer::targetPositionStepsE -= g_nContinueStepsExtruder;
 
 			// wait until the continue position has been reached
 			if( Printer::debugInfo() )
@@ -2666,9 +2667,9 @@ void continuePrint( void )
 			setExtruderCurrent( uMotorCurrents[E_AXIS] );
 #endif // EXTRUDER_CURRENT_PAUSE_DELAY
 
-			if( g_nContinueStepsExtruder )	Printer::targetPositionStepsE -= g_nContinueStepsExtruder;
 			if( g_nContinueStepsZ )			Printer::targetPositionStepsZ += g_nContinueStepsZ;
 			calculateAllowedZStepsAfterEndStop();
+			if( g_nContinueStepsExtruder )	Printer::targetPositionStepsE -= g_nContinueStepsExtruder;
 
 			// wait until the continue position has been reached
 			if( Printer::debugInfo() )
